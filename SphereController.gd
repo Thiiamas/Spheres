@@ -11,6 +11,11 @@ class_name SphereController
 
 enum State { GROUNDED, AIRBORNE, FLYING }
 
+## High-level player mode. MOVEMENT lets the ball roll/jump/boost; ATTACK locks
+## movement (placeholder — attack behaviour is implemented later). Toggle with
+## the "mode_toggle" action. The ball changes colour as a visual cue.
+enum Mode { MOVEMENT, ATTACK }
+
 @export_group("Rolling")
 ## Torque applied while grounded and giving directional input.
 @export var roll_torque: float = 35.0
@@ -31,12 +36,24 @@ enum State { GROUNDED, AIRBORNE, FLYING }
 ## A contact counts as "ground" when its normal·UP is at least this value.
 @export var ground_normal_threshold: float = 0.6
 
+@export_group("Mode")
+## Mesh whose material is recoloured to signal MOVEMENT vs ATTACK mode.
+@export var ball_mesh: MeshInstance3D
+## Albedo + glow colour while in MOVEMENT mode.
+@export var movement_color: Color = Color(0.3, 0.55, 0.9)
+## Albedo + glow colour while in ATTACK mode.
+@export var attack_color: Color = Color(0.95, 0.3, 0.2)
+
 @export_group("References")
 @export var reactor: Reactor
 @export var camera: SphereCamera ## Provides the view yaw so roll matches the active camera mode.
 @export var boost_particles: GPUParticles3D ## Optional; emits while FLYING.
 
 var state: State = State.AIRBORNE
+var mode: Mode = Mode.MOVEMENT
+
+# Per-instance copy of the ball material so recolouring doesn't touch the shared resource.
+var _mode_material: StandardMaterial3D = null
 
 var _is_grounded: bool = false
 var _can_double_jump: bool = false
@@ -50,10 +67,26 @@ func _ready() -> void:
 	max_contacts_reported = 8
 	# Keep simulating so boost/roll feel responsive even at rest.
 	can_sleep = false
+
+	# Own a private copy of the material so the mode tint is per-instance.
+	if ball_mesh:
+		var mat := ball_mesh.get_active_material(0)
+		if mat is StandardMaterial3D:
+			_mode_material = mat.duplicate()
+			ball_mesh.material_override = _mode_material
+	_apply_mode_visual()
+
 	print("[Ball] reactor=", reactor, " camera=", camera, " boost_force=", boost_force)
 
 
 func _process(_delta: float) -> void:
+	if Input.is_action_just_pressed("mode_toggle"):
+		_toggle_mode()
+
+	# Movement input is ignored entirely in ATTACK mode.
+	if mode != Mode.MOVEMENT:
+		return
+
 	# Buffer jump presses here for crisp edge detection; consume them in physics.
 	if Input.is_action_just_pressed("jump"):
 		if _is_grounded:
@@ -67,9 +100,18 @@ func _integrate_forces(physics_state: PhysicsDirectBodyState3D) -> void:
 	_update_grounded(physics_state)
 	_update_state()
 
-	# Exhaust particles fire only while actively boosting.
+	var can_move := mode == Mode.MOVEMENT
+
+	# Exhaust particles fire only while actively boosting in MOVEMENT mode.
 	if boost_particles:
-		boost_particles.emitting = state == State.FLYING
+		boost_particles.emitting = can_move and state == State.FLYING
+
+	# ATTACK mode locks all movement. Drop any buffered jumps so they don't
+	# fire when switching back.
+	if not can_move:
+		_jump_queued = false
+		_double_jump_queued = false
+		return
 
 	if _is_grounded:
 		_apply_roll(physics_state)
@@ -85,6 +127,22 @@ func _integrate_forces(physics_state: PhysicsDirectBodyState3D) -> void:
 
 	if state == State.FLYING:
 		_apply_boost(physics_state)
+
+
+func _toggle_mode() -> void:
+	mode = Mode.ATTACK if mode == Mode.MOVEMENT else Mode.MOVEMENT
+	_apply_mode_visual()
+
+
+## Recolour the ball so the current mode is readable at a glance.
+func _apply_mode_visual() -> void:
+	if _mode_material == null:
+		return
+	var col := movement_color if mode == Mode.MOVEMENT else attack_color
+	_mode_material.albedo_color = col
+	_mode_material.emission_enabled = true
+	_mode_material.emission = col
+	_mode_material.emission_energy_multiplier = 1.6
 
 
 func _update_grounded(physics_state: PhysicsDirectBodyState3D) -> void:

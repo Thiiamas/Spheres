@@ -125,7 +125,7 @@ shape = SubResource("WorldBoundaryShape3D_ground")
 transform = Transform3D(0.866025, -0.353553, 0.353553, 0, 0.707107, 0.707107, -0.5, -0.612372, 0.612372, 0, 8, 0)
 shadow_enabled = true
 
-[node name="Ball" type="RigidBody3D" parent="." unique_id=1830542542 node_paths=PackedStringArray("reactor", "camera", "boost_particles")]
+[node name="Ball" type="RigidBody3D" parent="." unique_id=1830542542 node_paths=PackedStringArray("ball_mesh", "reactor", "camera", "boost_particles")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 script = ExtResource("1_ctrl")
 roll_torque = 20.0
@@ -133,6 +133,7 @@ max_roll_speed = 12.0
 jump_force = 6.0
 double_jump_force = 4.0
 boost_force = 12.0
+ball_mesh = NodePath("MeshInstance3D")
 reactor = NodePath("Reactor")
 camera = NodePath("../SphereCamera")
 boost_particles = NodePath("Reactor/BoostParticles")
