@@ -46,6 +46,8 @@ enum Mode { MOVEMENT, ATTACK }
 @export var movement_color: Color = Color(0.3, 0.55, 0.9)
 ## Albedo + glow colour while in ATTACK mode.
 @export var attack_color: Color = Color(0.95, 0.3, 0.2)
+## Albedo + glow colour while passive (crystallised — not the active sphere).
+@export var passive_color: Color = Color(0.5, 0.75, 1.0)
 
 @export_group("References")
 @export var reactor: Reactor
@@ -54,6 +56,11 @@ enum Mode { MOVEMENT, ATTACK }
 
 var state: State = State.AIRBORNE
 var mode: Mode = Mode.MOVEMENT
+
+## Whether this sphere is the one the consciousness currently controls. Passive
+## spheres are frozen (crystallised) and ignore all input. Driven by the
+## Consciousness autoload via set_active() / set_passive().
+var is_controlled: bool = false
 
 # Per-instance copy of the ball material so recolouring doesn't touch the shared resource.
 var _mode_material: StandardMaterial3D = null
@@ -77,12 +84,19 @@ func _ready() -> void:
 		if mat is StandardMaterial3D:
 			_mode_material = mat.duplicate()
 			ball_mesh.material_override = _mode_material
-	_apply_mode_visual()
+
+	# Join the pool of transferable spheres. Consciousness decides which one
+	# starts active; until then this sphere sits crystallised (set_passive).
+	Consciousness.register(self)
 
 	print("[Ball] reactor=", reactor, " camera=", camera, " boost_force=", boost_force)
 
 
 func _process(_delta: float) -> void:
+	# Passive (crystallised) spheres ignore all input.
+	if not is_controlled:
+		return
+
 	if Input.is_action_just_pressed("mode_toggle"):
 		_toggle_mode()
 
@@ -100,6 +114,11 @@ func _process(_delta: float) -> void:
 
 
 func _integrate_forces(physics_state: PhysicsDirectBodyState3D) -> void:
+	# Passive spheres are frozen, so _integrate_forces shouldn't even run — but
+	# guard anyway so a stray call can never move a crystallised sphere.
+	if not is_controlled:
+		return
+
 	_update_grounded(physics_state)
 	_update_state()
 
@@ -134,18 +153,66 @@ func _integrate_forces(physics_state: PhysicsDirectBodyState3D) -> void:
 
 func _toggle_mode() -> void:
 	mode = Mode.ATTACK if mode == Mode.MOVEMENT else Mode.MOVEMENT
-	_apply_mode_visual()
+	_apply_visual()
 
 
-## Recolour the ball so the current mode is readable at a glance.
-func _apply_mode_visual() -> void:
+## --- Consciousness transfer (Phase 2) -------------------------------------
+
+## Take control of this sphere: thaw the physics, re-enable its reactor, and
+## reset to MOVEMENT mode. Called by the Consciousness autoload.
+func set_active() -> void:
+	is_controlled = true
+	mode = Mode.MOVEMENT
+	freeze = false
+	if reactor:
+		reactor.set_process(true)
+		reactor.set_process_input(true)
+	_apply_visual()
+
+
+## Crystallise this sphere: stop dead, freeze the body so it becomes an immovable
+## obstacle, and silence its reactor. Called by the Consciousness autoload.
+func set_passive() -> void:
+	is_controlled = false
+	linear_velocity = Vector3.ZERO
+	angular_velocity = Vector3.ZERO
+	freeze = true
+	_jump_queued = false
+	_double_jump_queued = false
+	if reactor:
+		reactor.set_process(false)
+		reactor.set_process_input(false)
+	if boost_particles:
+		boost_particles.emitting = false
+	_apply_visual()
+
+
+## Let the shared camera point this controller at the right view yaw.
+func bind_camera(cam: SphereCamera) -> void:
+	camera = cam
+
+
+func get_reactor() -> Reactor:
+	return reactor
+
+
+## Recolour the ball so its mode (when active) or crystallised state (passive)
+## is readable at a glance.
+func _apply_visual() -> void:
 	if _mode_material == null:
 		return
-	var col := movement_color if mode == Mode.MOVEMENT else attack_color
+	var col: Color
+	var energy: float
+	if not is_controlled:
+		col = passive_color
+		energy = 0.35 # faint, icy glow
+	else:
+		col = movement_color if mode == Mode.MOVEMENT else attack_color
+		energy = 1.6
 	_mode_material.albedo_color = col
 	_mode_material.emission_enabled = true
 	_mode_material.emission = col
-	_mode_material.emission_energy_multiplier = 1.6
+	_mode_material.emission_energy_multiplier = energy
 
 
 func _update_grounded(physics_state: PhysicsDirectBodyState3D) -> void:

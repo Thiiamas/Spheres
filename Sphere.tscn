@@ -1,0 +1,82 @@
+[gd_scene load_steps=12 format=3]
+
+[ext_resource type="Script" uid="uid://bbve772w8ey0t" path="res://SphereController.gd" id="1_ctrl"]
+[ext_resource type="Script" uid="uid://dnopq63lncmyw" path="res://Reactor.gd" id="2_react"]
+
+[sub_resource type="SphereMesh" id="Sphere_ball"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_ball"]
+albedo_color = Color(0.3, 0.55, 0.9, 1)
+metallic = 0.4
+roughness = 0.3
+
+[sub_resource type="SphereShape3D" id="Shape_ball"]
+
+[sub_resource type="SphereMesh" id="Sphere_nozzle"]
+radius = 0.12
+height = 0.24
+
+[sub_resource type="Gradient" id="Gradient_flame"]
+offsets = PackedFloat32Array(0, 0.4, 1)
+colors = PackedColorArray(1, 0.95, 0.5, 1, 1, 0.4, 0.1, 0.8, 0.5, 0.1, 0.05, 0)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_flame"]
+gradient = SubResource("Gradient_flame")
+
+[sub_resource type="ParticleProcessMaterial" id="Particle_boost"]
+emission_shape = 1
+emission_sphere_radius = 0.1
+direction = Vector3(0, -1, 0)
+spread = 22.0
+initial_velocity_min = 5.0
+initial_velocity_max = 8.0
+gravity = Vector3(0, 0, 0)
+scale_min = 0.4
+color_ramp = SubResource("GradientTexture1D_flame")
+
+[sub_resource type="StandardMaterial3D" id="Mat_flame"]
+transparency = 1
+blend_mode = 1
+shading_mode = 0
+vertex_color_use_as_albedo = true
+albedo_color = Color(1, 0.6, 0.2, 1)
+disable_receive_shadows = true
+billboard_mode = 3
+billboard_keep_scale = true
+
+[sub_resource type="QuadMesh" id="Quad_flame"]
+material = SubResource("Mat_flame")
+size = Vector2(0.35, 0.35)
+
+[node name="Sphere" type="RigidBody3D" node_paths=PackedStringArray("ball_mesh", "reactor", "boost_particles")]
+script = ExtResource("1_ctrl")
+roll_torque = 20.0
+max_roll_speed = 12.0
+jump_force = 6.0
+double_jump_force = 4.0
+boost_force = 12.0
+ball_mesh = NodePath("MeshInstance3D")
+reactor = NodePath("Reactor")
+boost_particles = NodePath("Reactor/BoostParticles")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("Sphere_ball")
+surface_material_override/0 = SubResource("Mat_ball")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("Shape_ball")
+
+[node name="Reactor" type="Node3D" parent="."]
+script = ExtResource("2_react")
+
+[node name="Nozzle" type="MeshInstance3D" parent="Reactor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.6, 0)
+mesh = SubResource("Sphere_nozzle")
+
+[node name="BoostParticles" type="GPUParticles3D" parent="Reactor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.6, 0)
+emitting = false
+amount = 48
+lifetime = 0.6
+process_material = SubResource("Particle_boost")
+draw_pass_1 = SubResource("Quad_flame")

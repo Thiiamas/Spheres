@@ -48,18 +48,20 @@ dossiers `scenes/` / `scripts/`) :
 
 ```
 res://
-├── Main.tscn             ← scène principale (arène propre, bornée + Ball + caméra + HUD)
-├── TestScene.tscn        ← bac à sable (sol + niveau parkour + Ball + caméra + HUD)
-├── SphereController.gd    (RigidBody3D — mouvement reactor-ball : état, roll, saut, boost)
+├── Main.tscn             ← scène principale (arène bornée + 3× Sphere.tscn + caméra + HUD)
+├── TestScene.tscn        ← bac à sable (sol + niveau parkour + Ball inline + caméra + HUD)
+├── Sphere.tscn           ← sphère joueur réutilisable (RigidBody + mesh + collision + Reactor)
+├── SphereController.gd    (RigidBody3D — mouvement reactor-ball : état, roll, saut, boost ; actif/passif)
 ├── Reactor.gd             (Node3D — tuyère orientable, produit la direction de poussée)
-├── SphereCamera.gd        (Camera3D — deux modes : FOLLOW / RTS)
-├── HUD.gd                 (Label de debug : état, angles réacteur, vitesse, mode caméra)
+├── SphereCamera.gd        (Camera3D — deux modes : FOLLOW / RTS ; suit la sphère active)
+├── HUD.gd                 (Label de debug : sphère active, état, angles réacteur, vitesse, caméra)
+├── Consciousness.gd       (Autoload `Consciousness` — registre des sphères, transfert au Tab)
 └── Docs/                  (ce plan + les prompts de phase)
 ```
 
 > Réorganiser en `scenes/` / `scripts/` est une tâche de nettoyage future, non
-> bloquante. Aucun autoload n'existe encore (les phases 2 et 4 en introduiront :
-> `Consciousness`, `GameManager`).
+> bloquante. Un autoload existe : `Consciousness` (phase 2). La phase 4
+> introduira `GameManager`.
 
 ---
 
@@ -68,7 +70,7 @@ res://
 | Phase | Fichier prompt | Objectif | État |
 |-------|---------------|----------|------|
 | 1 | `phase1_movement.md` | Sphère contrôlable (mouvement) | ✅ Implémenté (système reactor-ball ; d'autres systèmes à venir) |
-| 2 | `phase2_transfer.md` | Transfert de conscience | ⬜ À faire |
+| 2 | `phase2_transfer.md` | Transfert de conscience | ✅ Implémenté (adapté au reactor-ball : sphères figées par `freeze`) |
 | 3 | `phase3_combat.md` | Ennemis + combat + HP | ⬜ À faire |
 | 4 | `phase4_loop.md` | Boucle complète (vagues, zones, game over) | ⬜ À faire |
 

@@ -48,6 +48,23 @@ const _RTS_ZOOM_REF: float = 18.0 # zoom at which pan_speed is unscaled
 func _ready() -> void:
 	_apply_mode_state()
 
+	# Follow whichever sphere the consciousness currently inhabits, and keep up
+	# as control transfers between spheres.
+	Consciousness.active_changed.connect(_on_active_changed)
+	if Consciousness.active_sphere() != null:
+		_on_active_changed(Consciousness.active_sphere())
+
+
+## Retarget onto the newly active sphere: track it, read its reactor for orbit /
+## RTS aiming, and let it know which camera drives its camera-relative rolling.
+func _on_active_changed(sphere: SphereController) -> void:
+	target = sphere
+	reactor = sphere.get_reactor()
+	sphere.bind_camera(self)
+	if mode == Mode.RTS and rts_recenter_on_enter:
+		_rts_focus = sphere.global_position
+	_apply_mode_state() # re-point mouse capture / external_aim at the new reactor
+
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("camera_toggle"):

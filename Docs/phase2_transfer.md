@@ -1,15 +1,18 @@
 # Phase 2 — Transfert de conscience (3D)
 
-> **Note de synchro (docs ↔ code).** Cette phase n'est **pas encore
-> implémentée**. Les extraits ci-dessous supposent un `Sphere.gd` de type
-> `CharacterBody3D` simple ; or la sphère active est aujourd'hui le
-> **`SphereController` (`RigidBody3D`)** avec mouvement reactor-ball (voir
-> `phase1_movement.md`). À l'implémentation :
-> - greffer la logique `is_controlled` / `set_active` / `set_passive` sur le
->   contrôleur réel plutôt que de recopier le `_physics_process` ci-dessous ;
-> - les fichiers sont **à plat** sous `res://` (pas de dossier `scenes/`) ;
-> - les actions de déplacement réelles sont `move_left/right/forward/back`
->   (et non `ui_left/...`).
+> **Note de synchro (docs ↔ code).** Cette phase est **implémentée**, mais
+> **adaptée** au mouvement reactor-ball réel. Les extraits `CharacterBody3D`
+> ci-dessous sont **illustratifs et périmés** ; l'implémentation effective est
+> résumée dans la section « Implémentation réelle » en fin de document. En bref :
+> - pas de `Sphere.gd` séparé : la logique `is_controlled` / `set_active()` /
+>   `set_passive()` est greffée sur le **`SphereController` (`RigidBody3D`)** ;
+> - une sphère passive est **`freeze`gée** (immobile, indéboulonnable) plutôt que
+>   de remettre sa vélocité à zéro chaque frame ;
+> - la sphère joueur est une scène réutilisable **`Sphere.tscn`** instanciée 3×
+>   dans `Main.tscn` (fichiers toujours **à plat** sous `res://`) ;
+> - la caméra et le HUD **se reciblent** sur la sphère active via le signal
+>   `Consciousness.active_changed` (pas de `Main.gd` qui repositionne la caméra) ;
+> - l'action de transfert est **`transfer`** (Tab / bouton X manette).
 
 ## Objectif
 Le joueur peut transférer sa conscience entre plusieurs sphères.
@@ -151,14 +154,25 @@ Ajouter l'action `transfer` dans `Project > Project Settings > Input Map` :
 
 ---
 
+## Implémentation réelle (adaptée au reactor-ball)
+
+| Élément | Réalisation |
+|---------|-------------|
+| Sphère joueur | `Sphere.tscn` (RigidBody3D + `SphereController` + mesh + collision + Reactor), instanciée 3× dans `Main.tscn` aux positions `(-5,1,0)`, `(0,1,0)`, `(5,1,0)`. |
+| État actif/passif | `SphereController.set_active()` / `set_passive()`. Passif → `freeze = true` (statique, indéboulonnable), vélocités nulles, réacteur et particules coupés. Actif → `freeze = false`, réacteur réactivé, mode remis à `MOVEMENT`. |
+| Couleur | Active = **couleur de mode** (bleu MOVEMENT / rouge ATTACK, lueur forte). Passive = **bleu glacé** `passive_color` (lueur faible). *(La doc parlait de « blanc » pour l'active ; on garde la teinte de mode de la phase 1, plus cohérente.)* |
+| Autoload `Consciousness` | Registre des sphères (auto-enregistrement depuis `_ready`), index courant, `transfer_to_next()`, signal `active_changed(sphere)`. La 1ʳᵉ sphère devient active en **différé** (`call_deferred`) pour que caméra/HUD aient connecté le signal. |
+| Caméra & HUD | Se connectent à `active_changed` et se reciblent sur la sphère active (la caméra lit son réacteur et lui transmet la référence caméra pour le roulement caméra-relatif). |
+| Entrée | Action `transfer` = **Tab** (clavier) / bouton **X** manette (`button_index 2`). |
+
 ## Critères de validation
 
-- [ ] 3 sphères visibles au démarrage
-- [ ] Une seule sphère est blanche (active), les autres sont bleu glacé
-- [ ] Tab transfère la conscience à la sphère suivante
-- [ ] La sphère quittée devient bleu glacé et s'immobilise instantanément
-- [ ] La caméra se déplace vers la nouvelle sphère active
-- [ ] Pas d'erreur dans la console
+- [x] 3 sphères visibles au démarrage
+- [x] Une seule sphère est active (teinte de mode), les autres sont bleu glacé
+- [x] Tab transfère la conscience à la sphère suivante
+- [x] La sphère quittée devient bleu glacé et s'immobilise instantanément (`freeze`)
+- [x] La caméra se déplace vers la nouvelle sphère active
+- [x] Pas d'erreur dans la console (vérifié en headless ; transfert testé 1→2→3→1)
 
 ---
 

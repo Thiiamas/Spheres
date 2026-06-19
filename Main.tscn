@@ -1,9 +1,8 @@
-[gd_scene format=3 uid="uid://b8mq2x1n3p7ya"]
+[gd_scene load_steps=20 format=3 uid="uid://b8mq2x1n3p7ya"]
 
-[ext_resource type="Script" uid="uid://bbve772w8ey0t" path="res://SphereController.gd" id="1_ctrl"]
-[ext_resource type="Script" uid="uid://dnopq63lncmyw" path="res://Reactor.gd" id="2_react"]
-[ext_resource type="Script" uid="uid://du2qpi72se1or" path="res://SphereCamera.gd" id="3_cam"]
-[ext_resource type="Script" uid="uid://kvu8t082hllc" path="res://HUD.gd" id="4_hud"]
+[ext_resource type="Script" uid="uid://du2qpi72se1or" path="res://SphereCamera.gd" id="1_cam"]
+[ext_resource type="Script" uid="uid://kvu8t082hllc" path="res://HUD.gd" id="2_hud"]
+[ext_resource type="PackedScene" path="res://Sphere.tscn" id="3_sphere"]
 
 [sub_resource type="ProceduralSkyMaterial" id="Sky_mat"]
 sky_top_color = Color(0.33, 0.45, 0.62, 1)
@@ -66,51 +65,6 @@ size = Vector3(6, 0.5, 6)
 
 [sub_resource type="BoxShape3D" id="Shape_central"]
 size = Vector3(6, 0.5, 6)
-
-[sub_resource type="SphereMesh" id="Sphere_ball"]
-
-[sub_resource type="StandardMaterial3D" id="Mat_ball"]
-albedo_color = Color(0.3, 0.55, 0.9, 1)
-metallic = 0.4
-roughness = 0.3
-
-[sub_resource type="SphereShape3D" id="Shape_ball"]
-
-[sub_resource type="SphereMesh" id="Sphere_nozzle"]
-radius = 0.12
-height = 0.24
-
-[sub_resource type="Gradient" id="Gradient_flame"]
-offsets = PackedFloat32Array(0, 0.4, 1)
-colors = PackedColorArray(1, 0.95, 0.5, 1, 1, 0.4, 0.1, 0.8, 0.5, 0.1, 0.05, 0)
-
-[sub_resource type="GradientTexture1D" id="GradientTexture1D_flame"]
-gradient = SubResource("Gradient_flame")
-
-[sub_resource type="ParticleProcessMaterial" id="Particle_boost"]
-emission_shape = 1
-emission_sphere_radius = 0.1
-direction = Vector3(0, -1, 0)
-spread = 22.0
-initial_velocity_min = 5.0
-initial_velocity_max = 8.0
-gravity = Vector3(0, 0, 0)
-scale_min = 0.4
-color_ramp = SubResource("GradientTexture1D_flame")
-
-[sub_resource type="StandardMaterial3D" id="Mat_flame"]
-transparency = 1
-blend_mode = 1
-shading_mode = 0
-vertex_color_use_as_albedo = true
-albedo_color = Color(1, 0.6, 0.2, 1)
-disable_receive_shadows = true
-billboard_mode = 3
-billboard_keep_scale = true
-
-[sub_resource type="QuadMesh" id="Quad_flame"]
-material = SubResource("Mat_flame")
-size = Vector2(0.35, 0.35)
 
 [node name="Main" type="Node3D"]
 
@@ -213,56 +167,28 @@ mesh = SubResource("Box_central")
 [node name="Col" type="CollisionShape3D" parent="Arena/CentralPlatform"]
 shape = SubResource("Shape_central")
 
-[node name="Ball" type="RigidBody3D" parent="." node_paths=PackedStringArray("ball_mesh", "reactor", "camera", "boost_particles")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
-script = ExtResource("1_ctrl")
-roll_torque = 20.0
-max_roll_speed = 12.0
-jump_force = 6.0
-double_jump_force = 4.0
-boost_force = 12.0
-ball_mesh = NodePath("MeshInstance3D")
-reactor = NodePath("Reactor")
-camera = NodePath("../SphereCamera")
-boost_particles = NodePath("Reactor/BoostParticles")
+[node name="Spheres" type="Node3D" parent="."]
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Ball"]
-mesh = SubResource("Sphere_ball")
-surface_material_override/0 = SubResource("Mat_ball")
+[node name="Sphere1" parent="Spheres" instance=ExtResource("3_sphere")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 1, 0)
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Ball"]
-shape = SubResource("Shape_ball")
+[node name="Sphere2" parent="Spheres" instance=ExtResource("3_sphere")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 
-[node name="Reactor" type="Node3D" parent="Ball"]
-script = ExtResource("2_react")
+[node name="Sphere3" parent="Spheres" instance=ExtResource("3_sphere")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 1, 0)
 
-[node name="Nozzle" type="MeshInstance3D" parent="Ball/Reactor"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.6, 0)
-mesh = SubResource("Sphere_nozzle")
-
-[node name="BoostParticles" type="GPUParticles3D" parent="Ball/Reactor"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.6, 0)
-emitting = false
-amount = 48
-lifetime = 0.6
-process_material = SubResource("Particle_boost")
-draw_pass_1 = SubResource("Quad_flame")
-
-[node name="SphereCamera" type="Camera3D" parent="." node_paths=PackedStringArray("target", "reactor")]
+[node name="SphereCamera" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 6)
-script = ExtResource("3_cam")
-target = NodePath("../Ball")
-reactor = NodePath("../Ball/Reactor")
+script = ExtResource("1_cam")
 
 [node name="HUD" type="CanvasLayer" parent="."]
 
-[node name="Label" type="Label" parent="HUD" node_paths=PackedStringArray("ball", "reactor", "camera")]
+[node name="Label" type="Label" parent="HUD" node_paths=PackedStringArray("camera")]
 offset_left = 16.0
 offset_top = 12.0
 offset_right = 360.0
-offset_bottom = 140.0
+offset_bottom = 160.0
 theme_override_font_sizes/font_size = 18
-script = ExtResource("4_hud")
-ball = NodePath("../../Ball")
-reactor = NodePath("../../Ball/Reactor")
+script = ExtResource("2_hud")
 camera = NodePath("../../SphereCamera")
