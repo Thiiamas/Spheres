@@ -1,7 +1,8 @@
 # Spheres — Plan d'implémentation Godot 4 (3D)
 
 > **Projet Godot :** `Spheres` (`config/name="Spheres"`, scène principale
-> `res://TestScene.tscn`). *"The Shore"* était un titre de travail antérieur.
+> `res://Main.tscn`). `res://TestScene.tscn` reste un bac à sable (parkour de
+> test). *"The Shore"* était un titre de travail antérieur.
 >
 > **Règle d'or :** chaque phase produit quelque chose de jouable.
 > Ne pas passer à la suivante avant que la précédente soit stable et fun.
@@ -47,7 +48,8 @@ dossiers `scenes/` / `scripts/`) :
 
 ```
 res://
-├── TestScene.tscn        ← scène principale (sol + niveau parkour + Ball + caméra + HUD)
+├── Main.tscn             ← scène principale (arène propre, bornée + Ball + caméra + HUD)
+├── TestScene.tscn        ← bac à sable (sol + niveau parkour + Ball + caméra + HUD)
 ├── SphereController.gd    (RigidBody3D — mouvement reactor-ball : état, roll, saut, boost)
 ├── Reactor.gd             (Node3D — tuyère orientable, produit la direction de poussée)
 ├── SphereCamera.gd        (Camera3D — deux modes : FOLLOW / RTS)

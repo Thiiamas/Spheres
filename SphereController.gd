@@ -21,6 +21,9 @@ enum Mode { MOVEMENT, ATTACK }
 @export var roll_torque: float = 35.0
 ## Hard cap on spin so the ball doesn't accelerate forever.
 @export var max_roll_speed: float = 22.0
+## How hard the ball brakes when grounded with no input. Higher = settles sooner
+## (less coasting); 0 disables braking and the ball coasts on momentum alone.
+@export var brake_strength: float = 8.0
 
 @export_group("Jumping")
 ## Upward velocity set on a ground jump.
@@ -167,6 +170,7 @@ func _update_state() -> void:
 func _apply_roll(physics_state: PhysicsDirectBodyState3D) -> void:
 	var input := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	if input == Vector2.ZERO:
+		_apply_ground_brake(physics_state)
 		return
 
 	# Map input to a horizontal world direction relative to the active camera's
@@ -183,6 +187,20 @@ func _apply_roll(physics_state: PhysicsDirectBodyState3D) -> void:
 	var spin := physics_state.angular_velocity
 	if spin.length() > max_roll_speed:
 		physics_state.angular_velocity = spin.normalized() * max_roll_speed
+
+
+## With no input on the ground, bleed off spin and horizontal drift so the ball
+## settles quickly instead of coasting. Exponential decay keeps it frame-rate
+## independent; vertical velocity is left alone so gravity/landing still work.
+func _apply_ground_brake(physics_state: PhysicsDirectBodyState3D) -> void:
+	if brake_strength <= 0.0:
+		return
+	var decay := exp(-brake_strength * physics_state.step)
+	physics_state.angular_velocity *= decay
+	var v := physics_state.linear_velocity
+	v.x *= decay
+	v.z *= decay
+	physics_state.linear_velocity = v
 
 
 func _do_jump(physics_state: PhysicsDirectBodyState3D, force: float) -> void:

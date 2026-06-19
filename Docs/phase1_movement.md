@@ -94,6 +94,11 @@ FLYING    - en l'air ET boost maintenu. La poussée du réacteur est appliquée
   un roulement crédible.
 - La vitesse de rotation est plafonnée à `max_roll_speed` pour éviter une
   accélération infinie.
+- **Sans entrée au sol**, un **freinage** amortit la rotation et la vitesse
+  horizontale (décroissance exponentielle indépendante du framerate) pour que la
+  bille **s'arrête vite** au lieu de continuer à glisser. Réglé par
+  `brake_strength` (0 = pas de freinage, glisse à l'inertie pure). La vélocité
+  verticale n'est pas touchée (gravité / atterrissage préservés).
 
 ```gdscript
 func _apply_roll(physics_state: PhysicsDirectBodyState3D) -> void:
@@ -154,6 +159,7 @@ func _apply_boost(physics_state: PhysicsDirectBodyState3D) -> void:
 |-----------|--------|-------|
 | `roll_torque` | 35.0 | Couple de roulement au sol. |
 | `max_roll_speed` | 22.0 | Plafond de vitesse de rotation. |
+| `brake_strength` | 8.0 | Freinage au sol sans entrée (plus haut = s'arrête plus vite ; 0 = glisse). |
 | `jump_force` | 8.0 | Vélocité verticale du saut au sol. |
 | `double_jump_force` | 7.0 | Vélocité verticale du double-saut. |
 | `boost_force` | 28.0 | Poussée continue du boost (m/s²). |
