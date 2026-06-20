@@ -185,7 +185,8 @@ Assigner `Enemy.tscn` à la variable `enemy_scene` dans l'inspecteur.
 
 | Élément | Réalisation |
 |---------|-------------|
-| Ennemi | `Enemy.tscn` (`CharacterBody3D` + cube gris + `AttackZone` Area3D r=1.2) piloté par `Enemy.gd`. Chasse `Consciousness.active_sphere()` sur XZ ; mord chaque frame les corps de la zone qui ont `take_damage` (cooldown `attack_cooldown`). Bloqué physiquement par les sphères passives (figées → statiques). |
+| Ennemi | `Enemy.tscn` (`CharacterBody3D` + cube gris + `AttackZone` Area3D r=1.2) piloté par `Enemy.gd`. Chasse la **sphère la plus proche** (distance XZ, pas la sphère active) ; mord chaque frame les corps de la zone qui ont `take_damage` (cooldown `attack_cooldown`). Bloqué physiquement par les sphères passives (figées → statiques). |
+| Skill de placement | Les ennemis ciblant la sphère **la plus proche** (et l'active prenant les dégâts **pleins**, les passives ÷3), le joueur garde la sphère active à l'écart et switche pour infliger un max de dégâts en encaissant un min. |
 | Spawn | `EnemySpawner.gd` sur le nœud `Enemies` de `Main.tscn` : anneau de `enemy_count` (5) ennemis au rayon `spawn_radius` (12). `enemy_scene` = `Enemy.tscn`. |
 | HP | Sur `SphereController` : `max_hp` (100), `hp`, `take_damage()`. Passif → dégâts ÷ `passive_defense` (3). `hp ≤ 0` → `_die()`. |
 | Mort | `_die()` → `Consciousness.unregister(self)` (réassigne le contrôle si la sphère active meurt) puis `queue_free()`. |
@@ -200,7 +201,7 @@ Assigner `Enemy.tscn` à la variable `enemy_scene` dans l'inspecteur.
 ## Critères de validation
 
 - [x] 5 ennemis (cubes) spawnent autour des sphères
-- [x] Les ennemis marchent vers la sphère active sur le plan horizontal
+- [x] Les ennemis marchent vers la sphère **la plus proche** sur le plan horizontal
 - [x] Les barres de HP 3D diminuent quand les ennemis attaquent
 - [x] Une sphère passive perd 3x moins de HP (vérifié : 30 dégâts → −10)
 - [x] Quand une sphère tombe à 0 HP, elle disparaît (`queue_free`)

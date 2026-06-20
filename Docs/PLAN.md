@@ -57,7 +57,7 @@ res://
 ├── SphereCamera.gd        (Camera3D — deux modes : FOLLOW / RTS ; suit la sphère active)
 ├── HUD.gd                 (Label de debug : sphère active, état, angles réacteur, vitesse, caméra)
 ├── HPBar3D.gd             (Node3D — barre de vie billboard flottant au-dessus de la sphère)
-├── Enemy.gd               (CharacterBody3D — IA : marche vers la sphère active, mord en zone)
+├── Enemy.gd               (CharacterBody3D — IA : marche vers la sphère la plus proche, mord en zone)
 ├── EnemySpawner.gd        (Node3D — fait apparaître un anneau d'ennemis au démarrage)
 ├── Consciousness.gd       (Autoload `Consciousness` — registre des sphères, transfert au Tab, mort)
 └── Docs/                  (ce plan + les prompts de phase)

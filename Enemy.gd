@@ -1,9 +1,13 @@
 extends CharacterBody3D
 class_name Enemy
 
-## Angular grey cube. Walks toward the active sphere on the XZ plane and bites
+## Angular grey cube. Walks toward the *nearest* sphere on the XZ plane and bites
 ## any sphere that enters its attack zone (passive crystallised spheres take
 ## reduced damage and physically block the cube — see SphereController).
+##
+## Targeting the closest sphere (not the active one) is what makes positioning a
+## skill: keep the active sphere — which takes full damage — away from enemies,
+## let the tanky passive spheres absorb hits, and switch when it's safe.
 
 @export var speed: float = 3.5
 @export var attack_damage: float = 8.0
@@ -18,7 +22,7 @@ var _attack_timer: float = 0.0
 func _physics_process(delta: float) -> void:
 	_attack_timer -= delta
 
-	var target := Consciousness.active_sphere()
+	var target := _nearest_sphere()
 	if target == null:
 		velocity = Vector3.ZERO
 		move_and_slide()
@@ -40,6 +44,23 @@ func _physics_process(delta: float) -> void:
 	# not the chase target). Re-checked each frame so contact deals repeat hits.
 	if _attack_timer <= 0.0:
 		_try_attack()
+
+
+## Closest sphere by horizontal (XZ) distance — enemies move on the ground, so
+## reachability is what matters, not a sphere that's flown overhead.
+func _nearest_sphere() -> SphereController:
+	var best: SphereController = null
+	var best_dist := INF
+	for s in Consciousness.spheres:
+		if not is_instance_valid(s):
+			continue
+		var to := s.global_position - global_position
+		to.y = 0.0
+		var d := to.length_squared()
+		if d < best_dist:
+			best_dist = d
+			best = s
+	return best
 
 
 func _try_attack() -> void:
