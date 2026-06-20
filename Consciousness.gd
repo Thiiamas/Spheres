@@ -70,6 +70,13 @@ func active_sphere() -> SphereController:
 	return spheres[current_index]
 
 
+## Clear the registry. Call before reloading the scene so freed spheres from the
+## old run don't linger in the list.
+func reset() -> void:
+	spheres.clear()
+	current_index = 0
+
+
 func _activate_initial() -> void:
 	if spheres.is_empty():
 		return

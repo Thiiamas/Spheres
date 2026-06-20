@@ -57,6 +57,16 @@ enum Mode { MOVEMENT, ATTACK }
 ## Optional floating health bar (HPBar3D) shown above the sphere.
 @export var hp_bar: Node3D
 
+@export_group("Attack")
+## Projectile fired on the "attack" action (A). Aimed at the mouse target.
+@export var projectile_scene: PackedScene
+## Minimum seconds between shots.
+@export var attack_cooldown: float = 0.5
+## Travel speed handed to the projectile.
+@export var projectile_speed: float = 30.0
+## Damage handed to the projectile (Enemy.take_hit).
+@export var projectile_damage: float = 35.0
+
 @export_group("References")
 @export var reactor: Reactor
 @export var camera: SphereCamera ## Provides the view yaw so roll matches the active camera mode.
@@ -72,6 +82,8 @@ var is_controlled: bool = false
 
 ## Current hit points. Reaches 0 -> the sphere is destroyed.
 var hp: float = 100.0
+
+var _attack_timer: float = 0.0
 
 # Per-instance copy of the ball material so recolouring doesn't touch the shared resource.
 var _mode_material: StandardMaterial3D = null
@@ -106,10 +118,16 @@ func _ready() -> void:
 	print("[Ball] reactor=", reactor, " camera=", camera, " boost_force=", boost_force)
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	# Passive (crystallised) spheres ignore all input.
 	if not is_controlled:
 		return
+
+	# Firing works in both movement modes (aiming is always available).
+	_attack_timer -= delta
+	if Input.is_action_just_pressed("attack") and _attack_timer <= 0.0:
+		_fire_projectile()
+		_attack_timer = attack_cooldown
 
 	if Input.is_action_just_pressed("mode_toggle"):
 		_toggle_mode()
@@ -222,10 +240,33 @@ func take_damage(amount: float) -> void:
 		_die()
 
 
+## Fire a projectile toward where the mouse is aiming. The camera resolves the
+## world-space aim point via its current AimStrategy, so this code doesn't care
+## whether we're in FOLLOW or RTS mode.
+func _fire_projectile() -> void:
+	if projectile_scene == null or camera == null:
+		return
+	var origin := global_position
+	var target := camera.get_aim_target(origin)
+	var dir := target - origin
+	if dir.length() < 0.001:
+		dir = -global_basis.z # fallback: straight ahead
+	dir = dir.normalized()
+
+	var proj := projectile_scene.instantiate()
+	get_tree().current_scene.add_child(proj)
+	proj.global_position = origin + dir * 0.8
+	if proj.has_method("launch"):
+		proj.launch(dir, projectile_damage, projectile_speed)
+
+
 ## Leave the consciousness pool (which reassigns control if this was the active
-## sphere) and remove this sphere from the world.
+## sphere) and remove this sphere from the world. If it was the last one, the
+## run is over.
 func _die() -> void:
 	Consciousness.unregister(self)
+	if Consciousness.spheres.is_empty():
+		GameManager.game_over()
 	queue_free()
 
 

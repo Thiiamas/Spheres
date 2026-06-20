@@ -44,6 +44,10 @@ enum Mode { FOLLOW, RTS }
 var _rts_focus: Vector3 = Vector3.ZERO
 const _RTS_ZOOM_REF: float = 18.0 # zoom at which pan_speed is unscaled
 
+# How the active sphere's attack resolves "where the mouse points", swapped per
+# camera mode (Strategy pattern). See AimStrategy.
+var _aim_strategy: AimStrategy = ScreenCenterAim.new()
+
 
 func _ready() -> void:
 	_apply_mode_state()
@@ -92,6 +96,14 @@ func _apply_mode_state() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED if mode == Mode.FOLLOW else Input.MOUSE_MODE_VISIBLE
 	if reactor != null:
 		reactor.external_aim = mode == Mode.RTS
+	# RTS aims through the free cursor; FOLLOW through the screen centre.
+	_aim_strategy = MouseCursorAim.new() if mode == Mode.RTS else ScreenCenterAim.new()
+
+
+## Resolve where the active sphere should shoot, based on the current mouse
+## pointing and camera mode. Delegated to the mode's AimStrategy.
+func get_aim_target(origin: Vector3) -> Vector3:
+	return _aim_strategy.resolve(self, origin)
 
 
 func _physics_process(delta: float) -> void:

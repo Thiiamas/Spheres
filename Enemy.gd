@@ -13,10 +13,13 @@ class_name Enemy
 @export var attack_damage: float = 8.0
 @export var attack_cooldown: float = 1.2
 @export var gravity: float = 18.0
+## Hit points; depleted by player projectiles (take_hit).
+@export var hp: float = 40.0
 
 @onready var _attack_zone: Area3D = $AttackZone
 
 var _attack_timer: float = 0.0
+var _dead: bool = false
 
 
 func _physics_process(delta: float) -> void:
@@ -44,6 +47,18 @@ func _physics_process(delta: float) -> void:
 	# not the chase target). Re-checked each frame so contact deals repeat hits.
 	if _attack_timer <= 0.0:
 		_try_attack()
+
+
+## Take damage from a player projectile. Reports its death to GameManager so the
+## wave counter advances.
+func take_hit(damage: float) -> void:
+	if _dead:
+		return
+	hp -= damage
+	if hp <= 0.0:
+		_dead = true
+		GameManager.on_enemy_died()
+		queue_free()
 
 
 ## Closest sphere by horizontal (XZ) distance — enemies move on the ground, so

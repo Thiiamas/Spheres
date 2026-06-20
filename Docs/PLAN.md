@@ -48,24 +48,27 @@ dossiers `scenes/` / `scripts/`) :
 
 ```
 res://
-├── Main.tscn             ← scène principale (arène bornée + 3× Sphere.tscn + caméra + HUD)
+├── Main.tscn             ← scène principale (arène bornée + 3× Sphere.tscn + caméra + HUD + UI)
 ├── TestScene.tscn        ← bac à sable (sol + niveau parkour + Ball inline + caméra + HUD)
-├── Sphere.tscn           ← sphère joueur réutilisable (RigidBody + mesh + collision + Reactor)
-├── Enemy.tscn            ← cube ennemi (CharacterBody3D + AttackZone)
-├── SphereController.gd    (RigidBody3D — mouvement reactor-ball ; actif/passif ; HP, dégâts, mort)
+├── Sphere.tscn           ← sphère joueur réutilisable (RigidBody + mesh + collision + Reactor + HPBar + projectile)
+├── Enemy.tscn            ← cube ennemi (CharacterBody3D + AttackZone ; layer 2)
+├── Projectile.tscn       ← tir du joueur (Area3D ; masque layer 2 = ennemis)
+├── Main.gd               (Node3D — bootstrap : démarre la 1ʳᵉ vague via GameManager)
+├── SphereController.gd    (RigidBody3D — mouvement reactor-ball ; actif/passif ; HP ; attaque projectile)
 ├── Reactor.gd             (Node3D — tuyère orientable, produit la direction de poussée)
-├── SphereCamera.gd        (Camera3D — deux modes : FOLLOW / RTS ; suit la sphère active)
+├── SphereCamera.gd        (Camera3D — FOLLOW / RTS ; suit l'active ; fournit la cible de visée)
+├── AimStrategy.gd         (RefCounted — Strategy : écran→monde ; + MouseCursorAim / ScreenCenterAim)
 ├── HUD.gd                 (Label de debug : sphère active, état, angles réacteur, vitesse, caméra)
 ├── HPBar3D.gd             (Node3D — barre de vie billboard flottant au-dessus de la sphère)
-├── Enemy.gd               (CharacterBody3D — IA : marche vers la sphère la plus proche, mord en zone)
-├── EnemySpawner.gd        (Node3D — fait apparaître un anneau d'ennemis au démarrage)
-├── Consciousness.gd       (Autoload `Consciousness` — registre des sphères, transfert au Tab, mort)
+├── Enemy.gd               (CharacterBody3D — IA : marche vers la sphère la plus proche ; HP, take_hit)
+├── Consciousness.gd       (Autoload — registre des sphères, transfert au Tab, mort/réassignation)
+├── GameManager.gd         (Autoload — boucle vagues/zones, Game Over, redémarrage)
 └── Docs/                  (ce plan + les prompts de phase)
 ```
 
 > Réorganiser en `scenes/` / `scripts/` est une tâche de nettoyage future, non
-> bloquante. Un autoload existe : `Consciousness` (phase 2). La phase 4
-> introduira `GameManager`.
+> bloquante. Deux autoloads existent : `Consciousness` (phase 2) et
+> `GameManager` (phase 4).
 
 ---
 
@@ -76,7 +79,7 @@ res://
 | 1 | `phase1_movement.md` | Sphère contrôlable (mouvement) | ✅ Implémenté (système reactor-ball ; d'autres systèmes à venir) |
 | 2 | `phase2_transfer.md` | Transfert de conscience | ✅ Implémenté (adapté au reactor-ball : sphères figées par `freeze`) |
 | 3 | `phase3_combat.md` | Ennemis + combat + HP | ✅ Implémenté (adapté au reactor-ball ; HP greffés sur `SphereController`) |
-| 4 | `phase4_loop.md` | Boucle complète (vagues, zones, game over) | ⬜ À faire |
+| 4 | `phase4_loop.md` | Boucle complète (vagues, zones, game over) | ✅ Implémenté (attaque = projectile visé souris sur `A`) |
 
 ---
 

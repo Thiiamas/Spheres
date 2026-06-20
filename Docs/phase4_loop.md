@@ -1,12 +1,20 @@
 # Phase 4 — Boucle de jeu complète (3D)
 
-> **Note de synchro (docs ↔ code).** Pas encore implémentée. L'attaque se greffe
-> sur le contrôleur réel de la sphère (`SphereController`, `RigidBody3D`).
-> ⚠️ L'attaque proposée ici utilise l'action `attack` sur **Espace**, or
-> **Espace est déjà l'action `jump`** du mouvement actuel : choisir une autre
-> touche pour `attack`, ou conditionner selon le contexte. Fichiers à plat sous
-> `res://` (le `preload("res://scenes/Enemy.tscn")` doit devenir
-> `res://Enemy.tscn`).
+> **Note de synchro (docs ↔ code).** Cette phase est **implémentée**, mais
+> l'**attaque diffère** de la proposition ci-dessous. Détail dans la section
+> « Implémentation réelle » en fin de document. En bref :
+> - l'attaque n'est **pas** une explosion de zone sur Espace : c'est un
+>   **projectile** (`Projectile.tscn`) tiré sur l'action **`attack` = `A`**
+>   (Espace reste `jump`), **visé là où pointe la souris** ;
+> - « où pointe la souris » dépend de la caméra → résolu par un **patron
+>   Strategy** (`AimStrategy` + `MouseCursorAim` pour RTS, `ScreenCenterAim`
+>   pour FOLLOW) porté par `SphereCamera.get_aim_target()` ;
+> - les HP/dégâts ennemis (`take_hit`) et la mort vivent sur `Enemy.gd` ;
+>   les ennemis sont sur le **layer physique 2**, le projectile ne touche
+>   qu'eux ;
+> - `GameManager` (autoload) gère vagues/zones/Game Over ; `Main.gd` démarre la
+>   1ʳᵉ vague une fois les sphères enregistrées ; la mort de la dernière sphère
+>   (via `Consciousness.unregister`) déclenche le Game Over.
 
 ## Objectif
 Le jeu a une boucle complète :
@@ -178,15 +186,31 @@ func _ready() -> void:
 
 ---
 
+## Implémentation réelle (adaptée au reactor-ball)
+
+| Élément | Réalisation |
+|---------|-------------|
+| Attaque | Action **`attack` = `A`** (et clic gauche). `SphereController._fire_projectile()` instancie `Projectile.tscn`, le lance vers la cible souris, cooldown `attack_cooldown` (0.5 s). Marche dans les deux modes (MOVEMENT/ATTACK). |
+| Visée souris | `SphereCamera.get_aim_target(origin)` délègue à une `AimStrategy` choisie selon le mode caméra : **RTS → `MouseCursorAim`** (curseur libre projeté), **FOLLOW → `ScreenCenterAim`** (souris capturée → centre écran). Raycast sur les ennemis, sinon plan du sol, sinon point lointain. |
+| Projectile | `Projectile.tscn` (`Area3D`, masque layer 2) vole droit, appelle `Enemy.take_hit()` au contact puis se libère ; auto-destruction après `lifetime`. |
+| Ennemi | `Enemy.gd` : `hp` (40), `take_hit()` → mort → `GameManager.on_enemy_died()`. Sur **layer 2** (le projectile ne touche que les ennemis ; pas les sphères ni les murs). |
+| Boucle | `GameManager` (autoload) : `begin()` (appelé par `Main.gd`) → `start_wave(5)` ; `on_enemy_died()` décrémente ; à 0 → `_zone_cleared()` (zone++ , message, +2 s, `start_wave(4 + zone*2)`). |
+| Game Over | `SphereController._die()` → `Consciousness.unregister()` ; si plus aucune sphère → `GameManager.game_over()` (message). `ui_accept` recharge la scène (après `Consciousness.reset()`). |
+| UI | `CanvasLayer UI/MessageLabel` centré dans `Main.tscn` (caché par défaut). |
+
+> **Divergence assumée vs la doc d'origine.** L'explosion de zone + flash jaune
+> sur Espace est remplacée par un tir projectile visé souris sur `A` (demande
+> explicite). Le `take_hit` reste, mais déclenché par le projectile.
+
 ## Critères de validation
 
-- [ ] 5 ennemis (cubes) spawnent au démarrage
-- [ ] La sphère active peut attaquer avec Espace (flash jaune visible)
-- [ ] L'attaque a un cooldown de 3 secondes
-- [ ] Quand tous les ennemis sont morts → message "Zone dégagée" → nouvelle vague plus difficile
-- [ ] Quand toutes les sphères sont mortes → message "GAME OVER"
-- [ ] Entrée redémarre la partie depuis Game Over
-- [ ] La difficulté augmente à chaque zone (plus d'ennemis)
+- [x] 5 ennemis (cubes) spawnent au démarrage (`GameManager.start_wave(5)`)
+- [x] La sphère active peut attaquer avec **`A`** → projectile visé souris *(remplace le flash zone)*
+- [x] L'attaque a un cooldown (`attack_cooldown`, 0.5 s — projectile, pas l'AoE 3 s)
+- [x] Tous les ennemis morts → message "Zone dégagée" → vague plus difficile (vérifié : zone 2 = 8 ennemis)
+- [x] Toutes les sphères mortes → message "GAME OVER" (vérifié)
+- [x] Entrée redémarre la partie depuis Game Over
+- [x] La difficulté augmente à chaque zone (`4 + zone*2`)
 
 ---
 

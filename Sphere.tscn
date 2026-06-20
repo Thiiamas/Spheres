@@ -1,8 +1,9 @@
-[gd_scene load_steps=17 format=3]
+[gd_scene load_steps=18 format=3]
 
 [ext_resource type="Script" uid="uid://bbve772w8ey0t" path="res://SphereController.gd" id="1_ctrl"]
 [ext_resource type="Script" uid="uid://dnopq63lncmyw" path="res://Reactor.gd" id="2_react"]
 [ext_resource type="Script" path="res://HPBar3D.gd" id="3_hpbar"]
+[ext_resource type="PackedScene" path="res://Projectile.tscn" id="4_proj"]
 
 [sub_resource type="SphereMesh" id="Sphere_ball"]
 
@@ -72,6 +73,7 @@ max_roll_speed = 12.0
 jump_force = 6.0
 double_jump_force = 4.0
 boost_force = 12.0
+projectile_scene = ExtResource("4_proj")
 hp_bar = NodePath("HPBar3D")
 ball_mesh = NodePath("MeshInstance3D")
 reactor = NodePath("Reactor")
