@@ -1,0 +1,31 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://Enemy.gd" id="1_enemy"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_enemy"]
+albedo_color = Color(0.53, 0.53, 0.53, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="Box_enemy"]
+material = SubResource("Mat_enemy")
+size = Vector3(1, 1, 1)
+
+[sub_resource type="BoxShape3D" id="Shape_enemy"]
+size = Vector3(1, 1, 1)
+
+[sub_resource type="SphereShape3D" id="Shape_attack"]
+radius = 1.2
+
+[node name="Enemy" type="CharacterBody3D"]
+script = ExtResource("1_enemy")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("Box_enemy")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("Shape_enemy")
+
+[node name="AttackZone" type="Area3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="AttackZone"]
+shape = SubResource("Shape_attack")

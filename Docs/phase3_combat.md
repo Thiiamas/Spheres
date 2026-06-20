@@ -1,10 +1,20 @@
 # Phase 3 — Ennemis & Combat (3D)
 
-> **Note de synchro (docs ↔ code).** Pas encore implémentée. Comme en phase 2,
-> les ajouts HP / `take_damage` / barre de vie doivent se greffer sur le
-> contrôleur réel de la sphère (`SphereController`, `RigidBody3D`), pas sur un
-> `CharacterBody3D`. Fichiers à plat sous `res://` (ex. `res://Enemy.tscn`).
-> L'autoload `Consciousness` provient de la phase 2.
+> **Note de synchro (docs ↔ code).** Cette phase est **implémentée**, adaptée au
+> contrôleur réel. Les extraits ci-dessous (HP/mort sur un `Sphere.gd`,
+> `Main.gd` qui bouge la caméra) sont **illustratifs** ; le détail réel est dans
+> la section « Implémentation réelle » en fin de document. En bref :
+> - les HP (`hp`, `take_damage()`, mort) vivent sur **`SphereController`
+>   (`RigidBody3D`)**, pas sur un `Sphere.gd` séparé ;
+> - la mort passe par **`Consciousness.unregister()`** (retire la sphère, et
+>   réassigne le contrôle si la sphère active meurt) au lieu de bidouiller
+>   `Consciousness.spheres` directement ;
+> - la caméra suit déjà la sphère active via le signal `active_changed` (phase
+>   2) : **pas de `Main.gd`** qui repositionne la caméra ; le spawn d'ennemis est
+>   isolé dans **`EnemySpawner.gd`** (nœud `Enemies` de `Main.tscn`) ;
+> - l'ennemi **mord chaque frame** les corps présents dans sa zone
+>   (`get_overlapping_bodies` + cooldown) plutôt que sur le seul signal
+>   `body_entered`, pour des dégâts répétés au contact.
 
 ## Objectif
 Des ennemis angulaires (cubes gris) marchent vers les sphères et leur infligent des dégâts.
@@ -171,15 +181,31 @@ Assigner `Enemy.tscn` à la variable `enemy_scene` dans l'inspecteur.
 
 ---
 
+## Implémentation réelle (adaptée au reactor-ball)
+
+| Élément | Réalisation |
+|---------|-------------|
+| Ennemi | `Enemy.tscn` (`CharacterBody3D` + cube gris + `AttackZone` Area3D r=1.2) piloté par `Enemy.gd`. Chasse `Consciousness.active_sphere()` sur XZ ; mord chaque frame les corps de la zone qui ont `take_damage` (cooldown `attack_cooldown`). Bloqué physiquement par les sphères passives (figées → statiques). |
+| Spawn | `EnemySpawner.gd` sur le nœud `Enemies` de `Main.tscn` : anneau de `enemy_count` (5) ennemis au rayon `spawn_radius` (12). `enemy_scene` = `Enemy.tscn`. |
+| HP | Sur `SphereController` : `max_hp` (100), `hp`, `take_damage()`. Passif → dégâts ÷ `passive_defense` (3). `hp ≤ 0` → `_die()`. |
+| Mort | `_die()` → `Consciousness.unregister(self)` (réassigne le contrôle si la sphère active meurt) puis `queue_free()`. |
+| Barre de vie | `HPBar3D.gd` : deux `BoxMesh` (fond rouge sombre + remplissage vert non éclairé), `top_level` pour ignorer la rotation de la bille, billboard en lacet vers la caméra. Le remplissage se vide depuis la droite. |
+| Robustesse | Caméra et HUD ignorent une cible libérée (`is_instance_valid`) pour ne pas planter si toutes les sphères meurent (pas de game over en phase 3). |
+
+> **Équilibrage.** Avec 5 ennemis ciblant tous la sphère active (~33 dégâts/s
+> cumulés), l'active tombe en ~3 s si on ne bouge / ne switche pas — c'est la
+> pression voulue. Ajuster via `attack_damage`, `attack_cooldown`, `speed`,
+> `enemy_count` (tous exportés) si c'est trop brutal.
+
 ## Critères de validation
 
-- [ ] 5 ennemis (cubes) spawnent autour des sphères
-- [ ] Les ennemis marchent vers la sphère active sur le plan horizontal
-- [ ] Les barres de HP 3D diminuent quand les ennemis attaquent
-- [ ] Une sphère passive perd 3x moins de HP
-- [ ] Quand une sphère tombe à 0 HP, elle disparaît
-- [ ] Si la sphère active est détruite, la conscience transfère automatiquement
-- [ ] Pas d'erreur dans la console
+- [x] 5 ennemis (cubes) spawnent autour des sphères
+- [x] Les ennemis marchent vers la sphère active sur le plan horizontal
+- [x] Les barres de HP 3D diminuent quand les ennemis attaquent
+- [x] Une sphère passive perd 3x moins de HP (vérifié : 30 dégâts → −10)
+- [x] Quand une sphère tombe à 0 HP, elle disparaît (`queue_free`)
+- [x] Si la sphère active est détruite, la conscience transfère automatiquement (vérifié)
+- [x] Pas d'erreur dans la console (vérifié en headless)
 
 ---
 

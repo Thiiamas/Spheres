@@ -29,6 +29,27 @@ func register(sphere: SphereController) -> void:
 		call_deferred("_activate_initial")
 
 
+## Remove a destroyed sphere from the pool. If it was the active one, control
+## passes to the next surviving sphere; otherwise the active sphere is kept and
+## the index is fixed up for the shrunken list.
+func unregister(sphere: SphereController) -> void:
+	var idx := spheres.find(sphere)
+	if idx == -1:
+		return
+	var was_active := idx == current_index
+	spheres.remove_at(idx)
+
+	if spheres.is_empty():
+		current_index = 0
+		return
+
+	if was_active:
+		current_index = current_index % spheres.size()
+		_activate(current_index)
+	elif idx < current_index:
+		current_index -= 1
+
+
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("transfer"):
 		transfer_to_next()

@@ -49,6 +49,14 @@ enum Mode { MOVEMENT, ATTACK }
 ## Albedo + glow colour while passive (crystallised — not the active sphere).
 @export var passive_color: Color = Color(0.5, 0.75, 1.0)
 
+@export_group("Health")
+## Starting / maximum hit points.
+@export var max_hp: float = 100.0
+## Passive (crystallised) spheres take damage divided by this — they're tougher.
+@export var passive_defense: float = 3.0
+## Optional floating health bar (HPBar3D) shown above the sphere.
+@export var hp_bar: Node3D
+
 @export_group("References")
 @export var reactor: Reactor
 @export var camera: SphereCamera ## Provides the view yaw so roll matches the active camera mode.
@@ -61,6 +69,9 @@ var mode: Mode = Mode.MOVEMENT
 ## spheres are frozen (crystallised) and ignore all input. Driven by the
 ## Consciousness autoload via set_active() / set_passive().
 var is_controlled: bool = false
+
+## Current hit points. Reaches 0 -> the sphere is destroyed.
+var hp: float = 100.0
 
 # Per-instance copy of the ball material so recolouring doesn't touch the shared resource.
 var _mode_material: StandardMaterial3D = null
@@ -84,6 +95,9 @@ func _ready() -> void:
 		if mat is StandardMaterial3D:
 			_mode_material = mat.duplicate()
 			ball_mesh.material_override = _mode_material
+
+	hp = max_hp
+	_update_hp_bar()
 
 	# Join the pool of transferable spheres. Consciousness decides which one
 	# starts active; until then this sphere sits crystallised (set_passive).
@@ -194,6 +208,30 @@ func bind_camera(cam: SphereCamera) -> void:
 
 func get_reactor() -> Reactor:
 	return reactor
+
+
+## --- Health / combat (Phase 3) --------------------------------------------
+
+## Take a hit. Passive (crystallised) spheres divide the damage by
+## passive_defense, so they're far tougher than the active one.
+func take_damage(amount: float) -> void:
+	var dmg := amount if is_controlled else amount / passive_defense
+	hp = maxf(hp - dmg, 0.0)
+	_update_hp_bar()
+	if hp <= 0.0:
+		_die()
+
+
+## Leave the consciousness pool (which reassigns control if this was the active
+## sphere) and remove this sphere from the world.
+func _die() -> void:
+	Consciousness.unregister(self)
+	queue_free()
+
+
+func _update_hp_bar() -> void:
+	if hp_bar and hp_bar.has_method("update_bar"):
+		hp_bar.update_bar(hp, max_hp)
 
 
 ## Recolour the ball so its mode (when active) or crystallised state (passive)

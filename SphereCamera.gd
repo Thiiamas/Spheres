@@ -95,7 +95,7 @@ func _apply_mode_state() -> void:
 
 
 func _physics_process(delta: float) -> void:
-	if target == null:
+	if target == null or not is_instance_valid(target):
 		return
 	match mode:
 		Mode.FOLLOW:

@@ -3,6 +3,8 @@
 [ext_resource type="Script" uid="uid://du2qpi72se1or" path="res://SphereCamera.gd" id="1_cam"]
 [ext_resource type="Script" uid="uid://kvu8t082hllc" path="res://HUD.gd" id="2_hud"]
 [ext_resource type="PackedScene" path="res://Sphere.tscn" id="3_sphere"]
+[ext_resource type="Script" path="res://EnemySpawner.gd" id="4_spawn"]
+[ext_resource type="PackedScene" path="res://Enemy.tscn" id="5_enemy"]
 
 [sub_resource type="ProceduralSkyMaterial" id="Sky_mat"]
 sky_top_color = Color(0.33, 0.45, 0.62, 1)
@@ -177,6 +179,10 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 
 [node name="Sphere3" parent="Spheres" instance=ExtResource("3_sphere")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 1, 0)
+
+[node name="Enemies" type="Node3D" parent="."]
+script = ExtResource("4_spawn")
+enemy_scene = ExtResource("5_enemy")
 
 [node name="SphereCamera" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 6)

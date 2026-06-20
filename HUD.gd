@@ -23,8 +23,8 @@ func _on_active_changed(sphere: SphereController) -> void:
 
 
 func _process(_delta: float) -> void:
-	if ball == null:
-		text = "(no ball assigned)"
+	if ball == null or not is_instance_valid(ball):
+		text = "(no active sphere)"
 		return
 
 	var state_name: String = SphereController.State.keys()[ball.state]
