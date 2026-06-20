@@ -4,16 +4,17 @@ class_name SphereController
 ## Player ball. A RigidBody3D sphere that rolls on the ground, jumps / double
 ## jumps, and boosts through the air using the Reactor's thrust direction.
 ##
-## State machine:
-##   GROUNDED - touching the ground. WASD rolls the ball; Space jumps.
-##   AIRBORNE - in the air. Space double-jumps (once); Shift starts boosting.
-##   FLYING   - airborne AND holding boost. Reactor thrust is applied each step.
+## Locomotion phase (physics): GROUNDED / AIRBORNE / FLYING — recomputed each step.
+##
+## Control state (State pattern): MOVEMENT vs ATTACK, toggled with "mode_toggle"
+## (F). The active control state maps input and decides which behaviours run; the
+## mechanics below are the sphere's reusable capabilities. See SphereControlState.
 
 enum State { GROUNDED, AIRBORNE, FLYING }
 
-## High-level player mode. MOVEMENT lets the ball roll/jump/boost; ATTACK locks
-## movement (placeholder — attack behaviour is implemented later). Toggle with
-## the "mode_toggle" action. The ball changes colour as a visual cue.
+## High-level control mode. MOVEMENT = roll/jump/boost; ATTACK = hold position
+## and fire abilities. Kept as an enum for the HUD and the toggle; the behaviour
+## lives in the matching SphereControlState object.
 enum Mode { MOVEMENT, ATTACK }
 
 @export_group("Rolling")
@@ -58,7 +59,7 @@ enum Mode { MOVEMENT, ATTACK }
 @export var hp_bar: Node3D
 
 @export_group("Attack")
-## Projectile fired on the "attack" action (A). Aimed at the mouse target.
+## Projectile fired with the "attack" action (A) in ATTACK mode. Aimed at the mouse.
 @export var projectile_scene: PackedScene
 ## Minimum seconds between shots.
 @export var attack_cooldown: float = 0.5
@@ -67,12 +68,24 @@ enum Mode { MOVEMENT, ATTACK }
 ## Damage handed to the projectile (Enemy.take_hit).
 @export var projectile_damage: float = 35.0
 
+@export_group("AOE Attack")
+## Cosmetic blast spawned on the "aoe" action (Z) in ATTACK mode.
+@export var aoe_effect_scene: PackedScene
+## Radius of the area blast.
+@export var aoe_radius: float = 5.0
+## Damage dealt to every enemy in the radius.
+@export var aoe_damage: float = 35.0
+## Minimum seconds between blasts.
+@export var aoe_cooldown: float = 3.0
+
 @export_group("References")
 @export var reactor: Reactor
 @export var camera: SphereCamera ## Provides the view yaw so roll matches the active camera mode.
 @export var boost_particles: GPUParticles3D ## Optional; emits while FLYING.
 
-var state: State = State.AIRBORNE
+## Current locomotion phase (GROUNDED / AIRBORNE / FLYING).
+var movement_phase: State = State.AIRBORNE
+## Current control mode; mirrors the active control state for external readers.
 var mode: Mode = Mode.MOVEMENT
 
 ## Whether this sphere is the one the consciousness currently controls. Passive
@@ -83,7 +96,12 @@ var is_controlled: bool = false
 ## Current hit points. Reaches 0 -> the sphere is destroyed.
 var hp: float = 100.0
 
+# Active control state (State pattern). Null while passive.
+var _control: SphereControlState = null
+
 var _attack_timer: float = 0.0
+var _aoe_timer: float = 0.0
+var _aoe_pending: bool = false # set in input, consumed in physics (space queries need physics)
 
 # Per-instance copy of the ball material so recolouring doesn't touch the shared resource.
 var _mode_material: StandardMaterial3D = null
@@ -115,34 +133,17 @@ func _ready() -> void:
 	# starts active; until then this sphere sits crystallised (set_passive).
 	Consciousness.register(self)
 
-	print("[Ball] reactor=", reactor, " camera=", camera, " boost_force=", boost_force)
-
 
 func _process(delta: float) -> void:
 	# Passive (crystallised) spheres ignore all input.
 	if not is_controlled:
 		return
 
-	# Firing works in both movement modes (aiming is always available).
-	_attack_timer -= delta
-	if Input.is_action_just_pressed("attack") and _attack_timer <= 0.0:
-		_fire_projectile()
-		_attack_timer = attack_cooldown
-
 	if Input.is_action_just_pressed("mode_toggle"):
 		_toggle_mode()
 
-	# Movement input is ignored entirely in ATTACK mode.
-	if mode != Mode.MOVEMENT:
-		return
-
-	# Buffer jump presses here for crisp edge detection; consume them in physics.
-	if Input.is_action_just_pressed("jump"):
-		if _is_grounded:
-			_jump_queued = true
-		elif _can_double_jump:
-			_double_jump_queued = true
-			_can_double_jump = false
+	if _control:
+		_control.handle_input(delta)
 
 
 func _integrate_forces(physics_state: PhysicsDirectBodyState3D) -> void:
@@ -152,54 +153,43 @@ func _integrate_forces(physics_state: PhysicsDirectBodyState3D) -> void:
 		return
 
 	_update_grounded(physics_state)
-	_update_state()
+	_update_phase()
 
-	var can_move := mode == Mode.MOVEMENT
+	if _control:
+		_control.physics(physics_state)
 
-	# Exhaust particles fire only while actively boosting in MOVEMENT mode.
-	if boost_particles:
-		boost_particles.emitting = can_move and state == State.FLYING
+	# Area queries must run in the physics step; the attack state only requests.
+	if _aoe_pending:
+		_aoe_pending = false
+		_perform_aoe()
 
-	# ATTACK mode locks all movement. Drop any buffered jumps so they don't
-	# fire when switching back.
-	if not can_move:
-		_jump_queued = false
-		_double_jump_queued = false
-		return
 
-	if _is_grounded:
-		_apply_roll(physics_state)
-
-	if _jump_queued:
-		_do_jump(physics_state, jump_force)
-		_jump_queued = false
-		_can_double_jump = true # one double jump becomes available after leaving ground
-
-	if _double_jump_queued:
-		_do_jump(physics_state, double_jump_force)
-		_double_jump_queued = false
-
-	if state == State.FLYING:
-		_apply_boost(physics_state)
-
+# --- Control state machine -------------------------------------------------
 
 func _toggle_mode() -> void:
-	mode = Mode.ATTACK if mode == Mode.MOVEMENT else Mode.MOVEMENT
+	_enter_control_state(Mode.MOVEMENT if mode == Mode.ATTACK else Mode.ATTACK)
+
+
+func _enter_control_state(new_mode: Mode) -> void:
+	if _control:
+		_control.exit()
+	mode = new_mode
+	_control = MovementControlState.new(self) if mode == Mode.MOVEMENT else AttackControlState.new(self)
+	_control.enter()
 	_apply_visual()
 
 
 ## --- Consciousness transfer (Phase 2) -------------------------------------
 
 ## Take control of this sphere: thaw the physics, re-enable its reactor, and
-## reset to MOVEMENT mode. Called by the Consciousness autoload.
+## start in MOVEMENT mode. Called by the Consciousness autoload.
 func set_active() -> void:
 	is_controlled = true
-	mode = Mode.MOVEMENT
 	freeze = false
 	if reactor:
 		reactor.set_process(true)
 		reactor.set_process_input(true)
-	_apply_visual()
+	_enter_control_state(Mode.MOVEMENT)
 
 
 ## Crystallise this sphere: stop dead, freeze the body so it becomes an immovable
@@ -209,13 +199,14 @@ func set_passive() -> void:
 	linear_velocity = Vector3.ZERO
 	angular_velocity = Vector3.ZERO
 	freeze = true
-	_jump_queued = false
-	_double_jump_queued = false
+	cancel_buffered_jumps()
+	if _control:
+		_control.exit()
+		_control = null
 	if reactor:
 		reactor.set_process(false)
 		reactor.set_process_input(false)
-	if boost_particles:
-		boost_particles.emitting = false
+	set_boost_emitting(false)
 	_apply_visual()
 
 
@@ -228,6 +219,76 @@ func get_reactor() -> Reactor:
 	return reactor
 
 
+## --- Capabilities (driven by the control states) --------------------------
+
+func is_grounded() -> bool:
+	return _is_grounded
+
+
+func set_boost_emitting(on: bool) -> void:
+	if boost_particles:
+		boost_particles.emitting = on
+
+
+## Buffer a jump press for crisp edge detection; consumed in physics.
+func buffer_jump_input() -> void:
+	if Input.is_action_just_pressed("jump"):
+		if _is_grounded:
+			_jump_queued = true
+		elif _can_double_jump:
+			_double_jump_queued = true
+			_can_double_jump = false
+
+
+func cancel_buffered_jumps() -> void:
+	_jump_queued = false
+	_double_jump_queued = false
+
+
+func consume_jumps(physics_state: PhysicsDirectBodyState3D) -> void:
+	if _jump_queued:
+		_do_jump(physics_state, jump_force)
+		_jump_queued = false
+		_can_double_jump = true # one double jump becomes available after leaving ground
+	if _double_jump_queued:
+		_do_jump(physics_state, double_jump_force)
+		_double_jump_queued = false
+
+
+func apply_roll(physics_state: PhysicsDirectBodyState3D) -> void:
+	var input := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	if input == Vector2.ZERO:
+		_apply_ground_brake(physics_state)
+		return
+
+	# Map input to a horizontal world direction relative to the active camera's
+	# view yaw, so "forward" is always away-from-camera in BOTH follow and RTS
+	# modes. Falls back to the reactor yaw if no camera is assigned.
+	var view_yaw := camera.get_view_yaw() if camera else (reactor.yaw if reactor else 0.0)
+	var yaw_basis := Basis(Vector3.UP, deg_to_rad(view_yaw))
+	var dir := (yaw_basis * Vector3(input.x, 0.0, input.y)).normalized()
+
+	# To roll the ball toward `dir`, spin it about the horizontal axis UP x dir.
+	physics_state.apply_torque(Vector3.UP.cross(dir) * roll_torque)
+
+	# Clamp spin magnitude.
+	var spin := physics_state.angular_velocity
+	if spin.length() > max_roll_speed:
+		physics_state.angular_velocity = spin.normalized() * max_roll_speed
+
+
+func apply_boost(physics_state: PhysicsDirectBodyState3D) -> void:
+	if reactor == null:
+		return
+	# Thrust is opposite the nozzle direction: nozzle points down -> push up.
+	# Integrate it into velocity directly (boost_force is treated as an
+	# acceleration in m/s^2). We do this rather than apply_central_force because
+	# direct velocity writes reliably take effect inside _integrate_forces here,
+	# matching how the jump works.
+	var thrust := -reactor.get_reactor_dir() * boost_force
+	physics_state.linear_velocity += thrust * physics_state.step
+
+
 ## --- Health / combat (Phase 3) --------------------------------------------
 
 ## Take a hit. Passive (crystallised) spheres divide the damage by
@@ -238,6 +299,27 @@ func take_damage(amount: float) -> void:
 	_update_hp_bar()
 	if hp <= 0.0:
 		_die()
+
+
+## --- Attacks (Phase 4, only in ATTACK mode) -------------------------------
+
+func tick_attack_timers(delta: float) -> void:
+	_attack_timer -= delta
+	_aoe_timer -= delta
+
+
+func try_fire_projectile() -> void:
+	if _attack_timer > 0.0:
+		return
+	_attack_timer = attack_cooldown
+	_fire_projectile()
+
+
+func try_cast_aoe() -> void:
+	if _aoe_timer > 0.0:
+		return
+	_aoe_timer = aoe_cooldown
+	_aoe_pending = true # executed next physics step (see _integrate_forces)
 
 
 ## Fire a projectile toward where the mouse is aiming. The camera resolves the
@@ -260,6 +342,34 @@ func _fire_projectile() -> void:
 		proj.launch(dir, projectile_damage, projectile_speed)
 
 
+## Damage every enemy within aoe_radius and spawn the blast visual. Run from the
+## physics step so the shape query is valid.
+func _perform_aoe() -> void:
+	var space := get_world_3d().direct_space_state
+	var shape := SphereShape3D.new()
+	shape.radius = aoe_radius
+	var query := PhysicsShapeQueryParameters3D.new()
+	query.shape = shape
+	query.transform = Transform3D(Basis(), global_position)
+	query.collision_mask = 2 # enemies live on physics layer 2
+	for hit in space.intersect_shape(query, 64):
+		var body = hit.get("collider")
+		if body and body.has_method("take_hit"):
+			body.take_hit(aoe_damage)
+
+	if aoe_effect_scene:
+		# Defer the spawn so we don't add a node mid-physics-step.
+		_spawn_aoe_effect.call_deferred(global_position)
+
+
+func _spawn_aoe_effect(at: Vector3) -> void:
+	var fx := aoe_effect_scene.instantiate()
+	get_tree().current_scene.add_child(fx)
+	fx.global_position = at
+	if fx.has_method("play"):
+		fx.play(aoe_radius)
+
+
 ## Leave the consciousness pool (which reassigns control if this was the active
 ## sphere) and remove this sphere from the world. If it was the last one, the
 ## run is over.
@@ -275,8 +385,8 @@ func _update_hp_bar() -> void:
 		hp_bar.update_bar(hp, max_hp)
 
 
-## Recolour the ball so its mode (when active) or crystallised state (passive)
-## is readable at a glance.
+## Recolour the ball so its control state (when active) or crystallised state
+## (passive) is readable at a glance.
 func _apply_visual() -> void:
 	if _mode_material == null:
 		return
@@ -286,13 +396,15 @@ func _apply_visual() -> void:
 		col = passive_color
 		energy = 0.35 # faint, icy glow
 	else:
-		col = movement_color if mode == Mode.MOVEMENT else attack_color
+		col = _control.tint() if _control else movement_color
 		energy = 1.6
 	_mode_material.albedo_color = col
 	_mode_material.emission_enabled = true
 	_mode_material.emission = col
 	_mode_material.emission_energy_multiplier = energy
 
+
+# --- Internal physics helpers ---------------------------------------------
 
 func _update_grounded(physics_state: PhysicsDirectBodyState3D) -> void:
 	_is_grounded = false
@@ -303,41 +415,16 @@ func _update_grounded(physics_state: PhysicsDirectBodyState3D) -> void:
 			return
 
 
-func _update_state() -> void:
+func _update_phase() -> void:
 	if _is_grounded:
-		state = State.GROUNDED
+		movement_phase = State.GROUNDED
 		_can_double_jump = false # refreshed on next ground jump
 	elif Input.is_action_pressed("boost"):
-		state = State.FLYING
+		movement_phase = State.FLYING
 	else:
-		state = State.AIRBORNE
+		movement_phase = State.AIRBORNE
 
 
-func _apply_roll(physics_state: PhysicsDirectBodyState3D) -> void:
-	var input := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
-	if input == Vector2.ZERO:
-		_apply_ground_brake(physics_state)
-		return
-
-	# Map input to a horizontal world direction relative to the active camera's
-	# view yaw, so "forward" is always away-from-camera in BOTH follow and RTS
-	# modes. Falls back to the reactor yaw if no camera is assigned.
-	var view_yaw := camera.get_view_yaw() if camera else (reactor.yaw if reactor else 0.0)
-	var yaw_basis := Basis(Vector3.UP, deg_to_rad(view_yaw))
-	var dir := (yaw_basis * Vector3(input.x, 0.0, input.y)).normalized()
-
-	# To roll the ball toward `dir`, spin it about the horizontal axis UP x dir.
-	physics_state.apply_torque(Vector3.UP.cross(dir) * roll_torque)
-
-	# Clamp spin magnitude.
-	var spin := physics_state.angular_velocity
-	if spin.length() > max_roll_speed:
-		physics_state.angular_velocity = spin.normalized() * max_roll_speed
-
-
-## With no input on the ground, bleed off spin and horizontal drift so the ball
-## settles quickly instead of coasting. Exponential decay keeps it frame-rate
-## independent; vertical velocity is left alone so gravity/landing still work.
 func _apply_ground_brake(physics_state: PhysicsDirectBodyState3D) -> void:
 	if brake_strength <= 0.0:
 		return
@@ -355,15 +442,3 @@ func _do_jump(physics_state: PhysicsDirectBodyState3D, force: float) -> void:
 	var v := physics_state.linear_velocity
 	v.y = force
 	physics_state.linear_velocity = v
-
-
-func _apply_boost(physics_state: PhysicsDirectBodyState3D) -> void:
-	if reactor == null:
-		return
-	# Thrust is opposite the nozzle direction: nozzle points down -> push up.
-	# Integrate it into velocity directly (boost_force is treated as an
-	# acceleration in m/s^2). We do this rather than apply_central_force because
-	# direct velocity writes reliably take effect inside _integrate_forces here,
-	# matching how the jump works.
-	var thrust := -reactor.get_reactor_dir() * boost_force
-	physics_state.linear_velocity += thrust * physics_state.step

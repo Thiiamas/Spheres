@@ -39,24 +39,35 @@ Trois scripts coopèrent :
 
 ---
 
-## Modes : Mouvement / Attaque
+## Modes : Mouvement / Attaque (patron State)
 
-Un niveau au-dessus de la machine à états, la sphère a un **mode** global,
-basculé avec l'action `mode_toggle` (touche **F** / bouton **Y** manette) :
+Un niveau au-dessus de la machine à états locomotrice, la sphère a un **mode de
+contrôle** global, basculé avec `mode_toggle` (touche **F** / bouton **Y**).
+Il est implémenté avec un **patron State** : un objet `SphereControlState`
+(léger, `RefCounted`) détenu par le contrôleur mappe l'entrée et choisit les
+comportements physiques actifs. On **ne change pas le script** du nœud à chaud
+(déconseillé par Godot) ; on échange l'objet d'état.
 
-- **MOVEMENT** — comportement normal : roulement, saut, double-saut, boost.
-- **ATTACK** — *placeholder* : le mouvement est **totalement verrouillé** (ni
-  roll, ni saut, ni boost ; les sauts bufferisés sont purgés). Le comportement
-  d'attaque sera implémenté plus tard.
+- **MOVEMENT** (`MovementControlState`) — roulement, saut, double-saut, boost.
+  Seul cet état lit les entrées de **déplacement** (`move_*`, `jump`, `boost`).
+- **ATTACK** (`AttackControlState`) — le déplacement est **verrouillé** (la bille
+  tient sa position ; sauts bufferisés purgés) et la sphère **tire** : `A` =
+  projectile visé souris, `Z` = explosion de zone (AOE). Seul cet état lit les
+  actions d'**attaque** (`attack`, `aoe`).
 
-**Indice visuel :** la sphère **change de couleur** selon le mode — bleu
-(`movement_color`) en MOVEMENT, rouge (`attack_color`) en ATTACK, avec une
-émission (lueur) pour que ce soit lisible d'un coup d'œil. Le HUD affiche aussi
-le mode courant. Le matériau est dupliqué au `_ready()` pour que la teinte reste
-propre à l'instance.
+> Comme chaque état lit des actions distinctes, `Z` peut servir à la fois de
+> `move_forward` (en MOVEMENT) et d'`aoe` (en ATTACK) **sans conflit** : c'est
+> l'état actif qui décide quelle action est consommée. (Détail attaque/AOE :
+> `phase4_loop.md`.)
 
-> La visée du réacteur reste active dans les deux modes (elle servira à viser
-> l'attaque) ; seul le **déplacement** est désactivé en ATTACK.
+**Indice visuel :** la sphère **change de couleur** selon l'état — bleu
+(`movement_color`) en MOVEMENT, rouge (`attack_color`) en ATTACK, bleu glacé
+(`passive_color`) quand cristallisée (phase 2) — avec une émission (lueur). La
+teinte est fournie par `state.tint()`. Le HUD affiche le mode et les touches
+d'attaque. Le matériau est dupliqué au `_ready()` pour rester propre à l'instance.
+
+> La visée du réacteur reste active dans les deux modes ; seul le **déplacement**
+> est désactivé en ATTACK.
 
 ---
 
@@ -180,6 +191,9 @@ func _apply_boost(physics_state: PhysicsDirectBodyState3D) -> void:
 | `jump` | Espace / bouton A manette |
 | `boost` | Shift gauche / gâchette droite (R2) |
 | `mode_toggle` | F / bouton Y manette (bascule Mouvement ↔ Attaque) |
+| `attack` | A / clic gauche (tir projectile — **en mode ATTACK**) |
+| `aoe` | Z (explosion de zone — **en mode ATTACK** ; partage la touche de `move_forward`) |
+| `transfer` | Tab / bouton X manette (transfert de conscience — phase 2) |
 | `aim_left/right/up/down` | Stick droit (visée réacteur) |
 | `camera_toggle` | C / bouton Select |
 | `cam_pan_left/right/up/down` | Flèches (pan caméra RTS) |

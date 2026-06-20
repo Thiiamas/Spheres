@@ -190,7 +190,9 @@ func _ready() -> void:
 
 | Élément | Réalisation |
 |---------|-------------|
-| Attaque | Action **`attack` = `A`** (et clic gauche). `SphereController._fire_projectile()` instancie `Projectile.tscn`, le lance vers la cible souris, cooldown `attack_cooldown` (0.5 s). Marche dans les deux modes (MOVEMENT/ATTACK). |
+| États de contrôle | Patron **State** : `SphereControlState` (base) + `MovementControlState` / `AttackControlState`, objet détenu par `SphereController` (pas de `set_script` à chaud). MOVEMENT lit `move_*`/`jump`/`boost` ; ATTACK lit `attack`/`aoe` → les touches partagées (ex. `Z`) ne se télescopent jamais. Bascule : `F`. |
+| Attaque projectile | Action **`attack` = `A`** (et clic gauche), **en mode ATTACK**. `SphereController._fire_projectile()` instancie `Projectile.tscn`, le lance vers la cible souris, cooldown `attack_cooldown` (0.5 s). |
+| Attaque AOE | Action **`aoe` = `Z`**, **en mode ATTACK**. `_perform_aoe()` (exécutée dans le pas physique) fait une `intersect_shape` (sphère `aoe_radius`, masque layer 2) et inflige `aoe_damage` à chaque ennemi ; `AoeBlast.tscn` montre l'onde. Cooldown `aoe_cooldown` (3 s). |
 | Visée souris | `SphereCamera.get_aim_target(origin)` délègue à une `AimStrategy` choisie selon le mode caméra : **RTS → `MouseCursorAim`** (curseur libre projeté), **FOLLOW → `ScreenCenterAim`** (souris capturée → centre écran). Raycast sur les ennemis, sinon plan du sol, sinon point lointain. |
 | Projectile | `Projectile.tscn` (`Area3D`, masque layer 2) vole droit, appelle `Enemy.take_hit()` au contact puis se libère ; auto-destruction après `lifetime`. |
 | Ennemi | `Enemy.gd` : `hp` (40), `take_hit()` → mort → `GameManager.on_enemy_died()`. Sur **layer 2** (le projectile ne touche que les ennemis ; pas les sphères ni les murs). |
@@ -198,9 +200,11 @@ func _ready() -> void:
 | Game Over | `SphereController._die()` → `Consciousness.unregister()` ; si plus aucune sphère → `GameManager.game_over()` (message). `ui_accept` recharge la scène (après `Consciousness.reset()`). |
 | UI | `CanvasLayer UI/MessageLabel` centré dans `Main.tscn` (caché par défaut). |
 
-> **Divergence assumée vs la doc d'origine.** L'explosion de zone + flash jaune
-> sur Espace est remplacée par un tir projectile visé souris sur `A` (demande
-> explicite). Le `take_hit` reste, mais déclenché par le projectile.
+> **Divergence assumée vs la doc d'origine.** Deux attaques, en **mode ATTACK** :
+> `A` = projectile visé souris (remplace le flash zone sur Espace), `Z` =
+> explosion de zone (reprend l'idée d'AoE de la doc, via `intersect_shape`). Le
+> `take_hit` ennemi est déclenché par les deux. Le découpage MOVEMENT/ATTACK est
+> un **patron State** (cf. `phase1_movement.md`).
 
 ## Critères de validation
 

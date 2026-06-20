@@ -27,20 +27,20 @@ func _process(_delta: float) -> void:
 		text = "(no active sphere)"
 		return
 
-	var state_name: String = SphereController.State.keys()[ball.state]
 	var mode_name: String = SphereController.Mode.keys()[ball.mode]
+	var phase_name: String = SphereController.State.keys()[ball.movement_phase]
 	var boosting := Input.is_action_pressed("boost")
 
 	var lines := []
 	var count := Consciousness.spheres.size()
 	if count > 1:
 		lines.append("Sphere: %d/%d  (Tab to transfer)" % [Consciousness.current_index + 1, count])
-	lines.append_array([
-		"Mode: %s  (F to switch)" % mode_name,
-		"State: %s" % state_name,
-		"Boost held: %s" % ("yes" if boosting else "no"),
-		"Speed: %.1f m/s" % ball.linear_velocity.length(),
-	])
+	lines.append("Mode: %s  (F to switch)" % mode_name)
+	if ball.mode == SphereController.Mode.ATTACK:
+		lines.append("  A: fire   Z: AOE")
+	else:
+		lines.append("Phase: %s   Boost: %s" % [phase_name, ("yes" if boosting else "no")])
+	lines.append("Speed: %.1f m/s" % ball.linear_velocity.length())
 	if reactor != null:
 		lines.append("Reactor yaw: %.0f°  pitch: %.0f°" % [reactor.yaw, reactor.pitch])
 	if camera != null:
