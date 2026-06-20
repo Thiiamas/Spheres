@@ -37,7 +37,7 @@ func _process(_delta: float) -> void:
 		lines.append("Sphere: %d/%d  (Tab to transfer)" % [Consciousness.current_index + 1, count])
 	lines.append("Mode: %s  (F to switch)" % mode_name)
 	if ball.mode == SphereController.Mode.ATTACK:
-		lines.append("  A: fire   Z: AOE")
+		lines.append("  A: fire   Z: AOE orb (Z again to detonate)")
 	else:
 		lines.append("Phase: %s   Boost: %s" % [phase_name, ("yes" if boosting else "no")])
 	lines.append("Speed: %.1f m/s" % ball.linear_velocity.length())

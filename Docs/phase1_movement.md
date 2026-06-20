@@ -52,8 +52,9 @@ comportements physiques actifs. On **ne change pas le script** du nœud à chaud
   Seul cet état lit les entrées de **déplacement** (`move_*`, `jump`, `boost`).
 - **ATTACK** (`AttackControlState`) — le déplacement est **verrouillé** (la bille
   tient sa position ; sauts bufferisés purgés) et la sphère **tire** : `A` =
-  projectile visé souris, `Z` = explosion de zone (AOE). Seul cet état lit les
-  actions d'**attaque** (`attack`, `aoe`).
+  projectile visé souris, `Z` = orbe AOE lancée vers le curseur qui détone au
+  recast ou après un délai (façon Lux E). Seul cet état lit les actions
+  d'**attaque** (`attack`, `aoe`).
 
 > Comme chaque état lit des actions distinctes, `Z` peut servir à la fois de
 > `move_forward` (en MOVEMENT) et d'`aoe` (en ATTACK) **sans conflit** : c'est
@@ -192,7 +193,7 @@ func _apply_boost(physics_state: PhysicsDirectBodyState3D) -> void:
 | `boost` | Shift gauche / gâchette droite (R2) |
 | `mode_toggle` | F / bouton Y manette (bascule Mouvement ↔ Attaque) |
 | `attack` | A / clic gauche (tir projectile — **en mode ATTACK**) |
-| `aoe` | Z (explosion de zone — **en mode ATTACK** ; partage la touche de `move_forward`) |
+| `aoe` | Z (orbe AOE vers le curseur, détone au recast/délai — **en mode ATTACK** ; partage la touche de `move_forward`) |
 | `transfer` | Tab / bouton X manette (transfert de conscience — phase 2) |
 | `aim_left/right/up/down` | Stick droit (visée réacteur) |
 | `camera_toggle` | C / bouton Select |

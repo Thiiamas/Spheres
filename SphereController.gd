@@ -69,13 +69,20 @@ enum Mode { MOVEMENT, ATTACK }
 @export var projectile_damage: float = 35.0
 
 @export_group("AOE Attack")
-## Cosmetic blast spawned on the "aoe" action (Z) in ATTACK mode.
+## Orb launched on the "aoe" action (Z) in ATTACK mode; flies to the aim point
+## and detonates on recast or when its fuse expires (Lux-E style).
+@export var aoe_orb_scene: PackedScene
+## Cosmetic blast spawned when the orb detonates.
 @export var aoe_effect_scene: PackedScene
-## Radius of the area blast.
+## Radius of the detonation.
 @export var aoe_radius: float = 5.0
 ## Damage dealt to every enemy in the radius.
 @export var aoe_damage: float = 35.0
-## Minimum seconds between blasts.
+## Seconds before the orb auto-detonates if not recast.
+@export var aoe_fuse_time: float = 2.0
+## Orb travel speed toward the aim point.
+@export var aoe_orb_speed: float = 18.0
+## Minimum seconds between launches (recasting to detonate is free).
 @export var aoe_cooldown: float = 3.0
 
 @export_group("References")
@@ -101,7 +108,7 @@ var _control: SphereControlState = null
 
 var _attack_timer: float = 0.0
 var _aoe_timer: float = 0.0
-var _aoe_pending: bool = false # set in input, consumed in physics (space queries need physics)
+var _active_orb: AoeOrb = null # the in-flight AOE orb, if any (for recast detonation)
 
 # Per-instance copy of the ball material so recolouring doesn't touch the shared resource.
 var _mode_material: StandardMaterial3D = null
@@ -157,11 +164,6 @@ func _integrate_forces(physics_state: PhysicsDirectBodyState3D) -> void:
 
 	if _control:
 		_control.physics(physics_state)
-
-	# Area queries must run in the physics step; the attack state only requests.
-	if _aoe_pending:
-		_aoe_pending = false
-		_perform_aoe()
 
 
 # --- Control state machine -------------------------------------------------
@@ -315,11 +317,16 @@ func try_fire_projectile() -> void:
 	_fire_projectile()
 
 
+## AOE input. With an orb in flight, recast detonates it (free). Otherwise, if
+## off cooldown, launch a new orb toward the aim point.
 func try_cast_aoe() -> void:
+	if is_instance_valid(_active_orb):
+		_active_orb.detonate()
+		return
 	if _aoe_timer > 0.0:
 		return
 	_aoe_timer = aoe_cooldown
-	_aoe_pending = true # executed next physics step (see _integrate_forces)
+	_launch_aoe_orb()
 
 
 ## Fire a projectile toward where the mouse is aiming. The camera resolves the
@@ -342,32 +349,21 @@ func _fire_projectile() -> void:
 		proj.launch(dir, projectile_damage, projectile_speed)
 
 
-## Damage every enemy within aoe_radius and spawn the blast visual. Run from the
-## physics step so the shape query is valid.
-func _perform_aoe() -> void:
-	var space := get_world_3d().direct_space_state
-	var shape := SphereShape3D.new()
-	shape.radius = aoe_radius
-	var query := PhysicsShapeQueryParameters3D.new()
-	query.shape = shape
-	query.transform = Transform3D(Basis(), global_position)
-	query.collision_mask = 2 # enemies live on physics layer 2
-	for hit in space.intersect_shape(query, 64):
-		var body = hit.get("collider")
-		if body and body.has_method("take_hit"):
-			body.take_hit(aoe_damage)
+## Launch an AOE orb toward where the mouse is aiming (camera resolves the world
+## point via its AimStrategy). The orb travels there and detonates on recast or
+## when its fuse expires; it carries its own radius/damage/blast.
+func _launch_aoe_orb() -> void:
+	if aoe_orb_scene == null or camera == null:
+		return
+	var origin := global_position
+	var target := camera.get_aim_target(origin)
 
-	if aoe_effect_scene:
-		# Defer the spawn so we don't add a node mid-physics-step.
-		_spawn_aoe_effect.call_deferred(global_position)
-
-
-func _spawn_aoe_effect(at: Vector3) -> void:
-	var fx := aoe_effect_scene.instantiate()
-	get_tree().current_scene.add_child(fx)
-	fx.global_position = at
-	if fx.has_method("play"):
-		fx.play(aoe_radius)
+	var orb := aoe_orb_scene.instantiate()
+	get_tree().current_scene.add_child(orb)
+	orb.global_position = origin
+	if orb is AoeOrb:
+		orb.setup(target, aoe_radius, aoe_damage, aoe_fuse_time, aoe_orb_speed, aoe_effect_scene)
+	_active_orb = orb
 
 
 ## Leave the consciousness pool (which reassigns control if this was the active

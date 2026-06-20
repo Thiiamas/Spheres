@@ -1,10 +1,11 @@
-[gd_scene load_steps=19 format=3]
+[gd_scene load_steps=20 format=3]
 
 [ext_resource type="Script" uid="uid://bbve772w8ey0t" path="res://SphereController.gd" id="1_ctrl"]
 [ext_resource type="Script" uid="uid://dnopq63lncmyw" path="res://Reactor.gd" id="2_react"]
 [ext_resource type="Script" path="res://HPBar3D.gd" id="3_hpbar"]
 [ext_resource type="PackedScene" path="res://Projectile.tscn" id="4_proj"]
 [ext_resource type="PackedScene" path="res://AoeBlast.tscn" id="5_aoe"]
+[ext_resource type="PackedScene" path="res://AoeOrb.tscn" id="6_orb"]
 
 [sub_resource type="SphereMesh" id="Sphere_ball"]
 
@@ -75,6 +76,7 @@ jump_force = 6.0
 double_jump_force = 4.0
 boost_force = 12.0
 projectile_scene = ExtResource("4_proj")
+aoe_orb_scene = ExtResource("6_orb")
 aoe_effect_scene = ExtResource("5_aoe")
 hp_bar = NodePath("HPBar3D")
 ball_mesh = NodePath("MeshInstance3D")
