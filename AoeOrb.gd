@@ -15,6 +15,11 @@ var radius: float = 5.0
 var damage: float = 35.0
 var blast_scene: PackedScene
 
+## Ground height the radius ring sits on (arena floor top).
+@export var ground_y: float = 0.0
+
+@onready var _ring: MeshInstance3D = $RadiusRing
+
 var _target: Vector3
 var _fuse_left: float = 2.0
 var _exploded: bool = false
@@ -29,6 +34,9 @@ func setup(target: Vector3, p_radius: float, p_damage: float, p_fuse: float, p_s
 	travel_speed = p_speed
 	blast_scene = p_blast
 	_fuse_left = p_fuse
+	# Ring mesh is unit radius; scale it to show the real blast footprint.
+	if _ring:
+		_ring.scale = Vector3(radius, 1.0, radius)
 
 
 ## Request detonation now (recast). Defers to the next physics step.
@@ -42,6 +50,10 @@ func _physics_process(delta: float) -> void:
 	var dist := to.length()
 	if dist > 0.05:
 		global_position += to / dist * minf(travel_speed * delta, dist)
+
+	# Keep the radius ring flat on the ground beneath the orb.
+	if _ring:
+		_ring.global_position = Vector3(global_position.x, ground_y + 0.02, global_position.z)
 
 	_fuse_left -= delta
 	if _fuse_left <= 0.0:
