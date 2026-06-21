@@ -10,6 +10,10 @@ class_name Reactor
 ## (which is -reactorDir) pointing somewhat upward.
 
 @export_group("Aim Input")
+## Yaw (degrees) the reactor starts at. Sets the sphere's initial facing — and
+## therefore the FOLLOW camera's starting view. 180 looks toward +Z (the cube
+## world / where enemies spawn) instead of the default -Z.
+@export var initial_yaw: float = 0.0
 ## Degrees of rotation per pixel of mouse movement.
 @export var mouse_sensitivity: float = 0.15
 ## Degrees of rotation per second at full right-stick deflection.
@@ -41,6 +45,7 @@ var _mouse_delta: Vector2 = Vector2.ZERO
 
 
 func _ready() -> void:
+	yaw = initial_yaw
 	if capture_mouse:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 

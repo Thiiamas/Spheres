@@ -206,17 +206,20 @@ mesh = SubResource("Box_shoreline")
 
 [node name="Sphere1" parent="Spheres" unique_id=310171163 instance=ExtResource("3_sphere")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 1, -9)
+aoe_lifetime = 1.0
 
 [node name="Sphere2" parent="Spheres" unique_id=1517351530 instance=ExtResource("3_sphere")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -9)
+aoe_lifetime = 1.0
 
 [node name="Sphere3" parent="Spheres" unique_id=760352771 instance=ExtResource("3_sphere")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 1, -9)
+transform = Transform3D(1, 0, 1.7484555e-07, 0, 1, 0, -1.7484555e-07, 0, 1, 5, 1, -9)
+aoe_lifetime = 1.0
 
 [node name="Enemies" type="Node3D" parent="." unique_id=968899864]
 
 [node name="SphereCamera" type="Camera3D" parent="." unique_id=1861026911]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 6)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.6273756, 4.354389, -14.303755)
 script = ExtResource("1_cam")
 
 [node name="HUD" type="CanvasLayer" parent="." unique_id=1311212668]

@@ -92,6 +92,7 @@ shape = SubResource("Shape_ball")
 
 [node name="Reactor" type="Node3D" parent="."]
 script = ExtResource("2_react")
+initial_yaw = 180.0
 
 [node name="Nozzle" type="MeshInstance3D" parent="Reactor"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.6, 0)
