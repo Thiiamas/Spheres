@@ -9,7 +9,11 @@ extends Node
 ## nodes at their own _ready.
 
 const FIRST_WAVE := 5
-const SPAWN_RADIUS := 14.0
+## The Shore is a battle line, not a circle: cubes wash in along the cube-world
+## edge (north, +Z) and advance south toward the sphere world. SHORE_SPAWN_Z is
+## that edge; SHORE_SPAWN_HALF_WIDTH is how far the tide line spreads across X.
+const SHORE_SPAWN_Z := 13.0
+const SHORE_SPAWN_HALF_WIDTH := 12.0
 
 var enemy_scene: PackedScene = preload("res://Enemy.tscn")
 var current_zone: int = 1
@@ -34,11 +38,16 @@ func start_wave(count: int) -> void:
 		return
 	_hide_message()
 	enemies_alive = count
+	# A wave breaks across the whole frontier: spread the cubes evenly along the
+	# cube-world edge (with a little jitter) rather than around a point. Enemy.gd
+	# then walks each one toward the nearest sphere, so they advance as a tide.
 	for i in count:
 		var enemy := enemy_scene.instantiate()
 		_container.add_child(enemy)
-		var angle := (TAU / count) * i + randf() * 0.3
-		enemy.global_position = Vector3(cos(angle), 0.0, sin(angle)) * SPAWN_RADIUS + Vector3.UP * 0.5
+		var t := 0.5 if count <= 1 else float(i) / float(count - 1)
+		var x := lerpf(-SHORE_SPAWN_HALF_WIDTH, SHORE_SPAWN_HALF_WIDTH, t) + randf_range(-0.5, 0.5)
+		var z := SHORE_SPAWN_Z + randf_range(-0.6, 0.6)
+		enemy.global_position = Vector3(x, 0.5, z)
 
 
 ## An enemy reported its death (killed by a player projectile).

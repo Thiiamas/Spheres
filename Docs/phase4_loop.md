@@ -196,7 +196,7 @@ func _ready() -> void:
 | Visée souris | `SphereCamera.get_aim_target(origin)` délègue à une `AimStrategy` choisie selon le mode caméra : **RTS → `MouseCursorAim`** (curseur libre projeté), **FOLLOW → `ScreenCenterAim`** (souris capturée → centre écran). Raycast sur les ennemis, sinon plan du sol, sinon point lointain. |
 | Projectile | `Projectile.tscn` (`Area3D`, masque layer 2) vole droit, appelle `Enemy.take_hit()` au contact puis se libère ; auto-destruction après `lifetime`. |
 | Ennemi | `Enemy.gd` : `hp` (40), `take_hit()` → mort → `GameManager.on_enemy_died()`. Sur **layer 2** (le projectile ne touche que les ennemis ; pas les sphères ni les murs). |
-| Boucle | `GameManager` (autoload) : `begin()` (appelé par `Main.gd`) → `start_wave(5)` ; `on_enemy_died()` décrémente ; à 0 → `_zone_cleared()` (zone++ , message, +2 s, `start_wave(4 + zone*2)`). |
+| Boucle | `GameManager` (autoload) : `begin()` (appelé par `Main.gd`) → `start_wave(5)` ; `on_enemy_died()` décrémente ; à 0 → `_zone_cleared()` (zone++ , message, +2 s, `start_wave(4 + zone*2)`). **Spawn (niveau 01 « The Shore ») :** les cubes n'apparaissent plus en **cercle** autour du centre mais en **ligne de marée** le long du bord du monde-cube (`SHORE_SPAWN_Z`, +Z) étalée sur `SHORE_SPAWN_HALF_WIDTH` en X ; les sphères défendent depuis le côté monde-sphère (−Z). Cf. `LORE.md`. |
 | Game Over | `SphereController._die()` → `Consciousness.unregister()` ; si plus aucune sphère → `GameManager.game_over()` (message). `ui_accept` recharge la scène (après `Consciousness.reset()`). |
 | UI | `CanvasLayer UI/MessageLabel` centré dans `Main.tscn` (caché par défaut). |
 
