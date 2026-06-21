@@ -49,6 +49,10 @@ enum Mode { MOVEMENT, ATTACK }
 @export var attack_color: Color = Color(0.95, 0.3, 0.2)
 ## Albedo + glow colour while passive (crystallised — not the active sphere).
 @export var passive_color: Color = Color(0.5, 0.75, 1.0)
+## How hard the sphere brakes itself the moment it enters ATTACK mode. ATTACK is
+## a "setting" stance: the sphere anchors in place to aim instead of coasting on
+## its movement momentum. Higher = a shorter skid before it stops dead.
+@export var attack_anchor_brake: float = 28.0
 
 @export_group("Health")
 ## Starting / maximum hit points.
@@ -69,8 +73,9 @@ enum Mode { MOVEMENT, ATTACK }
 @export var projectile_damage: float = 35.0
 
 @export_group("AOE Attack")
-## Orb launched on the "aoe" action (Z) in ATTACK mode; flies to the aim point
-## and detonates on recast or when its fuse expires (Lux-E style).
+## Orb launched on the "aoe" action (Z) in ATTACK mode; flies toward the aim
+## point. Recasting stops it mid-flight, then a further recast detonates it —
+## see AoeOrb (Lux-E style, two-step).
 @export var aoe_orb_scene: PackedScene
 ## Cosmetic blast spawned when the orb detonates.
 @export var aoe_effect_scene: PackedScene
@@ -78,11 +83,15 @@ enum Mode { MOVEMENT, ATTACK }
 @export var aoe_radius: float = 5.0
 ## Damage dealt to every enemy in the radius.
 @export var aoe_damage: float = 35.0
-## Seconds before the orb auto-detonates if not recast.
-@export var aoe_fuse_time: float = 2.0
+## How long the orb flies before it stops and holds (MOVE phase). Reach = this x
+## aoe_orb_speed; a recast also stops it early.
+@export var aoe_move_time: float = 0.8
+## Overall fuse. After it stops, the orb holds until recast; if left alone it
+## auto-detonates once the lifetime runs out. Keep this >= aoe_move_time.
+@export var aoe_lifetime: float = 3.0
 ## Orb travel speed toward the aim point.
 @export var aoe_orb_speed: float = 18.0
-## Minimum seconds between launches (recasting to detonate is free).
+## Minimum seconds between launches (stopping / detonating an orb is free).
 @export var aoe_cooldown: float = 3.0
 
 @export_group("References")
@@ -145,6 +154,11 @@ func _process(delta: float) -> void:
 	# Passive (crystallised) spheres ignore all input.
 	if not is_controlled:
 		return
+
+	# Ability cooldowns advance in every mode, not just ATTACK: an ability cast
+	# then left behind keeps recharging while the player rolls around in MOVEMENT,
+	# so switching to ATTACK no longer hands you a frozen, half-spent cooldown.
+	tick_attack_timers(delta)
 
 	if Input.is_action_just_pressed("mode_toggle"):
 		_toggle_mode()
@@ -279,6 +293,18 @@ func apply_roll(physics_state: PhysicsDirectBodyState3D) -> void:
 		physics_state.angular_velocity = spin.normalized() * max_roll_speed
 
 
+## Hard slide-brake used by ATTACK mode. The sphere "sets" itself: its horizontal
+## drift and spin are killed fast so it holds position to aim and launch. Gravity
+## (the y velocity) is left alone so it stays seated on the ground.
+func apply_attack_anchor(physics_state: PhysicsDirectBodyState3D) -> void:
+	var decay := exp(-attack_anchor_brake * physics_state.step)
+	physics_state.angular_velocity *= decay
+	var v := physics_state.linear_velocity
+	v.x *= decay
+	v.z *= decay
+	physics_state.linear_velocity = v
+
+
 func apply_boost(physics_state: PhysicsDirectBodyState3D) -> void:
 	if reactor == null:
 		return
@@ -317,11 +343,12 @@ func try_fire_projectile() -> void:
 	_fire_projectile()
 
 
-## AOE input. With an orb in flight, recast detonates it (free). Otherwise, if
-## off cooldown, launch a new orb toward the aim point.
+## AOE input. With an orb already out, recasting drives its two-step cast (stop
+## while flying, detonate once stopped) — both free. Otherwise, if off cooldown,
+## launch a new orb toward the aim point.
 func try_cast_aoe() -> void:
 	if is_instance_valid(_active_orb):
-		_active_orb.detonate()
+		_active_orb.recast()
 		return
 	if _aoe_timer > 0.0:
 		return
@@ -349,9 +376,9 @@ func _fire_projectile() -> void:
 		proj.launch(dir, projectile_damage, projectile_speed)
 
 
-## Launch an AOE orb toward where the mouse is aiming (camera resolves the world
-## point via its AimStrategy). The orb travels there and detonates on recast or
-## when its fuse expires; it carries its own radius/damage/blast.
+## Launch an AOE orb in the aimed direction (camera resolves the world point via
+## its AimStrategy). The orb flies for aoe_move_time then holds, and is driven by
+## recasts; it carries its own move_time/lifetime/radius/damage/blast.
 func _launch_aoe_orb() -> void:
 	if aoe_orb_scene == null or camera == null:
 		return
@@ -362,7 +389,7 @@ func _launch_aoe_orb() -> void:
 	get_tree().current_scene.add_child(orb)
 	orb.global_position = origin
 	if orb is AoeOrb:
-		orb.setup(target, aoe_radius, aoe_damage, aoe_fuse_time, aoe_orb_speed, aoe_effect_scene)
+		orb.setup(target, aoe_radius, aoe_damage, aoe_move_time, aoe_lifetime, aoe_orb_speed, aoe_effect_scene)
 	_active_orb = orb
 
 

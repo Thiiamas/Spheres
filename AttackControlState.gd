@@ -12,18 +12,18 @@ func enter() -> void:
 	sphere.set_boost_emitting(false)
 
 
-func handle_input(delta: float) -> void:
-	sphere.tick_attack_timers(delta)
+func handle_input(_delta: float) -> void:
 	if Input.is_action_just_pressed("attack"):
 		sphere.try_fire_projectile()
 	if Input.is_action_just_pressed("aoe"):
 		sphere.try_cast_aoe()
 
 
-func physics(_physics_state: PhysicsDirectBodyState3D) -> void:
-	# Movement is locked. The body still simulates (gravity, collisions); the
-	# player simply applies no roll / jump / boost while attacking.
-	pass
+func physics(physics_state: PhysicsDirectBodyState3D) -> void:
+	# "Setting" stance: hard-brake the slide so the sphere anchors itself in place
+	# to aim and launch, instead of coasting on its movement-mode momentum. Roll /
+	# jump / boost stay locked; the body still simulates gravity and collisions.
+	sphere.apply_attack_anchor(physics_state)
 
 
 func tint() -> Color:
