@@ -52,6 +52,8 @@ res://
 ├── TestScene.tscn        ← bac à sable (sol + niveau parkour + Ball inline + caméra + HUD)
 ├── Sphere.tscn           ← sphère joueur réutilisable (RigidBody + mesh + collision + Reactor + HPBar + Controllable)
 ├── ShoreBeacon.tscn      ← balise possédable non-sphère (pylône statique, vue top-down — preuve phase 5)
+├── RuneMage.tscn         ← caster MOBA à la Ryze (phase 6 : click-to-move + sorts A/Z/E)
+├── RuneBolt.tscn / RuneFlux.tscn ← projectiles du mage (ligne / autoguidé marqueur)
 ├── Enemy.tscn            ← cube ennemi (CharacterBody3D + AttackZone ; layer 2)
 ├── Projectile.tscn       ← tir du joueur (Area3D ; masque layer 2 = ennemis)
 ├── AoeOrb.tscn           ← orbe AOE (vole vers le curseur, détone au recast/délai — façon Lux E)
@@ -62,6 +64,12 @@ res://
 ├── Controllable.gd        (Node — contrat de possession : composant enfant de toute entité possédable)
 ├── SphereControllable.gd  (adaptateur : relaie possession/entrée vers SphereController)
 ├── BeaconControllable.gd  (Controllable de la balise : illumine le cristal, ignore l'entrée)
+├── RuneMage.gd            (CharacterBody3D — click-to-move, HP, cast des 3 sorts ; piloté par drive(ctx))
+├── RuneMageControllable.gd (Controllable du mage + curseur-réticule réactif au survol)
+├── RuneBolt.gd            (Area3D — sort A : ligne, ×2 dégâts sur porteur de RuneMark)
+├── RuneFlux.gd            (Node3D — sort E : autoguidé, pose la RuneMark orbitale)
+├── RuneMark.gd            (Node3D — la marque : orbe orbital construit en code, expire)
+├── RuneCage.gd            (Node3D — sort Z : cage à barreaux construite en code sur l'ennemi rooté)
 ├── InputContext.gd        (RefCounted — entrée normalisée, seule classe à lire Input.*)
 ├── CameraConfig.gd        (Resource — config caméra en données ; sphere_follow/sphere_rts/beacon_topdown.tres)
 ├── AoeOrb.gd              (Node3D — orbe AOE : vole vers la cible, détone au recast/fuse, inflige les dégâts)
@@ -93,6 +101,7 @@ res://
 | 3 | `phase3_combat.md` | Ennemis + combat + HP | ✅ Implémenté (adapté au reactor-ball ; HP greffés sur `SphereController`) |
 | 4 | `phase4_loop.md` | Boucle complète (vagues, zones, game over) | ✅ Implémenté (attaque = projectile visé souris sur `A`) |
 | 5 | `phase5_possession.md` | Possession multi-perspective (`Controllable` / `InputContext` / `CameraConfig`) | ✅ Implémenté et playtesté (branche `phase5-possession` ; balise non-sphère possédable + test IA) |
+| 6 | `phase6_runemage.md` | RuneMage : gameplay MOBA à la Ryze (click-to-move, curseur ciblant, sorts A/Z/E) | ✅ Implémenté (branche `gameplay-ryze` ; **playtest manuel en attente**) |
 
 ---
 

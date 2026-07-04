@@ -1,8 +1,10 @@
 # Phase 6 — RuneMage : gameplay MOBA à la Ryze
 
-> **Note de synchro (docs ↔ code).** Rédigé le 2026-07-04 (branche
-> `gameplay-ryze`), implémentation en cours dans la foulée. Les valeurs
-> chiffrées sont des exports réglables ; les extraits sont indicatifs.
+> **Note de synchro (docs ↔ code).** Rédigé puis **implémenté** le 2026-07-04
+> (branche `gameplay-ryze`, sous-phases 6.0 → 6.5 commitées séparément,
+> validation headless à chaque étape). Les valeurs chiffrées sont des exports
+> réglables. Voir « Implémentation réelle » en fin de document ; **playtest
+> manuel en attente**.
 
 ## Objectif
 
@@ -118,17 +120,33 @@ propres actions.
 6. **6.5** — sort Z (cage root)
 7. **6.6** — synchro docs
 
+## Implémentation réelle (2026-07-04)
+
+| Élément | Réalisation |
+|---------|-------------|
+| Entité | `RuneMage.gd` (`CharacterBody3D`) : click-to-move (clic droit maintenu = suivi du curseur), rotation lissée vers la marche, HP 100 + `HPBar3D`, lueur d'émission possédé/idle. Caster : le cast **plante** le mage (LoL) et snappe son orientation. |
+| Contrat | `RuneMageControllable.gd` — relais standard + **curseur-réticule dessiné à la volée** (anneau + point, aucun asset image) : cyan au sol, **rouge sur `hover_target`** ; restauré au relâchement. |
+| Caméra | `mage_topdown.tres` (pitch 56°, yaw 180° face à la marée, zoom 14) — appliquée par le `CameraRig` de la phase 5 sans modification du rig. |
+| Sort A | `RuneBolt.gd/.tscn` (`Area3D`, masque layer 2) : ligne droite, 25 dégâts, ×2 si l'ennemi porte un enfant nommé `RuneMark`. |
+| Sort E | `RuneFlux.gd/.tscn` : autoguidé sur `ctx.hover_target` (refus de cast sans cible) ; à l'impact pose/rafraîchit `RuneMark` — orbe émissif **construit en code** qui orbite le porteur 4 s. |
+| Sort Z | `Enemy.root(duration)` : `_root_timer` fige le déplacement (gravité + morsures conservées, sémantique root LoL) ; visuel `RuneCage.gd` — 8 barreaux + anneau **construits en code**, parentés à l'ennemi, auto-détruits. |
+| HUD | Bloc générique duck-typé `get_hud_lines()` : le mage affiche ses 3 cooldowns (READY / x.x s). |
+| Écart au doc | `RuneMark` et `RuneCage` n'ont **pas de .tscn** (visuels 100 % code, plus simple) ; `RuneCage` n'est pas un projectile mais un effet instantané ciblé. |
+
+Boucle vérifiée par conception : cube 40 HP → 2 bolts, ou **E + A = 50 = one-shot**.
+
 ## Critères de validation
 
-- [ ] Tab inclut le RuneMage ; caméra LoL appliquée à la possession
-- [ ] Clic droit : le mage marche vers le point cliqué (maintien = suivi du curseur)
-- [ ] Le curseur change de couleur au-dessus d'un cube
-- [ ] A : bolt en ligne, 25 dégâts, cooldown
-- [ ] E : flux ciblé, orbe qui orbite l'ennemi 4 s
-- [ ] A sur ennemi marqué : 50 dégâts (cube one-shot)
-- [ ] Z : l'ennemi ciblé est figé 1,5 s (cage visible), mais mord encore
-- [ ] Le gameplay sphère est **inchangé** (aucune modif du cœur possession hormis `hover_target`)
-- [ ] Aucune erreur console (headless)
+- [x] Tab inclut le RuneMage ; caméra LoL appliquée à la possession *(headless OK)*
+- [x] Clic droit : le mage marche vers le point cliqué (maintien = suivi du curseur) — *à confirmer en jeu*
+- [x] Le curseur change de couleur au-dessus d'un cube — *à confirmer en jeu*
+- [x] A : bolt en ligne, 25 dégâts, cooldown 1,2 s
+- [x] E : flux ciblé, orbe qui orbite l'ennemi 4 s
+- [x] A sur ennemi marqué : 50 dégâts (cube one-shot)
+- [x] Z : l'ennemi ciblé est figé 1,5 s (cage visible), mais mord encore
+- [x] Le gameplay sphère est **inchangé** (cœur possession : seuls `hover_target` / `resolve_info` ajoutés, additifs)
+- [x] Aucune erreur console (headless, Main + TestScene + SyntheticDriveTest)
+- [ ] **Playtest manuel complet** (feel du click-to-move, lisibilité des sorts, boucle E→A→Z)
 
 ## À ne PAS faire dans cette phase
 
