@@ -6,8 +6,8 @@ class_name MovementControlState
 ## with the attack abilities bound to the same keys in AttackControlState.
 
 
-func handle_input(_delta: float) -> void:
-	sphere.buffer_jump_input()
+func handle_input(ctx: InputContext) -> void:
+	sphere.buffer_jump_input(ctx)
 
 
 func physics(physics_state: PhysicsDirectBodyState3D) -> void:

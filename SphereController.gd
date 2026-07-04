@@ -115,6 +115,11 @@ var hp: float = 100.0
 # Active control state (State pattern). Null while passive.
 var _control: SphereControlState = null
 
+# Latest InputContext pushed via drive(). Physics behaviours (roll, boost) read
+# it during _integrate_forces; the possession layer keeps its held state fresh
+# at physics rate (see InputContext.refresh_held). Null while passive.
+var _ctx: InputContext = null
+
 var _attack_timer: float = 0.0
 var _aoe_timer: float = 0.0
 var _active_orb: AoeOrb = null # the in-flight AOE orb, if any (for recast detonation)
@@ -150,21 +155,26 @@ func _ready() -> void:
 	Consciousness.register(self)
 
 
-func _process(delta: float) -> void:
+## Per-frame input, pushed by the possession layer (Consciousness) while this
+## sphere is possessed. Replaces _process: the sphere no longer polls Input.*,
+## it consumes the normalized InputContext it is handed.
+func drive(ctx: InputContext) -> void:
 	# Passive (crystallised) spheres ignore all input.
 	if not is_controlled:
 		return
 
+	_ctx = ctx
+
 	# Ability cooldowns advance in every mode, not just ATTACK: an ability cast
 	# then left behind keeps recharging while the player rolls around in MOVEMENT,
 	# so switching to ATTACK no longer hands you a frozen, half-spent cooldown.
-	tick_attack_timers(delta)
+	tick_attack_timers(ctx.delta)
 
-	if Input.is_action_just_pressed("mode_toggle"):
+	if ctx.just_pressed(&"mode_toggle"):
 		_toggle_mode()
 
 	if _control:
-		_control.handle_input(delta)
+		_control.handle_input(ctx)
 
 
 func _integrate_forces(physics_state: PhysicsDirectBodyState3D) -> void:
@@ -215,6 +225,7 @@ func set_passive() -> void:
 	linear_velocity = Vector3.ZERO
 	angular_velocity = Vector3.ZERO
 	freeze = true
+	_ctx = null
 	cancel_buffered_jumps()
 	if _control:
 		_control.exit()
@@ -247,8 +258,8 @@ func set_boost_emitting(on: bool) -> void:
 
 
 ## Buffer a jump press for crisp edge detection; consumed in physics.
-func buffer_jump_input() -> void:
-	if Input.is_action_just_pressed("jump"):
+func buffer_jump_input(ctx: InputContext) -> void:
+	if ctx.just_pressed(&"jump"):
 		if _is_grounded:
 			_jump_queued = true
 		elif _can_double_jump:
@@ -272,7 +283,7 @@ func consume_jumps(physics_state: PhysicsDirectBodyState3D) -> void:
 
 
 func apply_roll(physics_state: PhysicsDirectBodyState3D) -> void:
-	var input := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	var input := _ctx.move_vector if _ctx != null else Vector2.ZERO
 	if input == Vector2.ZERO:
 		_apply_ground_brake(physics_state)
 		return
@@ -356,14 +367,14 @@ func try_cast_aoe() -> void:
 	_launch_aoe_orb()
 
 
-## Fire a projectile toward where the mouse is aiming. The camera resolves the
-## world-space aim point via its current AimStrategy, so this code doesn't care
-## whether we're in FOLLOW or RTS mode.
+## Fire a projectile toward where the player is aiming. The possession layer
+## resolves the world-space aim point (ctx.world_cursor) via the camera's
+## AimStrategy, so this code doesn't care whether we're in FOLLOW or RTS mode.
 func _fire_projectile() -> void:
-	if projectile_scene == null or camera == null:
+	if projectile_scene == null or _ctx == null:
 		return
 	var origin := global_position
-	var target := camera.get_aim_target(origin)
+	var target := _ctx.world_cursor
 	var dir := target - origin
 	if dir.length() < 0.001:
 		dir = -global_basis.z # fallback: straight ahead
@@ -376,14 +387,15 @@ func _fire_projectile() -> void:
 		proj.launch(dir, projectile_damage, projectile_speed)
 
 
-## Launch an AOE orb in the aimed direction (camera resolves the world point via
-## its AimStrategy). The orb flies for aoe_move_time then holds, and is driven by
-## recasts; it carries its own move_time/lifetime/radius/damage/blast.
+## Launch an AOE orb in the aimed direction (the possession layer resolves the
+## world point via the camera's AimStrategy). The orb flies for aoe_move_time
+## then holds, and is driven by recasts; it carries its own
+## move_time/lifetime/radius/damage/blast.
 func _launch_aoe_orb() -> void:
-	if aoe_orb_scene == null or camera == null:
+	if aoe_orb_scene == null or _ctx == null:
 		return
 	var origin := global_position
-	var target := camera.get_aim_target(origin)
+	var target := _ctx.world_cursor
 
 	var orb := aoe_orb_scene.instantiate()
 	get_tree().current_scene.add_child(orb)
@@ -442,7 +454,7 @@ func _update_phase() -> void:
 	if _is_grounded:
 		movement_phase = State.GROUNDED
 		_can_double_jump = false # refreshed on next ground jump
-	elif Input.is_action_pressed("boost"):
+	elif _ctx != null and _ctx.pressed(&"boost"):
 		movement_phase = State.FLYING
 	else:
 		movement_phase = State.AIRBORNE

@@ -27,8 +27,10 @@ func exit() -> void:
 	pass
 
 
-## Per-frame input handling (called from the sphere's _process).
-func handle_input(_delta: float) -> void:
+## Per-frame input handling. The possession layer builds one InputContext per
+## frame and the sphere forwards it here (see SphereController.drive); states
+## never read Input.* themselves.
+func handle_input(_ctx: InputContext) -> void:
 	pass
 
 

@@ -29,7 +29,9 @@ func _process(_delta: float) -> void:
 
 	var mode_name: String = SphereController.Mode.keys()[ball.mode]
 	var phase_name: String = SphereController.State.keys()[ball.movement_phase]
-	var boosting := Input.is_action_pressed("boost")
+	# Read the possession layer's normalized input instead of polling Input.
+	var ctx := Consciousness.last_context
+	var boosting := ctx != null and ctx.pressed(&"boost")
 
 	var lines := []
 	var count := Consciousness.spheres.size()

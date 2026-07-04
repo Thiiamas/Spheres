@@ -12,10 +12,10 @@ func enter() -> void:
 	sphere.set_boost_emitting(false)
 
 
-func handle_input(_delta: float) -> void:
-	if Input.is_action_just_pressed("attack"):
+func handle_input(ctx: InputContext) -> void:
+	if ctx.just_pressed(&"attack"):
 		sphere.try_fire_projectile()
-	if Input.is_action_just_pressed("aoe"):
+	if ctx.just_pressed(&"aoe"):
 		sphere.try_cast_aoe()
 
 

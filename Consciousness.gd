@@ -16,6 +16,36 @@ signal active_changed(sphere: SphereController)
 var spheres: Array[SphereController] = []
 var current_index: int = 0
 
+## The camera that resolves "where is the player aiming" (world_cursor).
+## Registers itself in its _ready. Untyped: SphereCamera today, CameraRig later.
+var camera_rig = null
+
+## The InputContext pushed to the active entity this frame (null when nothing
+## is possessed). Readable by UI (HUD) so it doesn't poll Input itself.
+var last_context: InputContext = null
+
+
+## Build the frame's normalized input and push it to the possessed entity.
+## Entities never read Input.* — this is the single sampling point.
+func _process(delta: float) -> void:
+	var sphere := active_sphere()
+	if sphere == null:
+		last_context = null
+		return
+	var ctx := InputContext.capture(delta)
+	if camera_rig != null:
+		ctx.world_cursor = camera_rig.get_aim_target(sphere.global_position)
+	last_context = ctx
+	sphere.drive(ctx)
+
+
+## Physics runs after _process capture, so re-sample the *held* state (move
+## vector, pressed flags) each physics tick: roll/boost read input exactly as
+## fresh as when they polled Input directly. Edges keep their frame timing.
+func _physics_process(_delta: float) -> void:
+	if last_context != null:
+		last_context.refresh_held()
+
 
 func register(sphere: SphereController) -> void:
 	if sphere in spheres:

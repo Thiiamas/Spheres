@@ -52,6 +52,10 @@ var _aim_strategy: AimStrategy = ScreenCenterAim.new()
 func _ready() -> void:
 	_apply_mode_state()
 
+	# The possession layer asks us where the player is aiming (world_cursor)
+	# when it builds each frame's InputContext.
+	Consciousness.camera_rig = self
+
 	# Follow whichever sphere the consciousness currently inhabits, and keep up
 	# as control transfers between spheres.
 	Consciousness.active_changed.connect(_on_active_changed)
