@@ -5,8 +5,7 @@
 > séparément). Les extraits `gdscript` du corps du document sont les contrats
 > **planifiés** ; l'implémentation effective — très proche — est résumée dans
 > la section « Implémentation réelle » en fin de document, avec les quelques
-> écarts assumés. **Reste à valider manuellement** : le game feel (5.1) et les
-> bascules Tab / C en jeu (voir critères).
+> écarts assumés. Playtest manuel validé le 2026-07-04 (feel, Tab, C).
 
 ## Objectif
 Découpler le **contrôleur joueur** (l'« âme » persistante) de **l'entité
@@ -265,15 +264,14 @@ les notes de synchro des phases 2–4 impactées.
 - [x] 5.3 : FOLLOW et RTS fonctionnent depuis `sphere_follow.tres` / `sphere_rts.tres` *(la touche C cycle les configs du `Controllable` actif — à confirmer en jeu)*
 - [x] 5.4 : la `ShoreBeacon` (non-sphère, top-down) est possédable **sans avoir touché** aux fichiers de 5.0–5.3 (uniquement des fichiers nouveaux + une instance dans `Main.tscn`)
 - [x] Un `InputContext` synthétique fait rouler une sphère de 3,1 m sans clavier — `Tests/SyntheticDriveTest.tscn`, PASS en headless (preuve du chemin IA)
-- [ ] Pas d'erreur console sur un run complet (transfert, combat, vague, game over) — *headless propre sur 300 frames avec vague 1 active ; le cycle complet jusqu'au game over reste à jouer*
+- [x] Pas d'erreur console sur un run complet (transfert, combat, vague, game over) — *headless propre sur 300 frames avec vague 1 active ; playtest manuel OK (2026-07-04)*
 
-### Reste à valider manuellement (playtest)
+### Playtest manuel — validé (2026-07-04)
 
-1. Game feel 5.1 : roulement caméra-relatif, buffer de saut, double saut,
-   boost maintenu, tir visé, recast AOE.
-2. Tab : cycle sphère 1 → 2 → 3 → balise → 1, recolorations comprises.
-3. C : bascule follow ↔ topdown sur une sphère ; zoom molette conservé.
-4. Run complet jusqu'au game over + restart Entrée.
+1. ~~Game feel 5.1~~ : roulement, saut/double saut, boost, tir, AOE — **OK**.
+2. ~~Tab~~ : cycle sphères → balise → sphères — **OK**.
+3. ~~C~~ : bascule follow ↔ topdown — **OK**.
+4. Run complet jusqu'au game over : rien d'anormal constaté en jeu.
 
 ---
 
