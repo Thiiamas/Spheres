@@ -26,8 +26,9 @@ var _camera_index: int = 0
 
 func _ready() -> void:
 	entity = get_parent()
-	# TODO(5.2): register with Consciousness once its registry speaks
-	# Controllable (it is still typed Array[SphereController] at this stage).
+	# Join the possession pool. Consciousness decides who starts possessed;
+	# until then the entity sits released (on_released is called on register).
+	Consciousness.register(self)
 
 
 ## Current camera configuration (null when the entity defines none).

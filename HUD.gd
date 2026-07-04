@@ -9,22 +9,28 @@ extends Label
 
 
 func _ready() -> void:
-	# Follow the active sphere as consciousness transfers between spheres.
+	# Follow the active entity as consciousness transfers between entities.
 	Consciousness.active_changed.connect(_on_active_changed)
-	if Consciousness.active_sphere() != null:
-		_on_active_changed(Consciousness.active_sphere())
+	if Consciousness.active() != null:
+		_on_active_changed(Consciousness.active())
 
 	print("[HUD] ball=", ball, " reactor=", reactor, " camera=", camera)
 
 
-func _on_active_changed(sphere: SphereController) -> void:
-	ball = sphere
-	reactor = sphere.get_reactor()
+## Type-agnostic retarget: show the sphere debug block when a sphere is
+## possessed, otherwise just name the possessed entity.
+func _on_active_changed(controllable: Controllable) -> void:
+	ball = controllable.entity as SphereController
+	reactor = ball.get_reactor() if ball != null else null
 
 
 func _process(_delta: float) -> void:
 	if ball == null or not is_instance_valid(ball):
-		text = "(no active sphere)"
+		var c := Consciousness.active()
+		if c == null or c.entity == null:
+			text = "(no active entity)"
+		else:
+			text = "Possessing: %s  (Tab to transfer)" % c.entity.name
 		return
 
 	var mode_name: String = SphereController.Mode.keys()[ball.mode]
@@ -34,9 +40,9 @@ func _process(_delta: float) -> void:
 	var boosting := ctx != null and ctx.pressed(&"boost")
 
 	var lines := []
-	var count := Consciousness.spheres.size()
+	var count := Consciousness.entities.size()
 	if count > 1:
-		lines.append("Sphere: %d/%d  (Tab to transfer)" % [Consciousness.current_index + 1, count])
+		lines.append("Entity: %d/%d  (Tab to transfer)" % [Consciousness.current_index + 1, count])
 	lines.append("Mode: %s  (F to switch)" % mode_name)
 	if ball.mode == SphereController.Mode.ATTACK:
 		lines.append("  A: fire   Z: AOE orb (Z again to detonate)")

@@ -62,12 +62,17 @@ func take_hit(damage: float) -> void:
 
 
 ## Closest sphere by horizontal (XZ) distance — enemies move on the ground, so
-## reachability is what matters, not a sphere that's flown overhead.
+## reachability is what matters, not a sphere that's flown overhead. The
+## possession pool can hold non-sphere entities (bases…); cubes only ever hunt
+## spheres, so anything else is filtered out.
 func _nearest_sphere() -> SphereController:
 	var best: SphereController = null
 	var best_dist := INF
-	for s in Consciousness.spheres:
-		if not is_instance_valid(s):
+	for c in Consciousness.entities:
+		if not is_instance_valid(c):
+			continue
+		var s := c.entity as SphereController
+		if s == null or not is_instance_valid(s):
 			continue
 		var to := s.global_position - global_position
 		to.y = 0.0

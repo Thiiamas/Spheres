@@ -106,8 +106,12 @@ var mode: Mode = Mode.MOVEMENT
 
 ## Whether this sphere is the one the consciousness currently controls. Passive
 ## spheres are frozen (crystallised) and ignore all input. Driven by the
-## Consciousness autoload via set_active() / set_passive().
+## possession contract (SphereControllable) via set_active() / set_passive().
 var is_controlled: bool = false
+
+## The possession-contract child that adapts this sphere for Consciousness.
+## Set by SphereControllable in its _ready.
+var controllable: Controllable = null
 
 ## Current hit points. Reaches 0 -> the sphere is destroyed.
 var hp: float = 100.0
@@ -150,9 +154,10 @@ func _ready() -> void:
 	hp = max_hp
 	_update_hp_bar()
 
-	# Join the pool of transferable spheres. Consciousness decides which one
-	# starts active; until then this sphere sits crystallised (set_passive).
-	Consciousness.register(self)
+	# Registration with Consciousness is handled by the SphereControllable
+	# child (possession contract). It may have run its _ready — and crystallised
+	# us — before our material copy existed, so reflect the current state now.
+	_apply_visual()
 
 
 ## Per-frame input, pushed by the possession layer (Consciousness) while this
@@ -406,13 +411,23 @@ func _launch_aoe_orb() -> void:
 
 
 ## Leave the consciousness pool (which reassigns control if this was the active
-## sphere) and remove this sphere from the world. If it was the last one, the
-## run is over.
+## entity) and remove this sphere from the world. If it was the last *sphere*
+## (other entity types don't fight), the run is over.
 func _die() -> void:
-	Consciousness.unregister(self)
-	if Consciousness.spheres.is_empty():
+	if controllable != null:
+		Consciousness.unregister(controllable)
+	if not _any_sphere_left():
 		GameManager.game_over()
 	queue_free()
+
+
+## Whether any sphere remains in the possession pool (non-sphere entities are
+## ignored: a possessable base can't hold the shore on its own).
+func _any_sphere_left() -> bool:
+	for c in Consciousness.entities:
+		if is_instance_valid(c) and c.entity is SphereController:
+			return true
+	return false
 
 
 func _update_hp_bar() -> void:

@@ -1,19 +1,22 @@
 extends Node
 
-## Autoload singleton (registered as "Consciousness"). Tracks every sphere on
-## the field and which one the player's consciousness currently inhabits. Only
-## one sphere is active at a time; the rest are crystallised (passive).
+## Autoload singleton (registered as "Consciousness"). The player's persistent
+## "soul": it tracks every possessable entity on the field and which one it
+## currently inhabits. Only one entity is possessed at a time; the rest sit
+## released (spheres crystallise — each entity decides what "released" means).
 ##
-## Spheres self-register from their _ready(). The first registered sphere becomes
-## active (deferred, so cameras/HUD have a frame to subscribe); the rest start
-## passive. Pressing "transfer" (Tab) hands control to the next sphere in the
-## list, emitting active_changed so the camera and HUD can retarget.
+## Entities self-register through their Controllable child (see Controllable.gd
+## — the consciousness only ever speaks to that contract, never to concrete
+## types). The first registered entity becomes possessed (deferred, so
+## cameras/HUD have a frame to subscribe); the rest start released. Pressing
+## "transfer" (Tab) hands control to the next entity in the list, emitting
+## active_changed so the camera and HUD can retarget.
 
-## Emitted whenever control moves to a different sphere (including the initial
-## activation). Listeners receive the now-active SphereController.
-signal active_changed(sphere: SphereController)
+## Emitted whenever control moves to a different entity (including the initial
+## possession). Listeners receive the now-active Controllable.
+signal active_changed(controllable: Controllable)
 
-var spheres: Array[SphereController] = []
+var entities: Array[Controllable] = []
 var current_index: int = 0
 
 ## The camera that resolves "where is the player aiming" (world_cursor).
@@ -28,15 +31,16 @@ var last_context: InputContext = null
 ## Build the frame's normalized input and push it to the possessed entity.
 ## Entities never read Input.* — this is the single sampling point.
 func _process(delta: float) -> void:
-	var sphere := active_sphere()
-	if sphere == null:
+	var c := active()
+	if c == null:
 		last_context = null
 		return
 	var ctx := InputContext.capture(delta)
-	if camera_rig != null:
-		ctx.world_cursor = camera_rig.get_aim_target(sphere.global_position)
+	var entity_3d := c.entity as Node3D
+	if camera_rig != null and entity_3d != null:
+		ctx.world_cursor = camera_rig.get_aim_target(entity_3d.global_position)
 	last_context = ctx
-	sphere.drive(ctx)
+	c.handle_input(ctx)
 
 
 ## Physics runs after _process capture, so re-sample the *held* state (move
@@ -47,34 +51,34 @@ func _physics_process(_delta: float) -> void:
 		last_context.refresh_held()
 
 
-func register(sphere: SphereController) -> void:
-	if sphere in spheres:
+func register(controllable: Controllable) -> void:
+	if controllable in entities:
 		return
-	spheres.append(sphere)
-	# Everyone starts crystallised; the first one is promoted to active once the
+	entities.append(controllable)
+	# Everyone starts released; the first one is promoted to possessed once the
 	# whole scene tree has finished _ready (so listeners are connected).
-	sphere.set_passive()
-	if spheres.size() == 1:
+	controllable.on_released()
+	if entities.size() == 1:
 		current_index = 0
 		call_deferred("_activate_initial")
 
 
-## Remove a destroyed sphere from the pool. If it was the active one, control
-## passes to the next surviving sphere; otherwise the active sphere is kept and
-## the index is fixed up for the shrunken list.
-func unregister(sphere: SphereController) -> void:
-	var idx := spheres.find(sphere)
+## Remove a destroyed entity from the pool. If it was the possessed one,
+## control passes to the next surviving entity; otherwise the possessed entity
+## is kept and the index is fixed up for the shrunken list.
+func unregister(controllable: Controllable) -> void:
+	var idx := entities.find(controllable)
 	if idx == -1:
 		return
 	var was_active := idx == current_index
-	spheres.remove_at(idx)
+	entities.remove_at(idx)
 
-	if spheres.is_empty():
+	if entities.is_empty():
 		current_index = 0
 		return
 
 	if was_active:
-		current_index = current_index % spheres.size()
+		current_index = current_index % entities.size()
 		_activate(current_index)
 	elif idx < current_index:
 		current_index -= 1
@@ -85,35 +89,37 @@ func _input(event: InputEvent) -> void:
 		transfer_to_next()
 
 
-## Move control to the next sphere in registration order, wrapping around.
+## Move control to the next entity in registration order, wrapping around.
 func transfer_to_next() -> void:
-	if spheres.size() < 2:
+	if entities.size() < 2:
 		return
-	spheres[current_index].set_passive()
-	current_index = (current_index + 1) % spheres.size()
+	entities[current_index].on_released()
+	current_index = (current_index + 1) % entities.size()
 	_activate(current_index)
 
 
-func active_sphere() -> SphereController:
-	if spheres.is_empty():
+## The currently possessed entity's Controllable (null when the pool is empty).
+func active() -> Controllable:
+	if entities.is_empty():
 		return null
-	return spheres[current_index]
+	return entities[current_index]
 
 
-## Clear the registry. Call before reloading the scene so freed spheres from the
-## old run don't linger in the list.
+## Clear the registry. Call before reloading the scene so freed entities from
+## the old run don't linger in the list.
 func reset() -> void:
-	spheres.clear()
+	entities.clear()
 	current_index = 0
+	last_context = null
 
 
 func _activate_initial() -> void:
-	if spheres.is_empty():
+	if entities.is_empty():
 		return
 	_activate(current_index)
 
 
 func _activate(i: int) -> void:
-	var sphere := spheres[i]
-	sphere.set_active()
-	active_changed.emit(sphere)
+	var controllable := entities[i]
+	controllable.on_possessed()
+	active_changed.emit(controllable)

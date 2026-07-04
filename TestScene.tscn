@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://dnopq63lncmyw" path="res://Reactor.gd" id="2_react"]
 [ext_resource type="Script" uid="uid://du2qpi72se1or" path="res://SphereCamera.gd" id="3_cam"]
 [ext_resource type="Script" uid="uid://kvu8t082hllc" path="res://HUD.gd" id="4_hud"]
+[ext_resource type="Script" path="res://SphereControllable.gd" id="5_possess"]
 
 [sub_resource type="QuadMesh" id="QuadMesh_pn5b2"]
 size = Vector2(40, 40)
@@ -159,6 +160,9 @@ amount = 48
 lifetime = 0.6
 process_material = SubResource("ParticleProcessMaterial_boost")
 draw_pass_1 = SubResource("QuadMesh_flame")
+
+[node name="Controllable" type="Node" parent="Ball"]
+script = ExtResource("5_possess")
 
 [node name="SphereCamera" type="Camera3D" parent="." unique_id=1511247494 node_paths=PackedStringArray("target", "reactor")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 6)

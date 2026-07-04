@@ -56,21 +56,24 @@ func _ready() -> void:
 	# when it builds each frame's InputContext.
 	Consciousness.camera_rig = self
 
-	# Follow whichever sphere the consciousness currently inhabits, and keep up
-	# as control transfers between spheres.
+	# Follow whichever entity the consciousness currently inhabits, and keep up
+	# as control transfers between entities.
 	Consciousness.active_changed.connect(_on_active_changed)
-	if Consciousness.active_sphere() != null:
-		_on_active_changed(Consciousness.active_sphere())
+	if Consciousness.active() != null:
+		_on_active_changed(Consciousness.active())
 
 
-## Retarget onto the newly active sphere: track it, read its reactor for orbit /
-## RTS aiming, and let it know which camera drives its camera-relative rolling.
-func _on_active_changed(sphere: SphereController) -> void:
-	target = sphere
-	reactor = sphere.get_reactor()
-	sphere.bind_camera(self)
-	if mode == Mode.RTS and rts_recenter_on_enter:
-		_rts_focus = sphere.global_position
+## Retarget onto the newly possessed entity: track it and, when it's a sphere,
+## read its reactor for orbit / RTS aiming and let it know which camera drives
+## its camera-relative rolling. Non-sphere entities are simply tracked.
+func _on_active_changed(controllable: Controllable) -> void:
+	target = controllable.entity as Node3D
+	var sphere := controllable.entity as SphereController
+	reactor = sphere.get_reactor() if sphere != null else null
+	if sphere != null:
+		sphere.bind_camera(self)
+	if mode == Mode.RTS and rts_recenter_on_enter and target != null:
+		_rts_focus = target.global_position
 	_apply_mode_state() # re-point mouse capture / external_aim at the new reactor
 
 

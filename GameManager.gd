@@ -21,6 +21,9 @@ var enemies_alive: int = 0
 
 var _container: Node3D = null
 var _message: Label = null
+## True from game_over() until the next begin() — gates the restart input and
+## the pending-wave coroutine, without the manager knowing entity types.
+var _game_over: bool = false
 
 
 ## Called by Main once the scene (and its spheres) are ready.
@@ -29,6 +32,7 @@ func begin(container: Node3D, message: Label) -> void:
 	_message = message
 	current_zone = 1
 	enemies_alive = 0
+	_game_over = false
 	_hide_message()
 	start_wave(FIRST_WAVE)
 
@@ -58,6 +62,7 @@ func on_enemy_died() -> void:
 
 
 func game_over() -> void:
+	_game_over = true
 	show_message("GAME OVER\n[Entrée] pour recommencer")
 
 
@@ -72,7 +77,7 @@ func _zone_cleared() -> void:
 	show_message("Zone dégagée !\nProchaine zone…")
 	await get_tree().create_timer(2.0).timeout
 	# A wipe or restart may have happened during the pause.
-	if Consciousness.spheres.is_empty():
+	if _game_over:
 		return
 	start_wave(4 + current_zone * 2)
 
@@ -83,7 +88,8 @@ func _hide_message() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	# Restart only from the Game Over state (no spheres left).
-	if event.is_action_pressed("ui_accept") and Consciousness.spheres.is_empty():
+	# Restart only from the Game Over state (last sphere destroyed).
+	if event.is_action_pressed("ui_accept") and _game_over:
+		_game_over = false
 		Consciousness.reset()
 		get_tree().reload_current_scene()
