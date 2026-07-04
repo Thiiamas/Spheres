@@ -15,7 +15,7 @@ const FIRST_WAVE := 5
 const SHORE_SPAWN_Z := 13.0
 const SHORE_SPAWN_HALF_WIDTH := 12.0
 
-var enemy_scene: PackedScene = preload("res://Enemy.tscn")
+var enemy_scene: PackedScene = preload("res://entities/enemy/enemy.tscn")
 var current_zone: int = 1
 var enemies_alive: int = 0
 

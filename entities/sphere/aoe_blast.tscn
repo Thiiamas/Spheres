@@ -1,6 +1,6 @@
 [gd_scene load_steps=4 format=3]
 
-[ext_resource type="Script" path="res://AoeBlast.gd" id="1_blast"]
+[ext_resource type="Script" path="res://entities/sphere/aoe_blast.gd" id="1_blast"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_blast"]
 transparency = 1

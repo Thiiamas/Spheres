@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3]
 
-[ext_resource type="Script" path="res://Tests/rune_chain_test.gd" id="1_test"]
+[ext_resource type="Script" path="res://tests/rune_chain_test.gd" id="1_test"]
 
 [sub_resource type="WorldBoundaryShape3D" id="Ground"]
 

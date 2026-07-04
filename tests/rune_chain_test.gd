@@ -8,12 +8,12 @@ extends Node3D
 ##   2. SPREAD - a RuneFlux recast on a marked cube must contaminate its
 ##               unmarked neighbour (one ring).
 ##
-## Run with:  godot --headless res://Tests/RuneChainTest.tscn
+## Run with:  godot --headless res://tests/rune_chain_test.tscn
 ## Exit code 0 = PASS, 1 = FAIL.
 
-const ENEMY_SCENE := preload("res://Enemy.tscn")
-const BOLT_SCENE := preload("res://RuneBolt.tscn")
-const FLUX_SCENE := preload("res://RuneFlux.tscn")
+const ENEMY_SCENE := preload("res://entities/enemy/enemy.tscn")
+const BOLT_SCENE := preload("res://entities/mage/rune_bolt.tscn")
+const FLUX_SCENE := preload("res://entities/mage/rune_flux.tscn")
 
 var _phase := 0
 var _timer := 0.0

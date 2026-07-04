@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3]
 
-[ext_resource type="Script" path="res://Tests/synthetic_drive_test.gd" id="1_test"]
-[ext_resource type="PackedScene" path="res://Sphere.tscn" id="2_sphere"]
+[ext_resource type="Script" path="res://tests/synthetic_drive_test.gd" id="1_test"]
+[ext_resource type="PackedScene" path="res://entities/sphere/sphere.tscn" id="2_sphere"]
 
 [sub_resource type="WorldBoundaryShape3D" id="Ground"]
 

@@ -43,52 +43,46 @@ vagues).
 
 ## Structure du projet (état actuel)
 
-Les fichiers sont actuellement **à plat** à la racine `res://` (pas encore de
-dossiers `scenes/` / `scripts/`) :
+Réorganisé (2026-07-05) selon les recommandations Godot : **par fonctionnalité**
+(chaque entité regroupe sa scène, ses scripts et ses ressources) et fichiers en
+**snake_case**. Les `class_name` restent en PascalCase — les docs de phase
+référencent les classes (`SphereController`, `CameraRig`…), qui n'ont pas changé.
 
 ```
 res://
-├── Main.tscn             ← scène principale (arène bornée + 3× Sphere.tscn + ShoreBeacon + caméra + HUD + UI)
-├── TestScene.tscn        ← bac à sable (sol + niveau parkour + Ball inline + caméra + HUD)
-├── Sphere.tscn           ← sphère joueur réutilisable (RigidBody + mesh + collision + Reactor + HPBar + Controllable)
-├── ShoreBeacon.tscn      ← balise possédable non-sphère (pylône statique, vue top-down — preuve phase 5)
-├── RuneMage.tscn         ← caster MOBA à la Ryze (phase 6 : click-to-move + sorts A/Z/E)
-├── RuneBolt.tscn / RuneFlux.tscn ← projectiles du mage (ligne / autoguidé marqueur)
-├── Enemy.tscn            ← cube ennemi (CharacterBody3D + AttackZone ; layer 2)
-├── Projectile.tscn       ← tir du joueur (Area3D ; masque layer 2 = ennemis)
-├── AoeOrb.tscn           ← orbe AOE (vole vers le curseur, détone au recast/délai — façon Lux E)
-├── AoeBlast.tscn         ← onde de choc visuelle de la détonation (dôme qui s'étend)
-├── Main.gd               (Node3D — bootstrap : démarre la 1ʳᵉ vague via GameManager)
-├── SphereController.gd    (RigidBody3D — reactor-ball ; actif/passif ; HP ; tir + AOE ; piloté par drive(ctx))
-├── SphereControlState.gd  (patron State : base + MovementControlState / AttackControlState)
-├── Controllable.gd        (Node — contrat de possession : composant enfant de toute entité possédable)
-├── SphereControllable.gd  (adaptateur : relaie possession/entrée vers SphereController)
-├── BeaconControllable.gd  (Controllable de la balise : illumine le cristal, ignore l'entrée)
-├── RuneMage.gd            (CharacterBody3D — click-to-move, HP, cast des 3 sorts ; piloté par drive(ctx))
-├── RuneMageControllable.gd (Controllable du mage + curseur-réticule réactif au survol)
-├── RuneBolt.gd            (Area3D — sort A : ligne, ×2 dégâts sur porteur de RuneMark)
-├── RuneFlux.gd            (Node3D — sort E : autoguidé, pose la RuneMark orbitale)
-├── RuneMark.gd            (Node3D — la marque : orbe orbital construit en code, expire)
-├── RuneCage.gd            (Node3D — sort Z : cage à barreaux construite en code sur l'ennemi rooté)
-├── InputContext.gd        (RefCounted — entrée normalisée, seule classe à lire Input.*)
-├── CameraConfig.gd        (Resource — config caméra en données ; sphere_follow/sphere_rts/beacon_topdown.tres)
-├── AoeOrb.gd              (Node3D — orbe AOE : vole vers la cible, détone au recast/fuse, inflige les dégâts)
-├── AoeBlast.gd            (Node3D — onde de détonation cosmétique qui s'étend puis disparaît)
-├── Reactor.gd             (Node3D — tuyère orientable, produit la direction de poussée)
-├── CameraRig.gd           (Camera3D — applique les CameraConfig de l'entité possédée ; C cycle ; visée)
-├── AimStrategy.gd         (RefCounted — Strategy : écran→monde ; + MouseCursorAim / ScreenCenterAim)
-├── HUD.gd                 (Label de debug : entité possédée, état, angles réacteur, vitesse, caméra)
-├── HPBar3D.gd             (Node3D — barre de vie billboard flottant au-dessus de la sphère)
-├── Enemy.gd               (CharacterBody3D — IA : marche vers la sphère la plus proche ; HP, take_hit)
-├── Consciousness.gd       (Autoload — registre de Controllable, transfert au Tab, InputContext/frame)
-├── GameManager.gd         (Autoload — boucle vagues/zones, Game Over, redémarrage)
-├── Tests/                 (SyntheticDriveTest : preuve du pilotage par InputContext synthétique)
-└── Docs/                  (ce plan + les prompts de phase)
+├── autoloads/
+│   ├── consciousness.gd     (registre de Controllable, transfert au Tab, InputContext/frame)
+│   └── game_manager.gd      (boucle vagues/zones, Game Over, redémarrage)
+├── core/                    ← contrats de possession + caméra (phase 5)
+│   ├── controllable.gd      (Node — contrat de possession, composant enfant)
+│   ├── input_context.gd     (RefCounted — entrée normalisée, seule classe à lire Input.*)
+│   ├── camera_config.gd     (Resource — config caméra en données)
+│   ├── camera_rig.gd        (Camera3D — applique les CameraConfig ; C cycle ; visée)
+│   └── aim_strategy.gd + mouse_cursor_aim.gd + screen_center_aim.gd (Strategy écran→monde)
+├── levels/
+│   ├── main.tscn / main.gd  (scène principale : arène + 3 sphères + balise + mage + HUD)
+│   └── test_scene.tscn      (bac à sable parkour, Ball inline)
+├── entities/
+│   ├── sphere/              (sphere.tscn, sphere_controller.gd, sphere_controllable.gd,
+│   │                         états MOVE/ATTACK, reactor.gd, projectile.*, aoe_orb.*,
+│   │                         aoe_blast.*, sphere_follow.tres, sphere_rts.tres)
+│   ├── mage/                (rune_mage.tscn/.gd, rune_mage_controllable.gd, sorts :
+│   │                         rune_bolt.*, rune_flux.*, rune_mark.gd, rune_cage.gd,
+│   │                         mage_topdown.tres)
+│   ├── beacon/              (shore_beacon.tscn, beacon_controllable.gd, beacon_topdown.tres)
+│   └── enemy/               (enemy.tscn/.gd — cube, layer 2, groupe "enemies")
+├── ui/
+│   ├── hud.gd               (Label de debug : entité possédée, cooldowns, caméra)
+│   └── hp_bar_3d.gd         (barre de vie billboard)
+├── tests/                   (synthetic_drive_test.*, rune_chain_test.* — headless, code retour)
+├── Docs/                    (ce plan + les prompts de phase)
+├── icon.svg
+└── project.godot
 ```
 
-> Réorganiser en `scenes/` / `scripts/` est une tâche de nettoyage future, non
-> bloquante. Deux autoloads existent : `Consciousness` (phase 2) et
-> `GameManager` (phase 4).
+> Deux autoloads existent : `Consciousness` (phase 2) et `GameManager`
+> (phase 4). Les uid Godot ont survécu au déplacement (sidecars `.uid`
+> déplacés avec leurs scripts) ; tous les chemins `res://` ont été réécrits.
 
 ---
 

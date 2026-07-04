@@ -1,6 +1,6 @@
 [gd_resource type="Resource" script_class="CameraConfig" load_steps=2 format=3]
 
-[ext_resource type="Script" uid="uid://btf42jnq5hi48" path="res://CameraConfig.gd" id="1_cfg"]
+[ext_resource type="Script" uid="uid://btf42jnq5hi48" path="res://core/camera_config.gd" id="1_cfg"]
 
 [resource]
 resource_name = "beacon_topdown"

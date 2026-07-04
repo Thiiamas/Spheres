@@ -1,6 +1,6 @@
 [gd_scene load_steps=4 format=3]
 
-[ext_resource type="Script" path="res://RuneFlux.gd" id="1_flux"]
+[ext_resource type="Script" path="res://entities/mage/rune_flux.gd" id="1_flux"]
 
 [sub_resource type="SphereMesh" id="Sphere_flux"]
 radius = 0.16

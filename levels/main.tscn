@@ -1,11 +1,11 @@
 [gd_scene format=3 uid="uid://b8mq2x1n3p7ya"]
 
-[ext_resource type="Script" uid="uid://du2qpi72se1or" path="res://CameraRig.gd" id="1_cam"]
-[ext_resource type="Script" uid="uid://kvu8t082hllc" path="res://HUD.gd" id="2_hud"]
-[ext_resource type="PackedScene" path="res://Sphere.tscn" id="3_sphere"]
-[ext_resource type="PackedScene" path="res://ShoreBeacon.tscn" id="5_beacon"]
-[ext_resource type="PackedScene" path="res://RuneMage.tscn" id="6_mage"]
-[ext_resource type="Script" uid="uid://bugoh03uevsyt" path="res://Main.gd" id="4_main"]
+[ext_resource type="Script" uid="uid://du2qpi72se1or" path="res://core/camera_rig.gd" id="1_cam"]
+[ext_resource type="Script" uid="uid://kvu8t082hllc" path="res://ui/hud.gd" id="2_hud"]
+[ext_resource type="PackedScene" path="res://entities/sphere/sphere.tscn" id="3_sphere"]
+[ext_resource type="PackedScene" path="res://entities/beacon/shore_beacon.tscn" id="5_beacon"]
+[ext_resource type="PackedScene" path="res://entities/mage/rune_mage.tscn" id="6_mage"]
+[ext_resource type="Script" uid="uid://bugoh03uevsyt" path="res://levels/main.gd" id="4_main"]
 
 [sub_resource type="ProceduralSkyMaterial" id="Sky_mat"]
 sky_top_color = Color(0.33, 0.45, 0.62, 1)

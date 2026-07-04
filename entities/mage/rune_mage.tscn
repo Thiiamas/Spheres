@@ -1,12 +1,12 @@
 [gd_scene load_steps=15 format=3]
 
-[ext_resource type="Script" path="res://RuneMage.gd" id="1_mage"]
-[ext_resource type="PackedScene" path="res://RuneBolt.tscn" id="6_bolt"]
-[ext_resource type="PackedScene" path="res://RuneFlux.tscn" id="7_flux"]
-[ext_resource type="Script" path="res://HPBar3D.gd" id="2_hpbar"]
-[ext_resource type="Script" path="res://RuneMageControllable.gd" id="3_possess"]
-[ext_resource type="Script" uid="uid://btf42jnq5hi48" path="res://CameraConfig.gd" id="4_camcfg"]
-[ext_resource type="Resource" path="res://mage_topdown.tres" id="5_cfg_top"]
+[ext_resource type="Script" path="res://entities/mage/rune_mage.gd" id="1_mage"]
+[ext_resource type="PackedScene" path="res://entities/mage/rune_bolt.tscn" id="6_bolt"]
+[ext_resource type="PackedScene" path="res://entities/mage/rune_flux.tscn" id="7_flux"]
+[ext_resource type="Script" path="res://ui/hp_bar_3d.gd" id="2_hpbar"]
+[ext_resource type="Script" path="res://entities/mage/rune_mage_controllable.gd" id="3_possess"]
+[ext_resource type="Script" uid="uid://btf42jnq5hi48" path="res://core/camera_config.gd" id="4_camcfg"]
+[ext_resource type="Resource" path="res://entities/mage/mage_topdown.tres" id="5_cfg_top"]
 
 [sub_resource type="SphereMesh" id="Sphere_body"]
 radius = 0.45

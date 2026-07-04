@@ -11,14 +11,14 @@ config_version=5
 [application]
 
 config/name="Spheres"
-run/main_scene="res://Main.tscn"
+run/main_scene="res://levels/main.tscn"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
 
 [autoload]
 
-Consciousness="*res://Consciousness.gd"
-GameManager="*res://GameManager.gd"
+Consciousness="*res://autoloads/consciousness.gd"
+GameManager="*res://autoloads/game_manager.gd"
 
 [dotnet]
 

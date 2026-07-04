@@ -1,13 +1,13 @@
 [gd_scene format=3 uid="uid://cfkwyrf61h75t"]
 
-[ext_resource type="Script" uid="uid://bbve772w8ey0t" path="res://SphereController.gd" id="1_ctrl"]
-[ext_resource type="Script" uid="uid://dnopq63lncmyw" path="res://Reactor.gd" id="2_react"]
-[ext_resource type="Script" uid="uid://du2qpi72se1or" path="res://CameraRig.gd" id="3_cam"]
-[ext_resource type="Script" uid="uid://kvu8t082hllc" path="res://HUD.gd" id="4_hud"]
-[ext_resource type="Script" path="res://SphereControllable.gd" id="5_possess"]
-[ext_resource type="Script" uid="uid://btf42jnq5hi48" path="res://CameraConfig.gd" id="6_camcfg"]
-[ext_resource type="Resource" path="res://sphere_follow.tres" id="7_cfg_follow"]
-[ext_resource type="Resource" path="res://sphere_rts.tres" id="8_cfg_rts"]
+[ext_resource type="Script" uid="uid://bbve772w8ey0t" path="res://entities/sphere/sphere_controller.gd" id="1_ctrl"]
+[ext_resource type="Script" uid="uid://dnopq63lncmyw" path="res://entities/sphere/reactor.gd" id="2_react"]
+[ext_resource type="Script" uid="uid://du2qpi72se1or" path="res://core/camera_rig.gd" id="3_cam"]
+[ext_resource type="Script" uid="uid://kvu8t082hllc" path="res://ui/hud.gd" id="4_hud"]
+[ext_resource type="Script" path="res://entities/sphere/sphere_controllable.gd" id="5_possess"]
+[ext_resource type="Script" uid="uid://btf42jnq5hi48" path="res://core/camera_config.gd" id="6_camcfg"]
+[ext_resource type="Resource" path="res://entities/sphere/sphere_follow.tres" id="7_cfg_follow"]
+[ext_resource type="Resource" path="res://entities/sphere/sphere_rts.tres" id="8_cfg_rts"]
 
 [sub_resource type="QuadMesh" id="QuadMesh_pn5b2"]
 size = Vector2(40, 40)

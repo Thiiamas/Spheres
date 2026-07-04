@@ -4,7 +4,7 @@ extends Node3D
 ## sphere with a *synthetic* InputContext — no keyboard, no mouse — and assert
 ## that it moves. Run with:
 ##
-##   godot --headless res://Tests/SyntheticDriveTest.tscn
+##   godot --headless res://tests/synthetic_drive_test.tscn
 ##
 ## Exit code 0 = PASS (the sphere rolled), 1 = FAIL.
 ##
