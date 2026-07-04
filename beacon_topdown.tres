@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="CameraConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" uid="uid://btf42jnq5hi48" path="res://CameraConfig.gd" id="1_cfg"]
+
+[resource]
+resource_name = "beacon_topdown"
+script = ExtResource("1_cfg")
+mode = &"topdown"
+pitch = 70.0
+yaw = 45.0
+zoom = 25.0
+zoom_min = 10.0
+zoom_max = 45.0
+zoom_step = 2.5
+fov = 75.0

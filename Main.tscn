@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://du2qpi72se1or" path="res://CameraRig.gd" id="1_cam"]
 [ext_resource type="Script" uid="uid://kvu8t082hllc" path="res://HUD.gd" id="2_hud"]
 [ext_resource type="PackedScene" path="res://Sphere.tscn" id="3_sphere"]
+[ext_resource type="PackedScene" path="res://ShoreBeacon.tscn" id="5_beacon"]
 [ext_resource type="Script" uid="uid://bugoh03uevsyt" path="res://Main.gd" id="4_main"]
 
 [sub_resource type="ProceduralSkyMaterial" id="Sky_mat"]
@@ -215,6 +216,9 @@ aoe_lifetime = 1.0
 [node name="Sphere3" parent="Spheres" unique_id=760352771 instance=ExtResource("3_sphere")]
 transform = Transform3D(1, 0, 1.7484555e-07, 0, 1, 0, -1.7484555e-07, 0, 1, 5, 1, -9)
 aoe_lifetime = 1.0
+
+[node name="ShoreBeacon" parent="." instance=ExtResource("5_beacon")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -13)
 
 [node name="Enemies" type="Node3D" parent="." unique_id=968899864]
 

@@ -1,0 +1,25 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://BeaconControllable.gd" id="1_bctl"]
+[ext_resource type="Script" uid="uid://btf42jnq5hi48" path="res://CameraConfig.gd" id="2_camcfg"]
+[ext_resource type="Resource" path="res://beacon_topdown.tres" id="3_cfg"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_crystal"]
+albedo_color = Color(0.45, 0.85, 1, 1)
+metallic = 0.2
+roughness = 0.15
+
+[sub_resource type="PrismMesh" id="Prism_crystal"]
+size = Vector3(1.2, 2.6, 1.2)
+
+[node name="ShoreBeacon" type="Node3D"]
+
+[node name="Crystal" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.3, 0)
+mesh = SubResource("Prism_crystal")
+surface_material_override/0 = SubResource("Mat_crystal")
+
+[node name="Controllable" type="Node" parent="." node_paths=PackedStringArray("crystal")]
+script = ExtResource("1_bctl")
+crystal = NodePath("../Crystal")
+camera_configs = Array[ExtResource("2_camcfg")]([ExtResource("3_cfg")])

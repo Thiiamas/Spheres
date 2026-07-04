@@ -1,0 +1,17 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://Tests/synthetic_drive_test.gd" id="1_test"]
+[ext_resource type="PackedScene" path="res://Sphere.tscn" id="2_sphere"]
+
+[sub_resource type="WorldBoundaryShape3D" id="Ground"]
+
+[node name="SyntheticDriveTest" type="Node3D"]
+script = ExtResource("1_test")
+
+[node name="Ground" type="StaticBody3D" parent="."]
+
+[node name="Col" type="CollisionShape3D" parent="Ground"]
+shape = SubResource("Ground")
+
+[node name="Sphere" parent="." instance=ExtResource("2_sphere")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
