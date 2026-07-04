@@ -3,7 +3,7 @@ class_name AimStrategy
 
 ## Strategy pattern: turn the player's current pointing into a world-space aim
 ## point for the active sphere's attack. The concrete strategy depends on the
-## camera mode (chosen by SphereCamera): RTS uses the free mouse cursor, FOLLOW
+## camera mode (chosen by CameraRig): topdown uses the free mouse cursor, follow
 ## uses the screen centre because the mouse is captured for reactor aiming.
 ##
 ## Subclasses only decide *which screen point* to aim through; the screen→world

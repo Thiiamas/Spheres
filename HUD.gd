@@ -5,7 +5,7 @@ extends Label
 
 @export var ball: SphereController
 @export var reactor: Reactor
-@export var camera: SphereCamera
+@export var camera: CameraRig
 
 
 func _ready() -> void:
@@ -51,8 +51,7 @@ func _process(_delta: float) -> void:
 	lines.append("Speed: %.1f m/s" % ball.linear_velocity.length())
 	if reactor != null:
 		lines.append("Reactor yaw: %.0f°  pitch: %.0f°" % [reactor.yaw, reactor.pitch])
-	if camera != null:
-		var cam_mode: String = SphereCamera.Mode.keys()[camera.mode]
-		lines.append("Camera: %s  (C to toggle)" % cam_mode)
+	if camera != null and camera.config != null:
+		lines.append("Camera: %s  (C to toggle)" % String(camera.config.mode).to_upper())
 
 	text = "\n".join(lines)

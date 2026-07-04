@@ -19,8 +19,9 @@ signal active_changed(controllable: Controllable)
 var entities: Array[Controllable] = []
 var current_index: int = 0
 
-## The camera that resolves "where is the player aiming" (world_cursor).
-## Registers itself in its _ready. Untyped: SphereCamera today, CameraRig later.
+## The camera (CameraRig) that resolves "where is the player aiming"
+## (world_cursor). Registers itself in its _ready. Kept untyped so this
+## autoload has no hard dependency on the rig's class.
 var camera_rig = null
 
 ## The InputContext pushed to the active entity this frame (null when nothing

@@ -2,9 +2,12 @@
 
 [ext_resource type="Script" uid="uid://bbve772w8ey0t" path="res://SphereController.gd" id="1_ctrl"]
 [ext_resource type="Script" uid="uid://dnopq63lncmyw" path="res://Reactor.gd" id="2_react"]
-[ext_resource type="Script" uid="uid://du2qpi72se1or" path="res://SphereCamera.gd" id="3_cam"]
+[ext_resource type="Script" uid="uid://du2qpi72se1or" path="res://CameraRig.gd" id="3_cam"]
 [ext_resource type="Script" uid="uid://kvu8t082hllc" path="res://HUD.gd" id="4_hud"]
 [ext_resource type="Script" path="res://SphereControllable.gd" id="5_possess"]
+[ext_resource type="Script" uid="uid://btf42jnq5hi48" path="res://CameraConfig.gd" id="6_camcfg"]
+[ext_resource type="Resource" path="res://sphere_follow.tres" id="7_cfg_follow"]
+[ext_resource type="Resource" path="res://sphere_rts.tres" id="8_cfg_rts"]
 
 [sub_resource type="QuadMesh" id="QuadMesh_pn5b2"]
 size = Vector2(40, 40)
@@ -136,7 +139,7 @@ double_jump_force = 4.0
 boost_force = 12.0
 ball_mesh = NodePath("MeshInstance3D")
 reactor = NodePath("Reactor")
-camera = NodePath("../SphereCamera")
+camera = NodePath("../CameraRig")
 boost_particles = NodePath("Reactor/BoostParticles")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Ball" unique_id=325672466]
@@ -163,8 +166,9 @@ draw_pass_1 = SubResource("QuadMesh_flame")
 
 [node name="Controllable" type="Node" parent="Ball"]
 script = ExtResource("5_possess")
+camera_configs = Array[ExtResource("6_camcfg")]([ExtResource("7_cfg_follow"), ExtResource("8_cfg_rts")])
 
-[node name="SphereCamera" type="Camera3D" parent="." unique_id=1511247494 node_paths=PackedStringArray("target", "reactor")]
+[node name="CameraRig" type="Camera3D" parent="." unique_id=1511247494 node_paths=PackedStringArray("target", "reactor")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 6)
 script = ExtResource("3_cam")
 target = NodePath("../Ball")
@@ -291,4 +295,4 @@ theme_override_font_sizes/font_size = 18
 script = ExtResource("4_hud")
 ball = NodePath("../../Ball")
 reactor = NodePath("../../Ball/Reactor")
-camera = NodePath("../../SphereCamera")
+camera = NodePath("../../CameraRig")

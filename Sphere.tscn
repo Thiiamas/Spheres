@@ -1,7 +1,10 @@
-[gd_scene load_steps=21 format=3]
+[gd_scene load_steps=24 format=3]
 
 [ext_resource type="Script" uid="uid://bbve772w8ey0t" path="res://SphereController.gd" id="1_ctrl"]
 [ext_resource type="Script" path="res://SphereControllable.gd" id="7_possess"]
+[ext_resource type="Script" uid="uid://btf42jnq5hi48" path="res://CameraConfig.gd" id="8_camcfg"]
+[ext_resource type="Resource" path="res://sphere_follow.tres" id="9_cfg_follow"]
+[ext_resource type="Resource" path="res://sphere_rts.tres" id="10_cfg_rts"]
 [ext_resource type="Script" uid="uid://dnopq63lncmyw" path="res://Reactor.gd" id="2_react"]
 [ext_resource type="Script" path="res://HPBar3D.gd" id="3_hpbar"]
 [ext_resource type="PackedScene" path="res://Projectile.tscn" id="4_proj"]
@@ -120,3 +123,4 @@ mesh = SubResource("Box_bar_fill")
 
 [node name="Controllable" type="Node" parent="."]
 script = ExtResource("7_possess")
+camera_configs = Array[ExtResource("8_camcfg")]([ExtResource("9_cfg_follow"), ExtResource("10_cfg_rts")])

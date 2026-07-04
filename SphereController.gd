@@ -96,7 +96,7 @@ enum Mode { MOVEMENT, ATTACK }
 
 @export_group("References")
 @export var reactor: Reactor
-@export var camera: SphereCamera ## Provides the view yaw so roll matches the active camera mode.
+@export var camera: CameraRig ## Provides the view yaw so roll matches the active camera mode.
 @export var boost_particles: GPUParticles3D ## Optional; emits while FLYING.
 
 ## Current locomotion phase (GROUNDED / AIRBORNE / FLYING).
@@ -243,7 +243,7 @@ func set_passive() -> void:
 
 
 ## Let the shared camera point this controller at the right view yaw.
-func bind_camera(cam: SphereCamera) -> void:
+func bind_camera(cam: CameraRig) -> void:
 	camera = cam
 
 
