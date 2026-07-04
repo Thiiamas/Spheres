@@ -41,6 +41,11 @@ class_name RuneMage
 ## How long the attached RuneMark orbits the enemy.
 @export var flux_mark_duration: float = 4.0
 
+@export_group("Spell Z - RuneCage")
+## How long the caged enemy is pinned in place ("spell_z", point-and-click).
+@export var cage_duration: float = 1.5
+@export var cage_cooldown: float = 5.0
+
 @export_group("Visual")
 ## Mesh whose emission signals possession (bright = inhabited, dim = idle).
 @export var body_mesh: MeshInstance3D
@@ -64,6 +69,7 @@ var _ctx: InputContext = null
 # Spell cooldown timers (seconds remaining; <= 0 means ready).
 var _bolt_timer: float = 0.0
 var _flux_timer: float = 0.0
+var _cage_timer: float = 0.0
 
 # Per-instance copy of the body material so the glow is per-mage.
 var _mat: StandardMaterial3D = null
@@ -94,6 +100,8 @@ func drive(ctx: InputContext) -> void:
 
 	if ctx.just_pressed(&"spell_a"):
 		_cast_bolt(ctx)
+	if ctx.just_pressed(&"spell_z"):
+		_cast_cage(ctx)
 	if ctx.just_pressed(&"spell_e"):
 		_cast_flux(ctx)
 
@@ -158,6 +166,7 @@ func _die() -> void:
 func _tick_cooldowns(delta: float) -> void:
 	_bolt_timer -= delta
 	_flux_timer -= delta
+	_cage_timer -= delta
 
 
 ## Spell A: line bolt toward the cursor. Casting stops the walk (LoL style:
@@ -202,11 +211,31 @@ func _cast_flux(ctx: InputContext) -> void:
 		flux.launch(target, flux_speed, flux_mark_duration)
 
 
+## Spell Z: point-and-click — pins the enemy under the cursor in place. The
+## cage visual is built in code (RuneCage) and parented to the enemy.
+func _cast_cage(ctx: InputContext) -> void:
+	if _cage_timer > 0.0:
+		return
+	var target := ctx.hover_target
+	if target == null or not target.has_method("root"):
+		return # no rootable enemy under the cursor
+	_cage_timer = cage_cooldown
+	_has_destination = false
+	var to := target.global_position - global_position
+	rotation.y = atan2(to.x, to.z)
+
+	target.root(cage_duration)
+	var cage := RuneCage.new()
+	cage.duration = cage_duration
+	target.add_child(cage)
+
+
 ## Cooldown lines shown by the debug HUD (duck-typed — see HUD.gd).
 func get_hud_lines() -> Array[String]:
 	var lines: Array[String] = []
 	lines.append("Right-click: move")
 	lines.append("A: bolt %s" % _cd_label(_bolt_timer))
+	lines.append("Z: cage %s" % _cd_label(_cage_timer))
 	lines.append("E: flux %s" % _cd_label(_flux_timer))
 	return lines
 

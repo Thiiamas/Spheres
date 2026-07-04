@@ -19,11 +19,30 @@ class_name Enemy
 @onready var _attack_zone: Area3D = $AttackZone
 
 var _attack_timer: float = 0.0
+var _root_timer: float = 0.0
 var _dead: bool = false
+
+
+## Root the cube in place (RuneMage's cage, phase 6): movement is locked for
+## the duration but it keeps biting whatever stands in its attack zone.
+func root(duration: float) -> void:
+	_root_timer = maxf(_root_timer, duration)
 
 
 func _physics_process(delta: float) -> void:
 	_attack_timer -= delta
+	_root_timer -= delta
+
+	# Rooted: pinned to the spot, gravity and bites still apply.
+	if _root_timer > 0.0:
+		velocity.x = 0.0
+		velocity.z = 0.0
+		if not is_on_floor():
+			velocity.y -= gravity * delta
+		move_and_slide()
+		if _attack_timer <= 0.0:
+			_try_attack()
+		return
 
 	var target := _nearest_sphere()
 	if target == null:
