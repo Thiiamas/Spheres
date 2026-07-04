@@ -23,6 +23,12 @@ var _root_timer: float = 0.0
 var _dead: bool = false
 
 
+func _ready() -> void:
+	# Lets area spells (RuneBolt chain, RuneFlux spread) find nearby cubes
+	# without physics queries.
+	add_to_group("enemies")
+
+
 ## Root the cube in place (RuneMage's cage, phase 6): movement is locked for
 ## the duration but it keeps biting whatever stands in its attack zone.
 func root(duration: float) -> void:

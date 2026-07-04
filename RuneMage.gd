@@ -32,6 +32,9 @@ class_name RuneMage
 @export var bolt_cooldown: float = 1.2
 ## Damage multiplier against a RuneMark-carrying enemy (spell E synergy).
 @export var bolt_mark_multiplier: float = 2.0
+## When the bolt hits a marked enemy, shards chain to every other marked enemy
+## within this radius (and keep chaining from there).
+@export var bolt_chain_radius: float = 6.0
 
 @export_group("Spell E - RuneFlux")
 ## Homing projectile cast on the enemy under the cursor ("spell_e").
@@ -40,6 +43,9 @@ class_name RuneMage
 @export var flux_cooldown: float = 3.0
 ## How long the attached RuneMark orbits the enemy.
 @export var flux_mark_duration: float = 4.0
+## Recast on an already marked enemy: the mark spreads to every enemy within
+## this radius of the carrier (single ring, secondary fluxes don't re-spread).
+@export var flux_spread_radius: float = 5.0
 
 @export_group("Spell Z - RuneCage")
 ## How long the caged enemy is pinned in place ("spell_z", point-and-click).
@@ -188,7 +194,8 @@ func _cast_bolt(ctx: InputContext) -> void:
 	get_tree().current_scene.add_child(bolt)
 	bolt.global_position = global_position + dir * 0.7
 	if bolt is RuneBolt:
-		bolt.launch(dir, bolt_damage, bolt_speed, bolt_mark_multiplier)
+		bolt.launch(dir, bolt_damage, bolt_speed, bolt_mark_multiplier,
+			bolt_chain_radius, bolt_scene)
 
 
 ## Spell E: point-and-click — needs an enemy under the cursor. The flux chases
@@ -208,7 +215,8 @@ func _cast_flux(ctx: InputContext) -> void:
 	get_tree().current_scene.add_child(flux)
 	flux.global_position = global_position + Vector3.UP * 0.3
 	if flux is RuneFlux:
-		flux.launch(target, flux_speed, flux_mark_duration)
+		flux.launch(target, flux_speed, flux_mark_duration,
+			flux_spread_radius, true, flux_scene)
 
 
 ## Spell Z: point-and-click — pins the enemy under the cursor in place. The

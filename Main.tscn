@@ -204,6 +204,9 @@ mesh = SubResource("Box_cubeworld")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.04, 0)
 mesh = SubResource("Box_shoreline")
 
+[node name="RuneMage" parent="." instance=ExtResource("6_mage")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0.55, -12)
+
 [node name="Spheres" type="Node3D" parent="." unique_id=268503505]
 
 [node name="Sphere1" parent="Spheres" unique_id=310171163 instance=ExtResource("3_sphere")]
@@ -220,9 +223,6 @@ aoe_lifetime = 1.0
 
 [node name="ShoreBeacon" parent="." instance=ExtResource("5_beacon")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -13)
-
-[node name="RuneMage" parent="." instance=ExtResource("6_mage")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0.55, -12)
 
 [node name="Enemies" type="Node3D" parent="." unique_id=968899864]
 
