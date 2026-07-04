@@ -35,7 +35,7 @@ Trois scripts coopèrent :
 |--------|------|
 | `SphereController.gd` (`RigidBody3D`) | Machine à états, roulement, saut, boost. |
 | `Reactor.gd` (`Node3D`) | Tuyère orientable : produit une direction de poussée (yaw + pitch). |
-| `SphereCamera.gd` (`Camera3D`) | Deux modes (FOLLOW / RTS) ; fournit le yaw de vue pour un déplacement relatif caméra. |
+| `CameraRig.gd` (`Camera3D`, ex-`SphereCamera.gd`) | Applique des `CameraConfig` en données (follow / topdown depuis la phase 5) ; fournit le yaw de vue pour un déplacement relatif caméra. |
 
 ---
 

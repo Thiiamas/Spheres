@@ -12,7 +12,13 @@
 >   dans `Main.tscn` (fichiers toujours **à plat** sous `res://`) ;
 > - la caméra et le HUD **se reciblent** sur la sphère active via le signal
 >   `Consciousness.active_changed` (pas de `Main.gd` qui repositionne la caméra) ;
-> - l'action de transfert est **`transfer`** (Tab / bouton X manette).
+> - l'action de transfert est **`transfer`** (Tab / bouton X manette) ;
+> - **depuis la phase 5** (`phase5_possession.md`) : `Consciousness` ne
+>   manipule plus des `SphereController` mais des **`Controllable`** (contrat
+>   de possession en nœud enfant — `SphereControllable` pour les sphères) ;
+>   `set_active()`/`set_passive()` sont relayés par `on_possessed()`/
+>   `on_released()`, le signal est `active_changed(controllable)`, et le pool
+>   peut contenir des entités non-sphères (`ShoreBeacon`).
 
 ## Objectif
 Le joueur peut transférer sa conscience entre plusieurs sphères.

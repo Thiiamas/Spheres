@@ -1,10 +1,12 @@
 # Phase 5 — Possession multi-perspective (architecture)
 
-> **Note de synchro (docs ↔ code).** Cette phase est **planifiée, pas encore
-> implémentée** (rédigée le 2026-06-26, sur l'état réel du code). Les extraits
-> `gdscript` ci-dessous sont **indicatifs** : ils fixent les contrats et
-> l'intention, pas le code final. Les fichiers « à modifier » correspondent à
-> l'état actuel du dépôt (fichiers à plat sous `res://`).
+> **Note de synchro (docs ↔ code).** Cette phase est **implémentée**
+> (2026-07-04, branche `phase5-possession`, sous-phases 5.0 → 5.4 commitées
+> séparément). Les extraits `gdscript` du corps du document sont les contrats
+> **planifiés** ; l'implémentation effective — très proche — est résumée dans
+> la section « Implémentation réelle » en fin de document, avec les quelques
+> écarts assumés. **Reste à valider manuellement** : le game feel (5.1) et les
+> bascules Tab / C en jeu (voir critères).
 
 ## Objectif
 Découpler le **contrôleur joueur** (l'« âme » persistante) de **l'entité
@@ -239,15 +241,39 @@ les notes de synchro des phases 2–4 impactées.
 
 ---
 
+## Implémentation réelle (2026-07-04)
+
+| Élément | Réalisation |
+|---------|-------------|
+| Contrats | `Controllable.gd`, `InputContext.gd`, `CameraConfig.gd` — conformes au plan. Deux ajouts pragmatiques : `InputContext.delta` (évite un second paramètre à `handle_input`) et `Controllable.camera_configs: Array[CameraConfig]` + `cycle_camera_config()` (la touche C cycle les configs **de l'entité**, `get_camera_config()` rend la courante). |
+| Fraîcheur de l'entrée | `InputContext.capture()` échantillonne à la frame ; `refresh_held()` ré-échantillonne l'état **maintenu** (move_vector, `pressed`) à chaque tick physique depuis `Consciousness._physics_process`, pour que roll/boost lisent l'entrée aussi fraîche qu'avant (les fronts `just_pressed` gardent leur timing frame). |
+| `Consciousness` | Registre `entities: Array[Controllable]`, signal `active_changed(controllable)`, `active()`. Construit l'`InputContext` par frame (`world_cursor` résolu par `camera_rig.get_aim_target`, la caméra s'enregistre via `Consciousness.camera_rig`) et le pousse à l'actif. Expose `last_context` pour le HUD. |
+| Adaptateur sphère | `SphereControllable.gd`, enfant `Controllable` de `Sphere.tscn` **et** de la balle inline de `TestScene.tscn`. Relaie `on_possessed/on_released` → `set_active/set_passive`, `handle_input(ctx)` → `drive(ctx)` (qui remplace `SphereController._process`). L'enregistrement quitte `SphereController._ready` (l'enfant étant ready avant le parent, `_apply_visual()` est rejoué en fin de `_ready` du parent pour la teinte passive). |
+| Caméra | `SphereCamera.gd` → **`CameraRig.gd`** (uid conservé via le sidecar `.uid`). `apply_config(cfg)` aiguille sur `mode` (`&"follow"` / `&"topdown"` / `&"fixed"`) ; FOLLOW/RTS → `sphere_follow.tres` / `sphere_rts.tres`. Le zoom molette reste un **état du rig** (semé par la 1ʳᵉ config topdown puis borné) pour survivre aux bascules et transferts, comme l'ancien export. `SpringArm3D` non retenu (reporté). |
+| Périphériques | `Enemy._nearest_sphere()` filtre les sphères du pool hétérogène ; `GameManager` remplace ses lectures `spheres.is_empty()` par un flag `_game_over` ; `SphereController._die()` déclenche le game over quand plus aucune **sphère** ne reste (la balise ne compte pas) ; HUD type-agnostique (`Possessing: <nom>` pour une non-sphère). |
+| Preuve 5.4 | `ShoreBeacon.tscn` + `BeaconControllable.gd` + `beacon_topdown.tres` : pylône de cristal statique au sud (`(0, 0, -13)`), vue top-down, cristal qui s'illumine à la possession. Intégré **sans toucher** aux fichiers 5.0–5.3. |
+| Preuve IA | `Tests/SyntheticDriveTest.tscn` : un `InputContext` fabriqué à la main (move_vector avant) poussé via `controllable.handle_input()` fait rouler la sphère de **3,1 m** en headless, sortie 0 = PASS. |
+| Hors périmètre (assumé) | La visée du `Reactor` (souris/stick) garde sa propre lecture d'entrée — sa migration vers `look_vector` est notée pour plus tard. `look_vector` est réservé mais non alimenté. |
+
+---
+
 ## Critères de validation
 
-- [ ] 5.0 : les trois contrats existent, le jeu est inchangé, aucune erreur console
-- [ ] 5.1 : plus aucun `Input.*` dans `SphereController` ni dans les états de contrôle ; feel identique (roulement, saut, double saut, boost, tir, AOE)
-- [ ] 5.2 : `Consciousness` ne référence plus `SphereController` ; le transfert au Tab passe par les `Controllable`
-- [ ] 5.3 : FOLLOW et RTS fonctionnent depuis des `.tres` ; la touche C bascule comme avant
-- [ ] 5.4 : une entité non-sphère est possédable (le Tab l'inclut dans le cycle) **sans toucher** aux fichiers de 5.0–5.3
-- [ ] Un `InputContext` synthétique fait bouger une sphère sans clavier (preuve du chemin IA)
-- [ ] Pas d'erreur console sur un run complet (transfert, combat, vague, game over)
+- [x] 5.0 : les trois contrats existent, le jeu est inchangé, aucune erreur console *(vérifié headless, 120 frames)*
+- [x] 5.1 : plus aucun `Input.*` dans `SphereController` ni dans les états de contrôle *(grep : seuls `InputContext`, `Reactor` — visée, hors périmètre — et `CameraRig` lisent `Input`)* — **feel à confirmer en playtest manuel** (préservé par conception : `refresh_held()` ré-échantillonne l'état maintenu à la cadence physique)
+- [x] 5.2 : `Consciousness` ne référence plus `SphereController` ; l'activation initiale passe par les `Controllable` *(headless OK ; Tab à confirmer en jeu)*
+- [x] 5.3 : FOLLOW et RTS fonctionnent depuis `sphere_follow.tres` / `sphere_rts.tres` *(la touche C cycle les configs du `Controllable` actif — à confirmer en jeu)*
+- [x] 5.4 : la `ShoreBeacon` (non-sphère, top-down) est possédable **sans avoir touché** aux fichiers de 5.0–5.3 (uniquement des fichiers nouveaux + une instance dans `Main.tscn`)
+- [x] Un `InputContext` synthétique fait rouler une sphère de 3,1 m sans clavier — `Tests/SyntheticDriveTest.tscn`, PASS en headless (preuve du chemin IA)
+- [ ] Pas d'erreur console sur un run complet (transfert, combat, vague, game over) — *headless propre sur 300 frames avec vague 1 active ; le cycle complet jusqu'au game over reste à jouer*
+
+### Reste à valider manuellement (playtest)
+
+1. Game feel 5.1 : roulement caméra-relatif, buffer de saut, double saut,
+   boost maintenu, tir visé, recast AOE.
+2. Tab : cycle sphère 1 → 2 → 3 → balise → 1, recolorations comprises.
+3. C : bascule follow ↔ topdown sur une sphère ; zoom molette conservé.
+4. Run complet jusqu'au game over + restart Entrée.
 
 ---
 

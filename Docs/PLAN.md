@@ -48,26 +48,33 @@ dossiers `scenes/` / `scripts/`) :
 
 ```
 res://
-├── Main.tscn             ← scène principale (arène bornée + 3× Sphere.tscn + caméra + HUD + UI)
+├── Main.tscn             ← scène principale (arène bornée + 3× Sphere.tscn + ShoreBeacon + caméra + HUD + UI)
 ├── TestScene.tscn        ← bac à sable (sol + niveau parkour + Ball inline + caméra + HUD)
-├── Sphere.tscn           ← sphère joueur réutilisable (RigidBody + mesh + collision + Reactor + HPBar + projectile)
+├── Sphere.tscn           ← sphère joueur réutilisable (RigidBody + mesh + collision + Reactor + HPBar + Controllable)
+├── ShoreBeacon.tscn      ← balise possédable non-sphère (pylône statique, vue top-down — preuve phase 5)
 ├── Enemy.tscn            ← cube ennemi (CharacterBody3D + AttackZone ; layer 2)
 ├── Projectile.tscn       ← tir du joueur (Area3D ; masque layer 2 = ennemis)
 ├── AoeOrb.tscn           ← orbe AOE (vole vers le curseur, détone au recast/délai — façon Lux E)
 ├── AoeBlast.tscn         ← onde de choc visuelle de la détonation (dôme qui s'étend)
 ├── Main.gd               (Node3D — bootstrap : démarre la 1ʳᵉ vague via GameManager)
-├── SphereController.gd    (RigidBody3D — reactor-ball ; actif/passif ; HP ; tir + AOE ; délègue aux états)
+├── SphereController.gd    (RigidBody3D — reactor-ball ; actif/passif ; HP ; tir + AOE ; piloté par drive(ctx))
 ├── SphereControlState.gd  (patron State : base + MovementControlState / AttackControlState)
+├── Controllable.gd        (Node — contrat de possession : composant enfant de toute entité possédable)
+├── SphereControllable.gd  (adaptateur : relaie possession/entrée vers SphereController)
+├── BeaconControllable.gd  (Controllable de la balise : illumine le cristal, ignore l'entrée)
+├── InputContext.gd        (RefCounted — entrée normalisée, seule classe à lire Input.*)
+├── CameraConfig.gd        (Resource — config caméra en données ; sphere_follow/sphere_rts/beacon_topdown.tres)
 ├── AoeOrb.gd              (Node3D — orbe AOE : vole vers la cible, détone au recast/fuse, inflige les dégâts)
 ├── AoeBlast.gd            (Node3D — onde de détonation cosmétique qui s'étend puis disparaît)
 ├── Reactor.gd             (Node3D — tuyère orientable, produit la direction de poussée)
-├── SphereCamera.gd        (Camera3D — FOLLOW / RTS ; suit l'active ; fournit la cible de visée)
+├── CameraRig.gd           (Camera3D — applique les CameraConfig de l'entité possédée ; C cycle ; visée)
 ├── AimStrategy.gd         (RefCounted — Strategy : écran→monde ; + MouseCursorAim / ScreenCenterAim)
-├── HUD.gd                 (Label de debug : sphère active, état, angles réacteur, vitesse, caméra)
+├── HUD.gd                 (Label de debug : entité possédée, état, angles réacteur, vitesse, caméra)
 ├── HPBar3D.gd             (Node3D — barre de vie billboard flottant au-dessus de la sphère)
 ├── Enemy.gd               (CharacterBody3D — IA : marche vers la sphère la plus proche ; HP, take_hit)
-├── Consciousness.gd       (Autoload — registre des sphères, transfert au Tab, mort/réassignation)
+├── Consciousness.gd       (Autoload — registre de Controllable, transfert au Tab, InputContext/frame)
 ├── GameManager.gd         (Autoload — boucle vagues/zones, Game Over, redémarrage)
+├── Tests/                 (SyntheticDriveTest : preuve du pilotage par InputContext synthétique)
 └── Docs/                  (ce plan + les prompts de phase)
 ```
 
@@ -85,7 +92,7 @@ res://
 | 2 | `phase2_transfer.md` | Transfert de conscience | ✅ Implémenté (adapté au reactor-ball : sphères figées par `freeze`) |
 | 3 | `phase3_combat.md` | Ennemis + combat + HP | ✅ Implémenté (adapté au reactor-ball ; HP greffés sur `SphereController`) |
 | 4 | `phase4_loop.md` | Boucle complète (vagues, zones, game over) | ✅ Implémenté (attaque = projectile visé souris sur `A`) |
-| 5 | `phase5_possession.md` | Possession multi-perspective (`Controllable` / `InputContext` / `CameraConfig`) | 📋 Planifié (v0.2 — généralise la possession au-delà des sphères) |
+| 5 | `phase5_possession.md` | Possession multi-perspective (`Controllable` / `InputContext` / `CameraConfig`) | ✅ Implémenté (branche `phase5-possession` ; balise non-sphère possédable + test IA ; **playtest du feel en attente**) |
 
 ---
 
@@ -97,9 +104,10 @@ res://
   Physics** (`3d/physics_engine="Jolt Physics"`), pilotée dans
   `_integrate_forces()`. *(Un système antérieur du plan supposait
   `CharacterBody3D` + `move_and_slide()` ; ce n'est plus le cas.)*
-- La **caméra n'est pas une vue isométrique fixe** : `SphereCamera.gd` propose
-  deux modes — **FOLLOW** (chase-cam derrière la balle) et **RTS** (vue
-  surélevée à la StarCraft/LoL), basculés avec la touche **C**.
+- La **caméra n'est pas une vue isométrique fixe** : `CameraRig.gd` applique
+  des **`CameraConfig` en données** exposées par l'entité possédée — pour la
+  sphère : **follow** (chase-cam, `sphere_follow.tres`) et **topdown** (vue
+  surélevée à la StarCraft/LoL, `sphere_rts.tres`), cyclées avec la touche **C**.
 - Les ennemis (phase 3) seront des **cubes** (`BoxMesh`) gris se déplaçant sur
   le plan XZ (probablement `CharacterBody3D` + `move_and_slide()` ou
   `direction_to()`).
