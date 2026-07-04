@@ -39,7 +39,9 @@ func _process(delta: float) -> void:
 	var ctx := InputContext.capture(delta)
 	var entity_3d := c.entity as Node3D
 	if camera_rig != null and entity_3d != null:
-		ctx.world_cursor = camera_rig.get_aim_target(entity_3d.global_position)
+		var aim = camera_rig.get_aim_info(entity_3d.global_position)
+		ctx.world_cursor = aim.position
+		ctx.hover_target = aim.target
 	last_context = ctx
 	c.handle_input(ctx)
 

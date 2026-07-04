@@ -12,9 +12,11 @@ class_name InputContext
 
 ## Actions sampled into `actions` each frame. Entity-facing gameplay actions
 ## only — possession-layer actions (transfer) and camera actions (camera_toggle)
-## stay with their owners.
+## stay with their owners. Key overlaps across entities (attack=A vs spell_a=A)
+## are harmless: each entity only consumes its own actions.
 const TRACKED_ACTIONS: Array[StringName] = [
 	&"jump", &"boost", &"attack", &"aoe", &"mode_toggle",
+	&"move_click", &"spell_a", &"spell_z", &"spell_e",
 ]
 
 ## WASD / left stick, in input space (x = left/right, y = forward/back).
@@ -25,6 +27,10 @@ var look_vector: Vector2 = Vector2.ZERO
 ## World-space point the player is aiming at (cursor projected by the camera:
 ## enemy under pointer, else ground plane). Resolved by the possession layer.
 var world_cursor: Vector3 = Vector3.ZERO
+## The enemy body under the cursor, if any (null otherwise). Resolved by the
+## possession layer alongside world_cursor; used by targeted spells and the
+## hover-reactive cursor.
+var hover_target: Node3D = null
 ## action StringName -> { "pressed": bool, "just_pressed": bool }.
 var actions: Dictionary = {}
 ## Frame delta, so handle_input(ctx) needs no second parameter.

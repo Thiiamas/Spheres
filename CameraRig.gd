@@ -131,6 +131,12 @@ func get_aim_target(origin: Vector3) -> Vector3:
 	return _aim_strategy.resolve(self, origin)
 
 
+## Full aim resolution: world point + the enemy under the pointer (or null).
+## The possession layer feeds both into each frame's InputContext.
+func get_aim_info(origin: Vector3) -> AimStrategy.AimInfo:
+	return _aim_strategy.resolve_info(self, origin)
+
+
 func _physics_process(delta: float) -> void:
 	if config == null or target == null or not is_instance_valid(target):
 		return
