@@ -1,7 +1,8 @@
-[gd_scene load_steps=14 format=3]
+[gd_scene load_steps=15 format=3]
 
 [ext_resource type="Script" path="res://RuneMage.gd" id="1_mage"]
 [ext_resource type="PackedScene" path="res://RuneBolt.tscn" id="6_bolt"]
+[ext_resource type="PackedScene" path="res://RuneFlux.tscn" id="7_flux"]
 [ext_resource type="Script" path="res://HPBar3D.gd" id="2_hpbar"]
 [ext_resource type="Script" path="res://RuneMageControllable.gd" id="3_possess"]
 [ext_resource type="Script" uid="uid://btf42jnq5hi48" path="res://CameraConfig.gd" id="4_camcfg"]
@@ -41,6 +42,7 @@ script = ExtResource("1_mage")
 hp_bar = NodePath("HPBar3D")
 body_mesh = NodePath("Body")
 bolt_scene = ExtResource("6_bolt")
+flux_scene = ExtResource("7_flux")
 
 [node name="Body" type="MeshInstance3D" parent="."]
 mesh = SubResource("Sphere_body")

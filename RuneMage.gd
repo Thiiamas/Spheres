@@ -33,6 +33,14 @@ class_name RuneMage
 ## Damage multiplier against a RuneMark-carrying enemy (spell E synergy).
 @export var bolt_mark_multiplier: float = 2.0
 
+@export_group("Spell E - RuneFlux")
+## Homing projectile cast on the enemy under the cursor ("spell_e").
+@export var flux_scene: PackedScene
+@export var flux_speed: float = 20.0
+@export var flux_cooldown: float = 3.0
+## How long the attached RuneMark orbits the enemy.
+@export var flux_mark_duration: float = 4.0
+
 @export_group("Visual")
 ## Mesh whose emission signals possession (bright = inhabited, dim = idle).
 @export var body_mesh: MeshInstance3D
@@ -55,6 +63,7 @@ var _ctx: InputContext = null
 
 # Spell cooldown timers (seconds remaining; <= 0 means ready).
 var _bolt_timer: float = 0.0
+var _flux_timer: float = 0.0
 
 # Per-instance copy of the body material so the glow is per-mage.
 var _mat: StandardMaterial3D = null
@@ -85,6 +94,8 @@ func drive(ctx: InputContext) -> void:
 
 	if ctx.just_pressed(&"spell_a"):
 		_cast_bolt(ctx)
+	if ctx.just_pressed(&"spell_e"):
+		_cast_flux(ctx)
 
 
 func _physics_process(delta: float) -> void:
@@ -146,6 +157,7 @@ func _die() -> void:
 
 func _tick_cooldowns(delta: float) -> void:
 	_bolt_timer -= delta
+	_flux_timer -= delta
 
 
 ## Spell A: line bolt toward the cursor. Casting stops the walk (LoL style:
@@ -170,11 +182,32 @@ func _cast_bolt(ctx: InputContext) -> void:
 		bolt.launch(dir, bolt_damage, bolt_speed, bolt_mark_multiplier)
 
 
+## Spell E: point-and-click — needs an enemy under the cursor. The flux chases
+## it and attaches the RuneMark (spell A then hits it for double damage).
+func _cast_flux(ctx: InputContext) -> void:
+	if flux_scene == null or _flux_timer > 0.0:
+		return
+	var target := ctx.hover_target
+	if target == null:
+		return # no enemy under the cursor: the cast simply doesn't go off
+	_flux_timer = flux_cooldown
+	_has_destination = false
+	var to := target.global_position - global_position
+	rotation.y = atan2(to.x, to.z)
+
+	var flux := flux_scene.instantiate()
+	get_tree().current_scene.add_child(flux)
+	flux.global_position = global_position + Vector3.UP * 0.3
+	if flux is RuneFlux:
+		flux.launch(target, flux_speed, flux_mark_duration)
+
+
 ## Cooldown lines shown by the debug HUD (duck-typed — see HUD.gd).
 func get_hud_lines() -> Array[String]:
 	var lines: Array[String] = []
 	lines.append("Right-click: move")
 	lines.append("A: bolt %s" % _cd_label(_bolt_timer))
+	lines.append("E: flux %s" % _cd_label(_flux_timer))
 	return lines
 
 
