@@ -24,6 +24,15 @@ class_name RuneMage
 ## Optional floating health bar (HPBar3D) shown above the mage.
 @export var hp_bar: Node3D
 
+@export_group("Spell A - RuneBolt")
+## Line projectile cast toward the cursor ("spell_a").
+@export var bolt_scene: PackedScene
+@export var bolt_damage: float = 25.0
+@export var bolt_speed: float = 26.0
+@export var bolt_cooldown: float = 1.2
+## Damage multiplier against a RuneMark-carrying enemy (spell E synergy).
+@export var bolt_mark_multiplier: float = 2.0
+
 @export_group("Visual")
 ## Mesh whose emission signals possession (bright = inhabited, dim = idle).
 @export var body_mesh: MeshInstance3D
@@ -43,6 +52,9 @@ var _has_destination: bool = false
 
 # Latest InputContext pushed via drive(). Null while not possessed.
 var _ctx: InputContext = null
+
+# Spell cooldown timers (seconds remaining; <= 0 means ready).
+var _bolt_timer: float = 0.0
 
 # Per-instance copy of the body material so the glow is per-mage.
 var _mat: StandardMaterial3D = null
@@ -70,6 +82,9 @@ func drive(ctx: InputContext) -> void:
 	if ctx.pressed(&"move_click"):
 		_destination = ctx.world_cursor
 		_has_destination = true
+
+	if ctx.just_pressed(&"spell_a"):
+		_cast_bolt(ctx)
 
 
 func _physics_process(delta: float) -> void:
@@ -127,10 +142,44 @@ func _die() -> void:
 	queue_free()
 
 
-## --- Spell plumbing (spells land in 6.3-6.5) --------------------------------
+## --- Spells ------------------------------------------------------------------
 
-func _tick_cooldowns(_delta: float) -> void:
-	pass
+func _tick_cooldowns(delta: float) -> void:
+	_bolt_timer -= delta
+
+
+## Spell A: line bolt toward the cursor. Casting stops the walk (LoL style:
+## you plant to cast) and snaps the facing to the cast direction.
+func _cast_bolt(ctx: InputContext) -> void:
+	if bolt_scene == null or _bolt_timer > 0.0:
+		return
+	var dir := ctx.world_cursor - global_position
+	dir.y = 0.0
+	if dir.length() < 0.001:
+		dir = Vector3(sin(rotation.y), 0.0, cos(rotation.y)) # fallback: facing
+	dir = dir.normalized()
+
+	_bolt_timer = bolt_cooldown
+	_has_destination = false
+	rotation.y = atan2(dir.x, dir.z)
+
+	var bolt := bolt_scene.instantiate()
+	get_tree().current_scene.add_child(bolt)
+	bolt.global_position = global_position + dir * 0.7
+	if bolt is RuneBolt:
+		bolt.launch(dir, bolt_damage, bolt_speed, bolt_mark_multiplier)
+
+
+## Cooldown lines shown by the debug HUD (duck-typed — see HUD.gd).
+func get_hud_lines() -> Array[String]:
+	var lines: Array[String] = []
+	lines.append("Right-click: move")
+	lines.append("A: bolt %s" % _cd_label(_bolt_timer))
+	return lines
+
+
+static func _cd_label(timer: float) -> String:
+	return "READY" if timer <= 0.0 else "%.1fs" % timer
 
 
 ## --- Internals ---------------------------------------------------------------

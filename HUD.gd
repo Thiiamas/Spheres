@@ -29,8 +29,13 @@ func _process(_delta: float) -> void:
 		var c := Consciousness.active()
 		if c == null or c.entity == null:
 			text = "(no active entity)"
-		else:
-			text = "Possessing: %s  (Tab to transfer)" % c.entity.name
+			return
+		# Generic entity block: name + whatever the entity wants to expose
+		# (duck-typed get_hud_lines, e.g. the RuneMage's spell cooldowns).
+		var entity_lines := ["Possessing: %s  (Tab to transfer)" % c.entity.name]
+		if c.entity.has_method("get_hud_lines"):
+			entity_lines.append_array(c.entity.get_hud_lines())
+		text = "\n".join(entity_lines)
 		return
 
 	var mode_name: String = SphereController.Mode.keys()[ball.mode]
