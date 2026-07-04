@@ -77,7 +77,7 @@ res://
 
 ---
 
-## Les 4 phases
+## Les phases
 
 | Phase | Fichier prompt | Objectif | État |
 |-------|---------------|----------|------|
@@ -85,6 +85,7 @@ res://
 | 2 | `phase2_transfer.md` | Transfert de conscience | ✅ Implémenté (adapté au reactor-ball : sphères figées par `freeze`) |
 | 3 | `phase3_combat.md` | Ennemis + combat + HP | ✅ Implémenté (adapté au reactor-ball ; HP greffés sur `SphereController`) |
 | 4 | `phase4_loop.md` | Boucle complète (vagues, zones, game over) | ✅ Implémenté (attaque = projectile visé souris sur `A`) |
+| 5 | `phase5_possession.md` | Possession multi-perspective (`Controllable` / `InputContext` / `CameraConfig`) | 📋 Planifié (v0.2 — généralise la possession au-delà des sphères) |
 
 ---
 
@@ -124,6 +125,9 @@ res://
   sphère active ? *(Le mode RTS adresse déjà partiellement cette question.)*
 - Les ennemis ciblent-ils toujours la sphère active ou peuvent-ils ignorer la
   conscience ?
+- La conscience doit-elle pouvoir posséder **autre chose que des sphères**
+  (base RTS, véhicule, tourelle) ? *(Architecture détaillée dans
+  `phase5_possession.md`.)*
 
 ---
 
