@@ -1,0 +1,34 @@
+[gd_scene format=3 uid="uid://bhljb3fqpgtgx"]
+
+[ext_resource type="Shader" uid="uid://d2rohg0vghuk6" path="res://shaders/cheese_holes.gdshader" id="1_cheese"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_lab"]
+radial_segments = 203
+rings = 182
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_lab"]
+render_priority = 0
+shader = ExtResource("1_cheese")
+shader_parameter/hole_centers = PackedVector3Array(0.085, -0.635, 0.2, -0.24, 0.5, 0.9, -4.495, -0.2, 0.5, 0.75, -0.4, -0.1)
+shader_parameter/hole_radius = PackedFloat32Array(0.18, 0.18, 0.18, 0.18)
+shader_parameter/hole_depth = PackedFloat32Array(0.075, 0.3, 0.195, 0.1)
+shader_parameter/base_color = Color(0.78, 0.72, 0.58, 1)
+shader_parameter/hole_color = Color(0.2, 0.9, 0.85, 1)
+shader_parameter/hole_color_sharpness = 0.59800002770648
+shader_parameter/roughness = 0.5
+shader_parameter/metallic = 0.05
+shader_parameter/hole_glow_energy = 1.8
+
+[node name="ShaderLab" type="Node3D" unique_id=845676474]
+
+[node name="Sphere" type="MeshInstance3D" parent="." unique_id=842177962]
+transform = Transform3D(0.9436913, 0, 0.33082736, 0, 1, 0, -0.33082736, 0, 0.9436913, 0, 0, 0)
+mesh = SubResource("SphereMesh_lab")
+surface_material_override/0 = SubResource("ShaderMaterial_lab")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1653866414]
+transform = Transform3D(0.8660254, 0.35355338, -0.35355338, 0, 0.70710677, 0.70710677, 0.5, -0.6123724, 0.6123724, 0, 3, 3)
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=2059518755]
+transform = Transform3D(1, 0, 0, 0, 0.9335804, 0.35836795, 0, -0.35836795, 0.9335804, 0, 1.5, 4)
+current = true
