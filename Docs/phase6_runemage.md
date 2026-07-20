@@ -4,7 +4,7 @@
 > (branche `gameplay-ryze`, sous-phases 6.0 → 6.5 commitées séparément,
 > validation headless à chaque étape). Les valeurs chiffrées sont des exports
 > réglables. Voir « Implémentation réelle » en fin de document ; **playtest
-> manuel en attente**.
+> manuel effectué**, gameplay validé.
 
 ## Objectif
 
@@ -141,18 +141,18 @@ Boucle vérifiée par conception : cube 40 HP → 2 bolts, ou **E + A = 50 = one
 
 ## Critères de validation
 
-- [x] Tab inclut le RuneMage ; caméra LoL appliquée à la possession *(headless OK)*
-- [x] Clic droit : le mage marche vers le point cliqué (maintien = suivi du curseur) — *à confirmer en jeu*
-- [x] Le curseur change de couleur au-dessus d'un cube — *à confirmer en jeu*
+- [x] Tab inclut le RuneMage ; caméra LoL appliquée à la possession *(headless OK, confirmé en jeu)*
+- [x] Clic droit : le mage marche vers le point cliqué (maintien = suivi du curseur) — *confirmé en jeu*
+- [x] Le curseur change de couleur au-dessus d'un cube — *confirmé en jeu*
 - [x] A : bolt en ligne, 25 dégâts, cooldown 1,2 s
 - [x] E : flux ciblé, orbe qui orbite l'ennemi 4 s
 - [x] A sur ennemi marqué : 50 dégâts (cube one-shot)
 - [x] Z : l'ennemi ciblé est figé 1,5 s (cage visible), mais mord encore
-- [ ] E recast sur un marqué : la marque se propage aux ennemis dans le rayon (flux secondaires visibles ; pas de rebond en cascade)
-- [ ] A sur un marqué entouré d'autres marqués : éclats en chaîne, mêmes dégâts sur chaque marqué, chacun touché une seule fois
+- [x] E recast sur un marqué : la marque se propage aux ennemis dans le rayon (flux secondaires visibles ; pas de rebond en cascade)
+- [x] A sur un marqué entouré d'autres marqués : éclats en chaîne, mêmes dégâts sur chaque marqué, chacun touché une seule fois
 - [x] Le gameplay sphère est **inchangé** (cœur possession : seuls `hover_target` / `resolve_info` ajoutés, additifs)
 - [x] Aucune erreur console (headless, Main + TestScene + SyntheticDriveTest)
-- [ ] **Playtest manuel complet** (feel du click-to-move, lisibilité des sorts, boucle E→E→A→Z)
+- [x] **Playtest manuel complet** (feel du click-to-move, lisibilité des sorts, boucle E→E→A→Z)
 
 ## À ne PAS faire dans cette phase
 

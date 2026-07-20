@@ -1,6 +1,6 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://bsofnce4mg2j3"]
 
-[ext_resource type="Script" path="res://tests/shader_showcase.gd" id="0_script"]
+[ext_resource type="Script" uid="uid://73o620rwhqvj" path="res://tests/shader_showcase.gd" id="0_script"]
 [ext_resource type="Shader" uid="uid://05jxeixfo4mm" path="res://shaders/sphere_active.gdshader" id="1_active"]
 [ext_resource type="Shader" uid="uid://ixxgx1wqumb2" path="res://shaders/sphere_crystallized.gdshader" id="2_cryst"]
 [ext_resource type="Shader" uid="uid://ddq3kgeu5j1o2" path="res://shaders/sphere_danger.gdshader" id="3_danger"]
@@ -16,13 +16,13 @@ background_color = Color(0.05, 0.03, 0.03, 1)
 ambient_light_source = 2
 ambient_light_color = Color(0.102, 0.051, 0.051, 1)
 ambient_light_energy = 0.4
+glow_enabled = true
+glow_intensity = 0.8
+glow_bloom = 0.15
 fog_enabled = true
 fog_density = 0.012
 fog_height = -2.0
 fog_height_density = 2.0
-glow_enabled = true
-glow_intensity = 0.8
-glow_bloom = 0.15
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_ground"]
 size = Vector2(40, 80)
@@ -38,22 +38,19 @@ roughness = 0.9
 [sub_resource type="SphereMesh" id="Mesh_active"]
 radius = 2.0
 height = 4.0
-radial_segments = 64
-rings = 32
+
+[sub_resource type="ShaderMaterial" id="Mat_active"]
+render_priority = 0
+shader = ExtResource("1_active")
+shader_parameter/base_color = Color(0.47598857, 0.3510271, 0, 1)
+shader_parameter/rim_color = Color(0.89243644, 0.4952876, 0, 1)
+shader_parameter/ring_color = Color(0.86177963, 0.777099, 0, 1)
+shader_parameter/emission_strength = 4.0
+shader_parameter/pulse_speed = 1.8
 
 [sub_resource type="SphereMesh" id="Mesh_hero"]
 radius = 8.0
 height = 16.0
-radial_segments = 64
-rings = 32
-
-[sub_resource type="ShaderMaterial" id="Mat_active"]
-shader = ExtResource("1_active")
-shader_parameter/base_color = Color(0.47598857, 0.3510271, 0.0, 1)
-shader_parameter/rim_color = Color(0.89243644, 0.4952876, 0.0, 1)
-shader_parameter/ring_color = Color(0.86177963, 0.777099, 0.0, 1)
-shader_parameter/emission_strength = 4.0
-shader_parameter/pulse_speed = 1.8
 
 [sub_resource type="SphereMesh" id="Mesh_crystallized"]
 radius = 1.5
@@ -62,6 +59,7 @@ radial_segments = 128
 rings = 64
 
 [sub_resource type="ShaderMaterial" id="Mat_crystallized"]
+render_priority = 0
 shader = ExtResource("2_cryst")
 shader_parameter/base_color = Color(0.55, 0.04, 0.08, 1)
 shader_parameter/spike_height = 0.28
@@ -73,10 +71,9 @@ shader_parameter/metallic = 0.15
 [sub_resource type="SphereMesh" id="Mesh_danger"]
 radius = 1.2
 height = 2.4
-radial_segments = 64
-rings = 32
 
 [sub_resource type="ShaderMaterial" id="Mat_danger"]
+render_priority = 0
 shader = ExtResource("3_danger")
 shader_parameter/damage_level = 0.55
 shader_parameter/jitter_strength = 0.04
@@ -97,6 +94,7 @@ radial_segments = 32
 rings = 16
 
 [sub_resource type="ShaderMaterial" id="Mat_destroyed"]
+render_priority = 0
 shader = ExtResource("4_destroyed")
 shader_parameter/dissolve_amount = 0.45
 shader_parameter/edge_color = Color(1, 0.4, 0.5, 1)
@@ -107,6 +105,29 @@ shader_parameter/roughness = 0.6
 shader_parameter/metallic = 0.1
 shader_parameter/noise_scale = 4.0
 
+[sub_resource type="SphereMesh" id="Mesh_unit32"]
+radius = 1.0
+height = 2.0
+radial_segments = 32
+rings = 16
+
+[sub_resource type="ShaderMaterial" id="Mat_active_scatter"]
+render_priority = 0
+shader = ExtResource("1_active")
+shader_parameter/base_color = Color(0.47598857, 0.3510271, 0, 1)
+shader_parameter/rim_color = Color(0.89243644, 0.4952876, 0, 1)
+shader_parameter/ring_color = Color(0.86177963, 0.777099, 0, 1)
+shader_parameter/emission_strength = 1.0
+shader_parameter/pulse_speed = 1.8
+
+[sub_resource type="BoxMesh" id="BoxMesh_unit"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_rock_spherique"]
+albedo_color = Color(0.12, 0.07, 0.07, 1)
+roughness = 0.95
+
+[sub_resource type="PrismMesh" id="PrismMesh_unit"]
+
 [sub_resource type="SphereMesh" id="Mesh_angular"]
 radius = 2.0
 height = 4.0
@@ -114,6 +135,7 @@ radial_segments = 16
 rings = 8
 
 [sub_resource type="ShaderMaterial" id="Mat_angular"]
+render_priority = 0
 shader = ExtResource("7_angular")
 shader_parameter/light_dir = Vector3(0.37155, 0.6691, 0.6435)
 shader_parameter/crystal_color = Color(0.05, 0.4, 0.12, 1)
@@ -131,6 +153,7 @@ radial_segments = 128
 rings = 64
 
 [sub_resource type="ShaderMaterial" id="Mat_obscure"]
+render_priority = 0
 shader = ExtResource("6_obscure")
 shader_parameter/spike_height_a = 0.35
 shader_parameter/spike_freq_a = 4.5
@@ -147,6 +170,7 @@ radial_segments = 32
 rings = 16
 
 [sub_resource type="ShaderMaterial" id="Mat_spectral"]
+render_priority = 0
 shader = ExtResource("5_spectral")
 shader_parameter/core_color = Color(0.1, 0.25, 0.7, 1)
 shader_parameter/rim_color = Color(0.4, 0.75, 1, 1)
@@ -162,6 +186,7 @@ radial_segments = 32
 rings = 16
 
 [sub_resource type="ShaderMaterial" id="Mat_pixelated"]
+render_priority = 0
 shader = ExtResource("8_pixelated")
 shader_parameter/base_color = Color(0.72, 0.65, 0.58, 1)
 shader_parameter/px_resolution = 10.0
@@ -170,20 +195,6 @@ shader_parameter/screen_px_size = 3.0
 shader_parameter/roughness = 0.7
 shader_parameter/metallic = 0.0
 
-[sub_resource type="SphereMesh" id="Mesh_unit32"]
-radius = 1.0
-height = 2.0
-radial_segments = 32
-rings = 16
-
-[sub_resource type="ShaderMaterial" id="Mat_active_scatter"]
-shader = ExtResource("1_active")
-shader_parameter/base_color = Color(0.47598857, 0.3510271, 0.0, 1)
-shader_parameter/rim_color = Color(0.89243644, 0.4952876, 0.0, 1)
-shader_parameter/ring_color = Color(0.86177963, 0.777099, 0.0, 1)
-shader_parameter/emission_strength = 1.0
-shader_parameter/pulse_speed = 1.8
-
 [sub_resource type="SphereMesh" id="Mesh_unit16"]
 radius = 1.0
 height = 2.0
@@ -191,6 +202,7 @@ radial_segments = 16
 rings = 8
 
 [sub_resource type="ShaderMaterial" id="Mat_angular_scatter"]
+render_priority = 0
 shader = ExtResource("7_angular")
 shader_parameter/light_dir = Vector3(0.37155, 0.6691, 0.6435)
 shader_parameter/crystal_color = Color(0.05, 0.4, 0.12, 1)
@@ -201,245 +213,234 @@ shader_parameter/specular_shininess = 32.0
 shader_parameter/edge_power = 3.0
 shader_parameter/edge_threshold = 0.35
 
-[sub_resource type="BoxMesh" id="BoxMesh_unit"]
-size = Vector3(1, 1, 1)
-
-[sub_resource type="PrismMesh" id="PrismMesh_unit"]
-size = Vector3(1, 1, 1)
-
-[sub_resource type="StandardMaterial3D" id="Mat_rock_spherique"]
-albedo_color = Color(0.12, 0.07, 0.07, 1)
-roughness = 0.95
-
 [sub_resource type="StandardMaterial3D" id="Mat_rock_angulaire"]
 albedo_color = Color(0.06, 0.09, 0.07, 1)
 roughness = 0.95
 
-[node name="ShaderShowcase" type="Node3D"]
+[node name="ShaderShowcase" type="Node3D" unique_id=829173109]
 script = ExtResource("0_script")
 
-[node name="Environment" type="WorldEnvironment" parent="."]
+[node name="Environment" type="WorldEnvironment" parent="." unique_id=2040617979]
 environment = SubResource("Environment_showcase")
 
-[node name="Sun" type="DirectionalLight3D" parent="."]
+[node name="Sun" type="DirectionalLight3D" parent="." unique_id=522512827]
 transform = Transform3D(0.8660254, 0, -0.5, -0.33455, 0.7431, -0.5794, 0.37155, 0.6691, 0.6435, 0, 20, 20)
 light_color = Color(1, 0.9607843, 0.8784314, 1)
 light_energy = 1.4
 shadow_enabled = true
 
-[node name="AmbientFill" type="DirectionalLight3D" parent="."]
+[node name="AmbientFill" type="DirectionalLight3D" parent="." unique_id=114922430]
 transform = Transform3D(0.8660254, 0, 0.5, 0.2273241, 0.8871681, -0.3937523, -0.4477376, 0.4614119, 0.7660445, 0, 16, -20)
 light_color = Color(0.7529412, 0.847058, 1, 1)
 light_energy = 0.3
-shadow_enabled = false
 
-[node name="Camera3D" type="Camera3D" parent="."]
+[node name="Camera3D" type="Camera3D" parent="." unique_id=343869592]
 transform = Transform3D(1, 0, 0, 0, 0.8829476, 0.4694716, 0, -0.4694716, 0.8829476, 0, 20, 50)
 current = true
 
-[node name="GroundSpherique" type="MeshInstance3D" parent="."]
+[node name="GroundSpherique" type="MeshInstance3D" parent="." unique_id=1191839814]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 0, 0)
 mesh = SubResource("PlaneMesh_ground")
 surface_material_override/0 = SubResource("Mat_ground_spherique")
 
-[node name="GroundAngulaire" type="MeshInstance3D" parent="."]
+[node name="GroundAngulaire" type="MeshInstance3D" parent="." unique_id=162332339]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 0, 0)
 mesh = SubResource("PlaneMesh_ground")
 surface_material_override/0 = SubResource("Mat_ground_angulaire")
 
-[node name="ZoneSpherique" type="Node3D" parent="."]
+[node name="ZoneSpherique" type="Node3D" parent="." unique_id=407950927]
 
-[node name="ActiveSphere" type="MeshInstance3D" parent="ZoneSpherique"]
+[node name="ActiveSphere" type="MeshInstance3D" parent="ZoneSpherique" unique_id=1031660186]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 2, 0)
 mesh = SubResource("Mesh_active")
 surface_material_override/0 = SubResource("Mat_active")
 
-[node name="HeroSphere" type="MeshInstance3D" parent="ZoneSpherique"]
+[node name="HeroSphere" type="MeshInstance3D" parent="ZoneSpherique" unique_id=1647816390]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22, 8, 0)
 mesh = SubResource("Mesh_hero")
 surface_material_override/0 = SubResource("Mat_active")
 
-[node name="CrystallizedSphere" type="MeshInstance3D" parent="ZoneSpherique"]
+[node name="CrystallizedSphere" type="MeshInstance3D" parent="ZoneSpherique" unique_id=366379231]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 1.5, -3)
 mesh = SubResource("Mesh_crystallized")
 surface_material_override/0 = SubResource("Mat_crystallized")
 
-[node name="DangerSphere" type="MeshInstance3D" parent="ZoneSpherique"]
+[node name="DangerSphere" type="MeshInstance3D" parent="ZoneSpherique" unique_id=199823052]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 1.2, 3)
 mesh = SubResource("Mesh_danger")
 surface_material_override/0 = SubResource("Mat_danger")
 
-[node name="DestroyedSphere" type="MeshInstance3D" parent="ZoneSpherique"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11, 1.0, 4)
+[node name="DestroyedSphere" type="MeshInstance3D" parent="ZoneSpherique" unique_id=1482746071]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11, 1, 4)
 mesh = SubResource("Mesh_destroyed")
 surface_material_override/0 = SubResource("Mat_destroyed")
 
-[node name="ScatterSpheres" type="Node3D" parent="ZoneSpherique"]
+[node name="ScatterSpheres" type="Node3D" parent="ZoneSpherique" unique_id=77655552]
 
-[node name="Scatter1" type="MeshInstance3D" parent="ZoneSpherique/ScatterSpheres"]
+[node name="Scatter1" type="MeshInstance3D" parent="ZoneSpherique/ScatterSpheres" unique_id=1239660452]
 transform = Transform3D(0.35, 0, 0, 0, 0.35, 0, 0, 0, 0.35, -2, 0.4, -6)
 mesh = SubResource("Mesh_unit32")
 surface_material_override/0 = SubResource("Mat_active_scatter")
 
-[node name="Scatter2" type="MeshInstance3D" parent="ZoneSpherique/ScatterSpheres"]
+[node name="Scatter2" type="MeshInstance3D" parent="ZoneSpherique/ScatterSpheres" unique_id=1721534621]
 transform = Transform3D(0.55, 0, 0, 0, 0.55, 0, 0, 0, 0.55, -4, 0.6, 6)
 mesh = SubResource("Mesh_unit32")
 surface_material_override/0 = SubResource("Mat_active_scatter")
 
-[node name="Scatter3" type="MeshInstance3D" parent="ZoneSpherique/ScatterSpheres"]
+[node name="Scatter3" type="MeshInstance3D" parent="ZoneSpherique/ScatterSpheres" unique_id=1075355924]
 transform = Transform3D(0.4, 0, 0, 0, 0.4, 0, 0, 0, 0.4, -9, 0.35, -7)
 mesh = SubResource("Mesh_unit32")
 surface_material_override/0 = SubResource("Mat_active_scatter")
 
-[node name="Scatter4" type="MeshInstance3D" parent="ZoneSpherique/ScatterSpheres"]
+[node name="Scatter4" type="MeshInstance3D" parent="ZoneSpherique/ScatterSpheres" unique_id=482990695]
 transform = Transform3D(0.65, 0, 0, 0, 0.65, 0, 0, 0, 0.65, -16, 0.7, 2)
 mesh = SubResource("Mesh_unit32")
 surface_material_override/0 = SubResource("Mat_active_scatter")
 
-[node name="Scatter5" type="MeshInstance3D" parent="ZoneSpherique/ScatterSpheres"]
+[node name="Scatter5" type="MeshInstance3D" parent="ZoneSpherique/ScatterSpheres" unique_id=859848302]
 transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, -19, 0.5, -4)
 mesh = SubResource("Mesh_unit32")
 surface_material_override/0 = SubResource("Mat_active_scatter")
 
-[node name="Scatter6" type="MeshInstance3D" parent="ZoneSpherique/ScatterSpheres"]
+[node name="Scatter6" type="MeshInstance3D" parent="ZoneSpherique/ScatterSpheres" unique_id=1477101476]
 transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, -6, 0.45, 7)
 mesh = SubResource("Mesh_unit32")
 surface_material_override/0 = SubResource("Mat_active_scatter")
 
-[node name="Silhouettes" type="Node3D" parent="ZoneSpherique"]
+[node name="Silhouettes" type="Node3D" parent="ZoneSpherique" unique_id=593946489]
 
-[node name="Rock1" type="MeshInstance3D" parent="ZoneSpherique/Silhouettes"]
+[node name="Rock1" type="MeshInstance3D" parent="ZoneSpherique/Silhouettes" unique_id=1517813612]
 transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, -3, 0.3, -8)
 mesh = SubResource("BoxMesh_unit")
 surface_material_override/0 = SubResource("Mat_rock_spherique")
 
-[node name="Rock2" type="MeshInstance3D" parent="ZoneSpherique/Silhouettes"]
+[node name="Rock2" type="MeshInstance3D" parent="ZoneSpherique/Silhouettes" unique_id=1095196737]
 transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, -17, 0.4, 8)
 mesh = SubResource("BoxMesh_unit")
 surface_material_override/0 = SubResource("Mat_rock_spherique")
 
-[node name="Rock3" type="MeshInstance3D" parent="ZoneSpherique/Silhouettes"]
+[node name="Rock3" type="MeshInstance3D" parent="ZoneSpherique/Silhouettes" unique_id=852339710]
 transform = Transform3D(0.7, 0, 0, 0, 0.7, 0, 0, 0, 0.7, -24, 0.35, -2)
 mesh = SubResource("BoxMesh_unit")
 surface_material_override/0 = SubResource("Mat_rock_spherique")
 
-[node name="Rock4" type="MeshInstance3D" parent="ZoneSpherique/Silhouettes"]
+[node name="Rock4" type="MeshInstance3D" parent="ZoneSpherique/Silhouettes" unique_id=837451041]
 transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, -1.5, 0.25, 5)
 mesh = SubResource("BoxMesh_unit")
 surface_material_override/0 = SubResource("Mat_rock_spherique")
 
-[node name="Rock5" type="MeshInstance3D" parent="ZoneSpherique/Silhouettes"]
-transform = Transform3D(1.0, 0, 0, 0, 1.0, 0, 0, 0, 1.0, -19, 0.5, -9)
+[node name="Rock5" type="MeshInstance3D" parent="ZoneSpherique/Silhouettes" unique_id=147908729]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19, 0.5, -9)
 mesh = SubResource("BoxMesh_unit")
 surface_material_override/0 = SubResource("Mat_rock_spherique")
 
-[node name="Pyramid1" type="MeshInstance3D" parent="ZoneSpherique/Silhouettes"]
-transform = Transform3D(1.0, 0, 0, 0, 1.0, 0, 0, 0, 1.0, -6, 0.5, -8)
+[node name="Pyramid1" type="MeshInstance3D" parent="ZoneSpherique/Silhouettes" unique_id=732329480]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0.5, -8)
 mesh = SubResource("PrismMesh_unit")
 surface_material_override/0 = SubResource("Mat_rock_spherique")
 
-[node name="Pyramid2" type="MeshInstance3D" parent="ZoneSpherique/Silhouettes"]
+[node name="Pyramid2" type="MeshInstance3D" parent="ZoneSpherique/Silhouettes" unique_id=2124498622]
 transform = Transform3D(1.2, 0, 0, 0, 1.2, 0, 0, 0, 1.2, -20, 0.6, 6)
 mesh = SubResource("PrismMesh_unit")
 surface_material_override/0 = SubResource("Mat_rock_spherique")
 
-[node name="Pyramid3" type="MeshInstance3D" parent="ZoneSpherique/Silhouettes"]
+[node name="Pyramid3" type="MeshInstance3D" parent="ZoneSpherique/Silhouettes" unique_id=1117570784]
 transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, -2, 0.4, 8)
 mesh = SubResource("PrismMesh_unit")
 surface_material_override/0 = SubResource("Mat_rock_spherique")
 
-[node name="ZoneAngulaire" type="Node3D" parent="."]
+[node name="ZoneAngulaire" type="Node3D" parent="." unique_id=1449539070]
 
-[node name="AngularSphere" type="MeshInstance3D" parent="ZoneAngulaire"]
+[node name="AngularSphere" type="MeshInstance3D" parent="ZoneAngulaire" unique_id=1319502264]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 2, -2)
 mesh = SubResource("Mesh_angular")
 surface_material_override/0 = SubResource("Mat_angular")
 
-[node name="ObscureSphere" type="MeshInstance3D" parent="ZoneAngulaire"]
+[node name="ObscureSphere" type="MeshInstance3D" parent="ZoneAngulaire" unique_id=381511155]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 1.8, 3)
 mesh = SubResource("Mesh_obscure")
 surface_material_override/0 = SubResource("Mat_obscure")
 
-[node name="SpectralSphere" type="MeshInstance3D" parent="ZoneAngulaire"]
+[node name="SpectralSphere" type="MeshInstance3D" parent="ZoneAngulaire" unique_id=316123225]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 1.5, 1)
 mesh = SubResource("Mesh_spectral")
 surface_material_override/0 = SubResource("Mat_spectral")
 
-[node name="PixelatedSphere" type="MeshInstance3D" parent="ZoneAngulaire"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 1.0, -5)
+[node name="PixelatedSphere" type="MeshInstance3D" parent="ZoneAngulaire" unique_id=90346724]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 1, -5)
 mesh = SubResource("Mesh_pixelated")
 surface_material_override/0 = SubResource("Mat_pixelated")
 
-[node name="ScatterSpheres" type="Node3D" parent="ZoneAngulaire"]
+[node name="ScatterSpheres" type="Node3D" parent="ZoneAngulaire" unique_id=220704876]
 
-[node name="Scatter1" type="MeshInstance3D" parent="ZoneAngulaire/ScatterSpheres"]
+[node name="Scatter1" type="MeshInstance3D" parent="ZoneAngulaire/ScatterSpheres" unique_id=612911779]
 transform = Transform3D(0.35, 0, 0, 0, 0.35, 0, 0, 0, 0.35, 2, 0.4, -6)
 mesh = SubResource("Mesh_unit16")
 surface_material_override/0 = SubResource("Mat_angular_scatter")
 
-[node name="Scatter2" type="MeshInstance3D" parent="ZoneAngulaire/ScatterSpheres"]
+[node name="Scatter2" type="MeshInstance3D" parent="ZoneAngulaire/ScatterSpheres" unique_id=1098694670]
 transform = Transform3D(0.55, 0, 0, 0, 0.55, 0, 0, 0, 0.55, 4, 0.6, 6)
 mesh = SubResource("Mesh_unit16")
 surface_material_override/0 = SubResource("Mat_angular_scatter")
 
-[node name="Scatter3" type="MeshInstance3D" parent="ZoneAngulaire/ScatterSpheres"]
+[node name="Scatter3" type="MeshInstance3D" parent="ZoneAngulaire/ScatterSpheres" unique_id=955787017]
 transform = Transform3D(0.4, 0, 0, 0, 0.4, 0, 0, 0, 0.4, 9, 0.35, -7)
 mesh = SubResource("Mesh_unit16")
 surface_material_override/0 = SubResource("Mat_angular_scatter")
 
-[node name="Scatter4" type="MeshInstance3D" parent="ZoneAngulaire/ScatterSpheres"]
+[node name="Scatter4" type="MeshInstance3D" parent="ZoneAngulaire/ScatterSpheres" unique_id=33552234]
 transform = Transform3D(0.65, 0, 0, 0, 0.65, 0, 0, 0, 0.65, 16, 0.7, 2)
 mesh = SubResource("Mesh_unit16")
 surface_material_override/0 = SubResource("Mat_angular_scatter")
 
-[node name="Scatter5" type="MeshInstance3D" parent="ZoneAngulaire/ScatterSpheres"]
+[node name="Scatter5" type="MeshInstance3D" parent="ZoneAngulaire/ScatterSpheres" unique_id=1107755999]
 transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, 19, 0.5, -4)
 mesh = SubResource("Mesh_unit16")
 surface_material_override/0 = SubResource("Mat_angular_scatter")
 
-[node name="Scatter6" type="MeshInstance3D" parent="ZoneAngulaire/ScatterSpheres"]
+[node name="Scatter6" type="MeshInstance3D" parent="ZoneAngulaire/ScatterSpheres" unique_id=809278180]
 transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 6, 0.45, 7)
 mesh = SubResource("Mesh_unit16")
 surface_material_override/0 = SubResource("Mat_angular_scatter")
 
-[node name="Silhouettes" type="Node3D" parent="ZoneAngulaire"]
+[node name="Silhouettes" type="Node3D" parent="ZoneAngulaire" unique_id=157721952]
 
-[node name="Rock1" type="MeshInstance3D" parent="ZoneAngulaire/Silhouettes"]
+[node name="Rock1" type="MeshInstance3D" parent="ZoneAngulaire/Silhouettes" unique_id=1909255872]
 transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 3, 0.3, -8)
 mesh = SubResource("BoxMesh_unit")
 surface_material_override/0 = SubResource("Mat_rock_angulaire")
 
-[node name="Rock2" type="MeshInstance3D" parent="ZoneAngulaire/Silhouettes"]
+[node name="Rock2" type="MeshInstance3D" parent="ZoneAngulaire/Silhouettes" unique_id=1334748252]
 transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, 17, 0.4, 8)
 mesh = SubResource("BoxMesh_unit")
 surface_material_override/0 = SubResource("Mat_rock_angulaire")
 
-[node name="Rock3" type="MeshInstance3D" parent="ZoneAngulaire/Silhouettes"]
+[node name="Rock3" type="MeshInstance3D" parent="ZoneAngulaire/Silhouettes" unique_id=1021197174]
 transform = Transform3D(0.7, 0, 0, 0, 0.7, 0, 0, 0, 0.7, 24, 0.35, -2)
 mesh = SubResource("BoxMesh_unit")
 surface_material_override/0 = SubResource("Mat_rock_angulaire")
 
-[node name="Rock4" type="MeshInstance3D" parent="ZoneAngulaire/Silhouettes"]
+[node name="Rock4" type="MeshInstance3D" parent="ZoneAngulaire/Silhouettes" unique_id=581557733]
 transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 1.5, 0.25, 5)
 mesh = SubResource("BoxMesh_unit")
 surface_material_override/0 = SubResource("Mat_rock_angulaire")
 
-[node name="Rock5" type="MeshInstance3D" parent="ZoneAngulaire/Silhouettes"]
-transform = Transform3D(1.0, 0, 0, 0, 1.0, 0, 0, 0, 1.0, 19, 0.5, -9)
+[node name="Rock5" type="MeshInstance3D" parent="ZoneAngulaire/Silhouettes" unique_id=380267227]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19, 0.5, -9)
 mesh = SubResource("BoxMesh_unit")
 surface_material_override/0 = SubResource("Mat_rock_angulaire")
 
-[node name="Pyramid1" type="MeshInstance3D" parent="ZoneAngulaire/Silhouettes"]
-transform = Transform3D(1.0, 0, 0, 0, 1.0, 0, 0, 0, 1.0, 6, 0.5, -8)
+[node name="Pyramid1" type="MeshInstance3D" parent="ZoneAngulaire/Silhouettes" unique_id=1020043110]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.5, -8)
 mesh = SubResource("PrismMesh_unit")
 surface_material_override/0 = SubResource("Mat_rock_angulaire")
 
-[node name="Pyramid2" type="MeshInstance3D" parent="ZoneAngulaire/Silhouettes"]
+[node name="Pyramid2" type="MeshInstance3D" parent="ZoneAngulaire/Silhouettes" unique_id=14696175]
 transform = Transform3D(1.2, 0, 0, 0, 1.2, 0, 0, 0, 1.2, 20, 0.6, 6)
 mesh = SubResource("PrismMesh_unit")
 surface_material_override/0 = SubResource("Mat_rock_angulaire")
 
-[node name="Pyramid3" type="MeshInstance3D" parent="ZoneAngulaire/Silhouettes"]
+[node name="Pyramid3" type="MeshInstance3D" parent="ZoneAngulaire/Silhouettes" unique_id=2064408573]
 transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, 2, 0.4, 8)
 mesh = SubResource("PrismMesh_unit")
 surface_material_override/0 = SubResource("Mat_rock_angulaire")

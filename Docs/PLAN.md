@@ -71,10 +71,16 @@ res://
 │   │                         mage_topdown.tres)
 │   ├── beacon/              (shore_beacon.tscn, beacon_controllable.gd, beacon_topdown.tres)
 │   └── enemy/               (enemy.tscn/.gd — cube, layer 2, groupe "enemies")
+├── shaders/                 (8 sphere_*.gdshader tribu/état : active, crystallized,
+│                             danger, destroyed, spectral, obscure, angular, pixelated ;
+│                             + breathing_dent, cheese_holes — utilitaires de déformation)
 ├── ui/
 │   ├── hud.gd               (Label de debug : entité possédée, cooldowns, caméra)
 │   └── hp_bar_3d.gd         (barre de vie billboard)
-├── tests/                   (synthetic_drive_test.*, rune_chain_test.* — headless, code retour)
+├── tests/                   (synthetic_drive_test.*, rune_chain_test.* — headless, code retour ;
+│                             shader_gallery.tscn — revue à plat des 8 shaders ;
+│                             shader_showcase.tscn/.gd — scène deux zones (Sphérique/Angulaire) ;
+│                             shader_lab.tscn — bac à sable shader-artist)
 ├── Docs/                    (ce plan + les prompts de phase)
 ├── icon.svg
 └── project.godot
@@ -95,7 +101,7 @@ res://
 | 3 | `phase3_combat.md` | Ennemis + combat + HP | ✅ Implémenté (adapté au reactor-ball ; HP greffés sur `SphereController`) |
 | 4 | `phase4_loop.md` | Boucle complète (vagues, zones, game over) | ✅ Implémenté (attaque = projectile visé souris sur `A`) |
 | 5 | `phase5_possession.md` | Possession multi-perspective (`Controllable` / `InputContext` / `CameraConfig`) | ✅ Implémenté et playtesté (branche `phase5-possession` ; balise non-sphère possédable + test IA) |
-| 6 | `phase6_runemage.md` | RuneMage : gameplay MOBA à la Ryze (click-to-move, curseur ciblant, sorts A/Z/E) | ✅ Implémenté (branche `gameplay-ryze` ; **playtest manuel en attente**) |
+| 6 | `phase6_runemage.md` | RuneMage : gameplay MOBA à la Ryze (click-to-move, curseur ciblant, sorts A/Z/E) | ✅ Implémenté et playtesté manuellement (branche `gameplay-ryze`) |
 
 ---
 
@@ -120,10 +126,14 @@ res://
 ## Hors scope v0.1
 
 - Bibliothèque de capacités (une seule capacité hardcodée en Phase 4)
-- Direction artistique / shaders / tribus
 - Système de méta-progression
 - UI soignée
 - NavigationAgent3D (pathfinding simple avec `direction_to()` suffit)
+
+> La direction artistique / shaders / tribus n'est plus hors scope : 8 shaders
+> `sphere_*` (états/tribus sphère vs cube) existent depuis le 2026-07-11
+> (`tests/shader_gallery.tscn` + `tests/shader_showcase.tscn`), et sont en
+> cours d'application aux entités de jeu réelles (RuneMage).
 
 ---
 

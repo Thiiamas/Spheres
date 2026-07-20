@@ -1,35 +1,43 @@
-[gd_scene load_steps=15 format=3]
+[gd_scene format=3 uid="uid://briuk5d171ryd"]
 
-[ext_resource type="Script" path="res://entities/mage/rune_mage.gd" id="1_mage"]
+[ext_resource type="Script" uid="uid://bopirphm1wi8d" path="res://entities/mage/rune_mage.gd" id="1_mage"]
+[ext_resource type="Script" uid="uid://pl3nwidcqq37" path="res://ui/hp_bar_3d.gd" id="2_hpbar"]
+[ext_resource type="Script" uid="uid://dpln48a2woykb" path="res://entities/mage/rune_mage_controllable.gd" id="3_possess"]
+[ext_resource type="Script" uid="uid://btf42jnq5hi48" path="res://core/camera_config.gd" id="4_camcfg"]
+[ext_resource type="Shader" uid="uid://cbi76eeexj4sw" path="res://shaders/sphere_spectral.gdshader" id="4_f1lj8"]
+[ext_resource type="Resource" path="res://entities/mage/mage_topdown.tres" id="5_cfg_top"]
+[ext_resource type="Shader" uid="uid://05jxeixfo4mm" path="res://shaders/sphere_active.gdshader" id="5_kxg27"]
 [ext_resource type="PackedScene" path="res://entities/mage/rune_bolt.tscn" id="6_bolt"]
 [ext_resource type="PackedScene" path="res://entities/mage/rune_flux.tscn" id="7_flux"]
-[ext_resource type="Script" path="res://ui/hp_bar_3d.gd" id="2_hpbar"]
-[ext_resource type="Script" path="res://entities/mage/rune_mage_controllable.gd" id="3_possess"]
-[ext_resource type="Script" uid="uid://btf42jnq5hi48" path="res://core/camera_config.gd" id="4_camcfg"]
-[ext_resource type="Resource" path="res://entities/mage/mage_topdown.tres" id="5_cfg_top"]
 
 [sub_resource type="SphereMesh" id="Sphere_body"]
 radius = 0.45
 height = 0.9
 
-[sub_resource type="StandardMaterial3D" id="Mat_body"]
-albedo_color = Color(0.55, 0.35, 0.95, 1)
-metallic = 0.3
-roughness = 0.25
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_7gsct"]
+render_priority = 0
+shader = ExtResource("4_f1lj8")
+shader_parameter/core_color = Color(0.1, 0.25, 0.7, 1)
+shader_parameter/rim_color = Color(1, 0.35, 0.45, 1)
+shader_parameter/center_alpha = 0.12
+shader_parameter/rim_alpha = 0.8
+shader_parameter/fresnel_power = 3.0
+shader_parameter/rim_glow_energy = 2.0
 
 [sub_resource type="TorusMesh" id="Torus_ring"]
 inner_radius = 0.62
 outer_radius = 0.72
 
-[sub_resource type="StandardMaterial3D" id="Mat_ring"]
-shading_mode = 0
-albedo_color = Color(0.75, 0.55, 1, 1)
-emission_enabled = true
-emission = Color(0.75, 0.55, 1, 1)
-emission_energy_multiplier = 1.4
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_0x820"]
+render_priority = 0
+shader = ExtResource("5_kxg27")
+shader_parameter/base_color = Color(0, 0, 0, 1)
+shader_parameter/rim_color = Color(0.27019677, 0.40629148, 1, 1)
+shader_parameter/ring_color = Color(0.33646968, 0.44320205, 0.9560078, 1)
+shader_parameter/emission_strength = 4.0
+shader_parameter/pulse_speed = 1.8
 
 [sub_resource type="SphereShape3D" id="Shape_body"]
-radius = 0.5
 
 [sub_resource type="BoxMesh" id="Box_bar_bg"]
 size = Vector3(1.04, 0.14, 0.04)
@@ -37,36 +45,36 @@ size = Vector3(1.04, 0.14, 0.04)
 [sub_resource type="BoxMesh" id="Box_bar_fill"]
 size = Vector3(1, 0.1, 0.05)
 
-[node name="RuneMage" type="CharacterBody3D" node_paths=PackedStringArray("hp_bar", "body_mesh")]
+[node name="RuneMage" type="CharacterBody3D" unique_id=1495481748 node_paths=PackedStringArray("hp_bar", "body_mesh")]
 script = ExtResource("1_mage")
 hp_bar = NodePath("HPBar3D")
-body_mesh = NodePath("Body")
 bolt_scene = ExtResource("6_bolt")
 flux_scene = ExtResource("7_flux")
+body_mesh = NodePath("Body")
 
-[node name="Body" type="MeshInstance3D" parent="."]
+[node name="Body" type="MeshInstance3D" parent="." unique_id=1920602211]
 mesh = SubResource("Sphere_body")
-surface_material_override/0 = SubResource("Mat_body")
+surface_material_override/0 = SubResource("ShaderMaterial_7gsct")
 
-[node name="RuneRing" type="MeshInstance3D" parent="."]
+[node name="RuneRing" type="MeshInstance3D" parent="." unique_id=2118087525]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
 mesh = SubResource("Torus_ring")
-surface_material_override/0 = SubResource("Mat_ring")
+surface_material_override/0 = SubResource("ShaderMaterial_0x820")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=942504226]
 shape = SubResource("Shape_body")
 
-[node name="HPBar3D" type="Node3D" parent="."]
+[node name="HPBar3D" type="Node3D" parent="." unique_id=1169203759]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
 script = ExtResource("2_hpbar")
 
-[node name="Background" type="MeshInstance3D" parent="HPBar3D"]
+[node name="Background" type="MeshInstance3D" parent="HPBar3D" unique_id=620631126]
 mesh = SubResource("Box_bar_bg")
 
-[node name="Fill" type="MeshInstance3D" parent="HPBar3D"]
+[node name="Fill" type="MeshInstance3D" parent="HPBar3D" unique_id=507962835]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.02)
 mesh = SubResource("Box_bar_fill")
 
-[node name="Controllable" type="Node" parent="."]
+[node name="Controllable" type="Node" parent="." unique_id=1064645262]
 script = ExtResource("3_possess")
 camera_configs = Array[ExtResource("4_camcfg")]([ExtResource("5_cfg_top")])
