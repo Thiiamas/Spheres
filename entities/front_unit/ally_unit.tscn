@@ -1,0 +1,70 @@
+[gd_scene load_steps=11 format=3 uid="uid://c7yi0645uwuga"]
+
+[ext_resource type="Script" uid="uid://bgrx8kmk3mc08" path="res://entities/front_unit/front_unit.gd" id="1_unit"]
+[ext_resource type="Shader" uid="uid://dlnbjft0403wj" path="res://shaders/front_unit_attack.gdshader" id="2_tgebk"]
+[ext_resource type="Script" path="res://ui/hp_bar_3d.gd" id="3_hpbar"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ally"]
+render_priority = 0
+shader = ExtResource("2_tgebk")
+shader_parameter/base_color = Color(0, 0, 0.69411767, 1)
+shader_parameter/attack_color = Color(1, 0.25, 0.1, 1)
+shader_parameter/attack_amount = 0.0
+shader_parameter/idle_emission = 0.8150000387125
+shader_parameter/attack_emission = 5.0
+shader_parameter/pulse_speed = 10.0
+shader_parameter/surface_roughness = 0.4
+
+[sub_resource type="SphereMesh" id="Sphere_ally"]
+material = SubResource("ShaderMaterial_ally")
+radius = 0.45
+height = 0.9
+
+[sub_resource type="SphereShape3D" id="Shape_ally"]
+radius = 0.45
+
+[sub_resource type="SphereShape3D" id="Shape_attack"]
+radius = 1.2
+
+[sub_resource type="StandardMaterial3D" id="Mat_bar_bg"]
+shading_mode = 0
+albedo_color = Color(0.33, 0.04, 0.04, 1)
+
+[sub_resource type="BoxMesh" id="Box_bar_bg"]
+material = SubResource("Mat_bar_bg")
+size = Vector3(1.04, 0.14, 0.04)
+
+[sub_resource type="StandardMaterial3D" id="Mat_bar_fill"]
+shading_mode = 0
+albedo_color = Color(0, 0.8, 0.27, 1)
+
+[sub_resource type="BoxMesh" id="Box_bar_fill"]
+material = SubResource("Mat_bar_fill")
+size = Vector3(1, 0.1, 0.05)
+
+[node name="AllyUnit" type="CharacterBody3D" unique_id=1136905818 node_paths=PackedStringArray("hp_bar")]
+script = ExtResource("1_unit")
+hp_bar = NodePath("HPBar3D")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1429178599]
+mesh = SubResource("Sphere_ally")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1421631481]
+shape = SubResource("Shape_ally")
+
+[node name="AttackZone" type="Area3D" parent="." unique_id=1480247483]
+collision_layer = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="AttackZone" unique_id=2074379107]
+shape = SubResource("Shape_attack")
+
+[node name="HPBar3D" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+script = ExtResource("3_hpbar")
+
+[node name="Background" type="MeshInstance3D" parent="HPBar3D"]
+mesh = SubResource("Box_bar_bg")
+
+[node name="Fill" type="MeshInstance3D" parent="HPBar3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.02)
+mesh = SubResource("Box_bar_fill")

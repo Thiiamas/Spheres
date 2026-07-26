@@ -58,9 +58,11 @@ res://
 │   ├── input_context.gd     (RefCounted — entrée normalisée, seule classe à lire Input.*)
 │   ├── camera_config.gd     (Resource — config caméra en données)
 │   ├── camera_rig.gd        (Camera3D — applique les CameraConfig ; C cycle ; visée)
-│   └── aim_strategy.gd + mouse_cursor_aim.gd + screen_center_aim.gd (Strategy écran→monde)
+│   ├── aim_strategy.gd + mouse_cursor_aim.gd + screen_center_aim.gd (Strategy écran→monde)
+│   └── faction.gd           (RefCounted — Faction.Kind ALLY/ENEMY, phase 7)
 ├── levels/
 │   ├── main.tscn / main.gd  (scène principale : arène + 3 sphères + balise + mage + HUD)
+│   ├── level2_front.tscn / level2_front.gd (phase 7 : deux Base + mage, scène séparée)
 │   └── test_scene.tscn      (bac à sable parkour, Ball inline)
 ├── entities/
 │   ├── sphere/              (sphere.tscn, sphere_controller.gd, sphere_controllable.gd,
@@ -70,7 +72,12 @@ res://
 │   │                         rune_bolt.*, rune_flux.*, rune_mark.gd, rune_cage.gd,
 │   │                         mage_topdown.tres)
 │   ├── beacon/              (shore_beacon.tscn, beacon_controllable.gd, beacon_topdown.tres)
-│   └── enemy/               (enemy.tscn/.gd — cube, layer 2, groupe "enemies")
+│   ├── enemy/               (enemy.tscn/.gd — cube, layer 2, groupe "enemies" ; phase 1-4)
+│   ├── base/                (base.tscn/.gd — spawner phase 7, vagues type LoL + GoalZone)
+│   └── front_unit/          (front_unit.gd + ally_unit.tscn/enemy_unit.tscn — phase 7,
+│                             unité autonome faction ALLY/ENEMY, indépendante de
+│                             Consciousness/GameManager ; comportement détaillé et
+│                             tenu à jour dans Docs/front_unit_ai.md)
 ├── shaders/                 (8 sphere_*.gdshader tribu/état : active, crystallized,
 │                             danger, destroyed, spectral, obscure, angular, pixelated ;
 │                             + breathing_dent, cheese_holes — utilitaires de déformation)
@@ -102,6 +109,7 @@ res://
 | 4 | `phase4_loop.md` | Boucle complète (vagues, zones, game over) | ✅ Implémenté (attaque = projectile visé souris sur `A`) |
 | 5 | `phase5_possession.md` | Possession multi-perspective (`Controllable` / `InputContext` / `CameraConfig`) | ✅ Implémenté et playtesté (branche `phase5-possession` ; balise non-sphère possédable + test IA) |
 | 6 | `phase6_runemage.md` | RuneMage : gameplay MOBA à la Ryze (click-to-move, curseur ciblant, sorts A/Z/E) | ✅ Implémenté et playtesté manuellement (branche `gameplay-ryze`) |
+| 7 | `phase7_front.md` (comportement `FrontUnit` : `front_unit_ai.md`) | Le Front : bases spawnant des unités autonomes qui s'affrontent entre les deux bases (scène séparée `level2_front.tscn`) | ✅ Implémenté (prototype v1, sans PV de base ni condition de défaite) ; à playtester |
 
 ---
 

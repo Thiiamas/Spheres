@@ -1,0 +1,31 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://entities/base/base.gd" id="1_base"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_structure"]
+albedo_color = Color(0.6, 0.6, 0.65, 1)
+roughness = 0.7
+
+[sub_resource type="CylinderMesh" id="Cyl_structure"]
+material = SubResource("Mat_structure")
+top_radius = 1.4
+bottom_radius = 1.8
+height = 2.5
+
+[sub_resource type="SphereShape3D" id="Shape_goal"]
+radius = 3.0
+
+[node name="Base" type="Node3D"]
+script = ExtResource("1_base")
+
+[node name="Structure" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.25, 0)
+mesh = SubResource("Cyl_structure")
+
+[node name="WaveTimer" type="Timer" parent="."]
+
+[node name="GoalZone" type="Area3D" parent="."]
+collision_layer = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="GoalZone"]
+shape = SubResource("Shape_goal")
