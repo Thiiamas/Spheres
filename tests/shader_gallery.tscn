@@ -55,15 +55,13 @@ shader_parameter/spike_sharpness = 0.6
 shader_parameter/roughness = 0.35
 shader_parameter/metallic = 0.15
 
-[sub_resource type="SphereMesh" id="Mesh_danger"]
-radius = 1.2
-height = 2.4
+[sub_resource type="CylinderMesh" id="CylinderMesh_1cv5x"]
 
 [sub_resource type="ShaderMaterial" id="Mat_danger"]
 render_priority = 0
 shader = ExtResource("3_danger")
 shader_parameter/damage_level = 0.55
-shader_parameter/jitter_strength = 0.04
+shader_parameter/jitter_strength = 0.0090000004275
 shader_parameter/emission_strength = 3.0
 shader_parameter/cell_density = 8.0
 shader_parameter/crack_width = 0.06
@@ -218,7 +216,7 @@ font_size = 28
 
 [node name="DangerSphere" type="MeshInstance3D" parent="." unique_id=1877011709]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 1.25, -3)
-mesh = SubResource("Mesh_danger")
+mesh = SubResource("CylinderMesh_1cv5x")
 surface_material_override/0 = SubResource("Mat_danger")
 
 [node name="Label" type="Label3D" parent="DangerSphere" unique_id=2122012404]
