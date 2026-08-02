@@ -1,7 +1,7 @@
 extends Node3D
 class_name Base
 
-## League-of-Legends-style wave spawner (Docs/phase7_front.md): every
+## League-of-Legends-style wave spawner (Docs/Plans/phase7_front.md): every
 ## wave_interval seconds, spawns a full wave of wave_size FrontUnit instances,
 ## one every wave_unit_spacing seconds, lined up side by side, so a wave
 ## pushes down the lane as a group rather than trickling out continuously.
@@ -14,6 +14,9 @@ signal unit_reached_goal(unit: FrontUnit)
 @export var faction: Faction.Kind = Faction.Kind.ALLY
 @export var unit_scene: PackedScene
 @export var advance_target: Node3D
+## The opposing Tower — units siege it while it's alive instead of trading
+## blows with whatever minion happens to be nearby (Docs/front/tower.md).
+@export var advance_target_tower: Node3D
 ## LoL waves spawn every 30s; shorter here so a prototype session sees several.
 @export var wave_interval: float = 10.0
 @export var wave_size: int = 3
@@ -77,6 +80,11 @@ func _on_wave_timer_timeout() -> void:
 		var unit := unit_scene.instantiate() as FrontUnit
 		unit.faction = faction
 		unit.target_base = advance_target
+		# advance_target_tower keeps pointing at the Tower's freed instance
+		# after it dies (queue_free() doesn't null out other nodes' refs) —
+		# assigning a freed reference to unit.target_tower directly would
+		# throw, so guard the read instead of ever clearing the field itself.
+		unit.target_tower = advance_target_tower if is_instance_valid(advance_target_tower) else null
 		add_child(unit)
 		var t := 0.5 if to_spawn <= 1 else float(i) / float(to_spawn - 1)
 		var offset := lerpf(-wave_spread, wave_spread, t)

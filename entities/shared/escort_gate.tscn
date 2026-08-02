@@ -1,0 +1,15 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://entities/shared/escort_gate.gd" id="1_gate"]
+
+[sub_resource type="SphereShape3D" id="Shape_detection"]
+radius = 1.0
+
+[node name="EscortGate" type="Node3D"]
+script = ExtResource("1_gate")
+
+[node name="DetectionZone" type="Area3D" parent="."]
+collision_layer = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="DetectionZone"]
+shape = SubResource("Shape_detection")

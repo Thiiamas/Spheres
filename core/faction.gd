@@ -1,7 +1,7 @@
 extends RefCounted
 class_name Faction
 
-## Shared faction contract for the front-line level (Docs/phase7_front.md):
+## Shared faction contract for the front-line level (Docs/Plans/phase7_front.md):
 ## Base and FrontUnit both read/write Faction.Kind so a spawner and its units
 ## agree on sides without duplicating the enum.
 
@@ -15,6 +15,10 @@ enum Kind { ALLY, ENEMY }
 const FLOOR_LAYER := 1
 const ALLY_LAYER := 4
 const ENEMY_LAYER := 2
+## The player-controlled entity's own layer (RuneMage), additive to whatever
+## else it occupies — lets an EscortGate (entities/shared/escort_gate.gd)
+## detect "the player is in range" without type-checking a concrete class.
+const PLAYER_LAYER := 8
 
 
 ## The opposing side — used to know which group to hunt and which base to

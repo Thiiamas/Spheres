@@ -1,7 +1,7 @@
 extends CharacterBody3D
 class_name FrontUnit
 
-## Foxhole-style front-line combatant (Docs/phase7_front.md). Self-contained —
+## Foxhole-style front-line combatant (Docs/Plans/phase7_front.md). Self-contained —
 ## no Consciousness/GameManager coupling, so level 1's wave-defense loop
 ## (entities/enemy/enemy.gd) stays untouched.
 ##
@@ -10,7 +10,7 @@ class_name FrontUnit
 ## advancing toward each other meet and grind in between, which is the front.
 ##
 ## Steering stays direction_to()-style, no NavigationAgent3D (see
-## Docs/PLAN.md "Hors scope v0.1"). Two mechanisms, in order of importance:
+## Docs/Plans/PLAN.md "Hors scope v0.1"). Two mechanisms, in order of importance:
 ##
 ## 1. Surround offset: naively walking straight at hostile.global_position (or
 ##    target_base.global_position) means every unit converging on the same
@@ -29,7 +29,7 @@ signal died(unit: FrontUnit)
 ## Fired the instant a hit lands (same moment _attacking_timer is armed) — for
 ## one-shot visual feedback (a flash, a lunge) that shouldn't retrigger every
 ## frame. For a continuous effect (glow, color shift) poll `is_attacking`
-## instead. See Docs/front_unit_ai.md.
+## instead. See Docs/front/front_unit_ai.md.
 signal attack_started
 
 const ENGAGE_RANGE := 6.0
@@ -45,7 +45,6 @@ const ENGAGE_RANGE := 6.0
 ## swing is off cooldown, LoL's "attack move" kiting window.
 @export var attack_duration: float = 1.2
 @export var gravity: float = 18.0
-@export var max_hp: float = 40.0
 ## Distance from a goal (hostile or base) this unit's own ring slot sits at.
 @export var surround_radius: float = 1.4
 ## Other units closer than this push this one sideways (its own hostile
@@ -53,13 +52,17 @@ const ENGAGE_RANGE := 6.0
 @export var avoidance_radius: float = 1.6
 ## How strongly the sideways push competes with the forward seek direction.
 @export var avoidance_weight: float = 2.2
-## Optional floating health bar (ui/hp_bar_3d.gd), same contract as
-## SphereController's — duck-typed via has_method so it's fine if unset.
-@export var hp_bar: Node3D
+## HP pool (entities/shared/health.gd) — take_damage/take_hit forward to it.
+@export var health: Health
 
 ## The opposing base to advance toward when no hostile is in engage range.
 ## Base sets this right after instantiate(), before the unit enters the tree.
 var target_base: Node3D = null
+## The opposing Tower to siege — set alongside target_base by Base. Takes
+## priority over any nearby hostile minion while alive and in engage range
+## (Docs/front/tower.md): a pushed wave focuses the tower instead of getting stuck
+## trading blows with whatever minion happens to be next to it.
+var target_tower: Node3D = null
 
 @onready var _attack_zone: Area3D = $AttackZone
 @onready var _mesh: MeshInstance3D = $MeshInstance3D
@@ -77,16 +80,13 @@ var is_attacking: bool:
 	get:
 		return _attacking_timer > 0.0
 
-var hp: float = 0.0
 var _attack_timer: float = 0.0
 var _attacking_timer: float = 0.0
 var _root_timer: float = 0.0
-var _dead: bool = false
 
 
 func _ready() -> void:
-	hp = max_hp
-	_update_hp_bar()
+	health.died.connect(_on_health_died)
 	add_to_group(Faction.group_name(faction))
 	if faction == Faction.Kind.ENEMY:
 		# Lets the RuneMage's spells (RuneBolt chain, RuneFlux spread) find
@@ -145,10 +145,10 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 		return
 
-	var hostile := _nearest_hostile()
+	var target := _current_target()
 	var goal_point: Vector3
-	if hostile != null:
-		goal_point = hostile.global_position
+	if target != null:
+		goal_point = target.global_position
 	elif target_base != null:
 		goal_point = target_base.global_position
 	else:
@@ -160,7 +160,7 @@ func _physics_process(delta: float) -> void:
 	var to := move_goal - global_position
 	to.y = 0.0
 	var seek := to.normalized() if to.length() > 0.001 else Vector3.ZERO
-	var blended := seek + _avoidance(hostile) * avoidance_weight
+	var blended := seek + _avoidance(target) * avoidance_weight
 	var dir := blended.normalized() if blended.length() > 0.001 else seek
 	velocity.x = dir.x * speed
 	velocity.z = dir.z * speed
@@ -174,22 +174,10 @@ func _physics_process(delta: float) -> void:
 		_try_attack()
 
 
-## Take damage from an opposing FrontUnit's bite. Reports its own death via
-## `died` so its spawning Base can decrement its alive count.
+## Take damage from an opposing FrontUnit's bite. Forwards to the Health
+## child; the actual hp-reaches-zero handling happens in _on_health_died.
 func take_damage(amount: float) -> void:
-	if _dead:
-		return
-	hp -= amount
-	_update_hp_bar()
-	if hp <= 0.0:
-		_dead = true
-		died.emit(self)
-		queue_free()
-
-
-func _update_hp_bar() -> void:
-	if hp_bar and hp_bar.has_method("update_bar"):
-		hp_bar.update_bar(hp, max_hp)
+	health.take_damage(amount)
 
 
 ## Damage from the RuneMage's spells (RuneBolt direct hit and chain shards) —
@@ -197,6 +185,26 @@ func _update_hp_bar() -> void:
 ## `has_method("take_hit")` in rune_bolt.gd:88.
 func take_hit(damage: float) -> void:
 	take_damage(damage)
+
+
+## Reports its own death via `died` so its spawning Base can decrement its
+## alive count, then frees itself — same order the old inline code used.
+func _on_health_died() -> void:
+	died.emit(self)
+	queue_free()
+
+
+## The opposing Tower if it's alive and within engage range, else the
+## nearest hostile minion. Checked every physics tick rather than cached, so
+## a unit already mid-siege drops the tower the instant it dies and falls
+## straight back to fighting minions or advancing on the base.
+func _current_target() -> Node3D:
+	if target_tower != null and is_instance_valid(target_tower):
+		var to := target_tower.global_position - global_position
+		to.y = 0.0
+		if to.length_squared() <= ENGAGE_RANGE * ENGAGE_RANGE:
+			return target_tower
+	return _nearest_hostile()
 
 
 ## Closest hostile FrontUnit within engage range, found via the opposing
@@ -228,9 +236,10 @@ func _surround_offset() -> Vector3:
 
 ## Short-range separation from every other FrontUnit (either faction) within
 ## avoidance_radius, stronger the closer they are, zero at and beyond it.
-## `exclude` is the unit's own hostile target, if any — it should be walked
-## into, not avoided.
-func _avoidance(exclude: FrontUnit) -> Vector3:
+## `exclude` is the unit's own target, if any — it should be walked into, not
+## avoided. Only ever matches a FrontUnit (the scan below never visits a
+## Tower), so passing a Tower as `exclude` is a harmless no-op.
+func _avoidance(exclude: Node3D) -> Vector3:
 	var push := Vector3.ZERO
 	for group in [Faction.group_name(Faction.Kind.ALLY), Faction.group_name(Faction.Kind.ENEMY)]:
 		for node in get_tree().get_nodes_in_group(group):
@@ -247,7 +256,7 @@ func _avoidance(exclude: FrontUnit) -> Vector3:
 
 func _try_attack() -> void:
 	for body in _attack_zone.get_overlapping_bodies():
-		if body is FrontUnit and body.faction != faction:
+		if (body is FrontUnit and body.faction != faction) or body is Tower:
 			body.take_damage(attack_damage)
 			_attack_timer = attack_cooldown
 			_attacking_timer = attack_duration

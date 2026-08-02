@@ -10,6 +10,11 @@ class_name RuneMage
 ## Like the sphere, the mage never reads Input.*: the possession layer pushes
 ## a normalized InputContext through drive(ctx) each frame.
 
+## The player's side — checked by EscortGate (entities/shared/escort_gate.gd)
+## before retaliating, so an ally-faction tower never punishes its own
+## player. Same Faction.Kind field FrontUnit/Tower/Base already carry.
+@export var faction: Faction.Kind = Faction.Kind.ALLY
+
 @export_group("Movement")
 ## Walk speed toward the clicked destination.
 @export var move_speed: float = 6.0
@@ -20,9 +25,9 @@ class_name RuneMage
 @export var gravity: float = 18.0
 
 @export_group("Health")
-@export var max_hp: float = 100.0
-## Optional floating health bar (HPBar3D) shown above the mage.
-@export var hp_bar: Node3D
+## HP pool (entities/shared/health.gd) — take_damage forwards to it, same
+## component FrontUnit and Tower use.
+@export var health: Health
 
 @export_group("Spell A - RuneBolt")
 ## Line projectile cast toward the cursor ("spell_a").
@@ -58,8 +63,10 @@ class_name RuneMage
 @export var possessed_energy: float = 1.8
 @export var idle_energy: float = 0.3
 
-## Current hit points. Reaches 0 -> the mage is destroyed.
-var hp: float = 100.0
+## Fired the instant hp reaches 0, before this node frees itself — lets the
+## level script (e.g. levels/level2_front.gd) react (respawn, game over...).
+signal died
+
 ## Driven by the possession contract (RuneMageControllable).
 var is_controlled: bool = false
 ## The possession-contract child; set by RuneMageControllable in its _ready.
@@ -82,8 +89,11 @@ var _mat: StandardMaterial3D = null
 
 
 func _ready() -> void:
-	hp = max_hp
-	_update_hp_bar()
+	health.died.connect(_on_health_died)
+	# Additive: keeps the default floor-collision bit, just makes the mage
+	# also detectable as "the player" by an EscortGate's detection zone
+	# (entities/shared/escort_gate.gd), without type-checking RuneMage there.
+	collision_layer |= Faction.PLAYER_LAYER
 	if body_mesh != null:
 		var mat := body_mesh.get_active_material(0)
 		if mat is StandardMaterial3D:
@@ -155,15 +165,13 @@ func set_passive() -> void:
 ## --- Health -----------------------------------------------------------------
 
 func take_damage(amount: float) -> void:
-	hp = maxf(hp - amount, 0.0)
-	_update_hp_bar()
-	if hp <= 0.0:
-		_die()
+	health.take_damage(amount)
 
 
-func _die() -> void:
+func _on_health_died() -> void:
 	if controllable != null:
 		Consciousness.unregister(controllable)
+	died.emit()
 	queue_free()
 
 
@@ -257,11 +265,6 @@ static func _cd_label(timer: float) -> String:
 func _face_toward(dir: Vector3, delta: float) -> void:
 	var target_yaw := atan2(dir.x, dir.z)
 	rotation.y = lerp_angle(rotation.y, target_yaw, 1.0 - exp(-turn_speed * delta))
-
-
-func _update_hp_bar() -> void:
-	if hp_bar and hp_bar.has_method("update_bar"):
-		hp_bar.update_bar(hp, max_hp)
 
 
 func _apply_visual() -> void:

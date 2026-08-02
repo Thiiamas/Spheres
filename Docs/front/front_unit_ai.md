@@ -5,7 +5,7 @@
 > du mouvement ou du combat de `FrontUnit` doit mettre à jour ce document dans
 > le **même changement** (pas après coup). Pour le pourquoi de chaque choix et
 > les essais qui n'ont pas marché, voir les sections correspondantes de
-> `Docs/phase7_front.md` — ce fichier-ci ne garde que ce qui est vrai
+> `Docs/Plans/phase7_front.md` — ce fichier-ci ne garde que ce qui est vrai
 > aujourd'hui.
 
 ## Vue d'ensemble
@@ -14,7 +14,7 @@
 complexe : à chaque frame physique, il recalcule sa direction à partir de
 quelques vecteurs simples (seek + décalage d'essaimage + évitement), et gère
 son attaque avec trois compteurs à rebours indépendants. Pas de
-`NavigationAgent3D` — choix déjà acté (`Docs/PLAN.md`, « Hors scope v0.1 »).
+`NavigationAgent3D` — choix déjà acté (`Docs/Plans/PLAN.md`, « Hors scope v0.1 »).
 
 ## Les trois minuteurs
 
@@ -40,12 +40,18 @@ soit la branche empruntée ensuite.
 
 ## Mouvement en branche libre
 
-1. **Cible** : `_nearest_hostile()` — l'unité `FrontUnit` adverse la plus
-   proche dans le groupe `front_ally`/`front_enemy`, dans `ENGAGE_RANGE`
-   (6.0). Aucun test de ligne de vue : la distance seule compte, même si un
-   allié bloque le chemin.
-2. **Point visé** : si un hostile est trouvé → sa position ; sinon → la
-   `Base` adverse (`target_base`) ; sinon (rien à faire) → vitesse nulle.
+1. **Cible** : `_current_target()` (2026-08-02) — priorité à la `Tower`
+   adverse (`target_tower`, assignée par `Base` comme `target_base`) si elle
+   est vivante et dans `ENGAGE_RANGE` (6.0) ; sinon repli sur
+   `_nearest_hostile()` — l'unité `FrontUnit` adverse la plus proche dans le
+   groupe `front_ally`/`front_enemy`, à la même portée. Aucun test de ligne
+   de vue : la distance seule compte, même si un allié bloque le chemin.
+   Réévalué chaque tick (rien n'est mis en cache), donc une tour détruite
+   entre deux frames relâche l'unité vers un minion ou la base l'instant
+   d'après — voir `Docs/front/tower.md`, section « Les minions assiègent la tour ».
+2. **Point visé** : si une cible (tour ou hostile) est trouvée → sa
+   position ; sinon → la `Base` adverse (`target_base`) ; sinon (rien à
+   faire) → vitesse nulle.
 3. **Décalage d'essaimage** (`_surround_offset()`) : le point visé est
    décalé sur un cercle de rayon `surround_radius` autour de la cible, à un
    angle dérivé de manière stable de `get_instance_id()`. Sans ça, toutes les
@@ -65,9 +71,11 @@ soit la branche empruntée ensuite.
 
 Appelé uniquement quand `_attack_timer <= 0`. Parcourt les corps qui
 chevauchent `AttackZone` (`Area3D`, rayon ~1.2) et prend le **premier**
-`FrontUnit` de faction adverse trouvé — **aucune priorité de ciblage**
-(pas de plus-faible-PV, pas de plus-proche, juste l'ordre renvoyé par
-`get_overlapping_bodies()`). Sur ce premier corps trouvé :
+`FrontUnit` de faction adverse **ou** `Tower` adverse trouvé (depuis
+2026-08-02 — la tour apparaît sans changement de layer/masque, elle réutilise
+`Faction.physics_layer(faction)` comme `FrontUnit`) — **aucune priorité de
+ciblage** au-delà de ça (pas de plus-faible-PV, pas de plus-proche, juste
+l'ordre renvoyé par `get_overlapping_bodies()`). Sur ce premier corps trouvé :
 
 ```gdscript
 body.take_damage(attack_damage)      # dégâts instantanés, pas de temps de trajet
@@ -139,31 +147,36 @@ réglés directement dans chaque `.tscn`.
 - Si le mesh d'une future scène `FrontUnit` n'utilise pas de `ShaderMaterial`,
   `_attack_shader` reste `null` et `_process` ne fait rien — sans erreur.
 
-## Barre de vie (`hp_bar`)
+## PV et barre de vie : composant `Health`
 
-Ajouté le 2026-07-24, en réutilisant `ui/hp_bar_3d.gd` tel quel (même
-composant que `SphereController`/`RuneMage` — fond dégradé rouge foncé,
-remplissage vert, billboard qui se tourne vers la caméra sans suivre la
-rotation du parent) :
+Depuis l'ajout de la tour (`Docs/front/tower.md`), `FrontUnit` ne porte plus ses
+PV en interne — il délègue à un enfant `entities/shared/health.gd`
+(`class_name Health`), le même composant générique réutilisé par `Tower`.
+Avant ce changement, `hp`/`max_hp`/`hp_bar` vivaient directement sur
+`FrontUnit` (dupliqué depuis `entities/enemy/enemy.gd`) ; c'est maintenant la
+première fois que ce bloc PV devient un vrai composant partagé plutôt qu'une
+quatrième copie.
 
-- `@export var hp_bar: Node3D` — même contrat duck-typé que
-  `SphereController.hp_bar` : optionnel, appelé seulement si
-  `hp_bar.has_method("update_bar")`.
-- `_update_hp_bar()` appelle `hp_bar.update_bar(hp, max_hp)` ; branché à la
-  fin de `_ready()` (affichage initial plein) et dans `take_damage()` juste
-  après avoir soustrait les PV.
-- `ally_unit.tscn` et `enemy_unit.tscn` câblent chacun un nœud `HPBar3D`
-  (mêmes `Background`/`Fill` que `sphere.tscn`/`rune_mage.tscn`) via
-  `node_paths=PackedStringArray("hp_bar")` + `hp_bar = NodePath("HPBar3D")`.
+- `@export var health: Health` — référence typée vers l'enfant `Health`,
+  câblée en `NodePath` dans `ally_unit.tscn`/`enemy_unit.tscn` (même
+  convention que `SphereController.reactor` sur `sphere.tscn`).
+- `Health` porte lui-même `max_hp`, l'accumulateur `hp`, le signal `died`, et
+  la barre de vie (`hp_bar`, même contrat duck-typé
+  `hp_bar.has_method("update_bar")` qu'avant, juste déplacé sur `Health`).
+- `FrontUnit._ready()` connecte `health.died` à `_on_health_died()`, qui
+  reproduit l'ancien ordre : `died.emit(self)` (signal propre à `FrontUnit`,
+  toujours utile à un futur `Base` qui voudrait réagir à une mort) puis
+  `queue_free()`.
 
 ## `take_damage` vs `take_hit`
 
-- `take_damage(amount)` : le seul point d'entrée réel — soustrait `hp`,
-  émet `died` et se libère à 0.
+- `take_damage(amount)` : transmet directement à `health.take_damage(amount)`
+  — toute la logique PV (soustraction, `died`, barre de vie) vit maintenant
+  dans `Health`, pas ici.
 - `take_hit(damage)` : simple alias, présent uniquement pour que les sorts du
   RuneMage (qui vérifient `has_method("take_hit")`, comme sur `Enemy`)
   puissent toucher les `FrontUnit` de faction `ENEMY`. Voir
-  `Docs/phase7_front.md` pour le détail des layers physiques qui rendent ça
+  `Docs/Plans/phase7_front.md` pour le détail des layers physiques qui rendent ça
   possible sans tir ami.
 
 ## Paramètres exportés
@@ -176,19 +189,25 @@ rotation du parent) :
 | `attack_cooldown` | 1.2 | Délai avant qu'un nouveau coup soit tenté. |
 | `attack_duration` | 1.2 | Durée d'immobilisation après un coup porté. |
 | `gravity` | 18.0 | Chute quand pas au sol (toutes branches). |
-| `max_hp` | 40.0 | PV de départ. |
 | `surround_radius` | 1.4 | Rayon du cercle d'essaimage autour d'une cible/base. |
 | `avoidance_radius` | 1.6 | Portée de la poussée d'évitement local. |
 | `avoidance_weight` | 2.2 | Poids de l'évitement face au seek dans le mélange final. |
+| `health` | (NodePath `Health`) | Référence vers l'enfant `Health` ; `max_hp` (40.0 par défaut) se règle sur ce nœud, pas ici. |
 
 ## Fichiers concernés
 
 - `entities/front_unit/front_unit.gd` — toute la logique ci-dessus.
+- `entities/shared/health.gd` — composant PV générique (`class_name Health`),
+  détail complet dans `Docs/front/tower.md`.
 - `shaders/front_unit_attack.gdshader` — le glow de combat, décrit plus haut.
 - `entities/front_unit/ally_unit.tscn`, `enemy_unit.tscn` — chacun applique le
-  shader ci-dessus avec ses propres paramètres, et câble un `HPBar3D`.
+  shader ci-dessus avec ses propres paramètres, et câble un enfant `Health`
+  (qui porte lui-même la référence vers `HPBar3D`).
 - `ui/hp_bar_3d.gd` — composant de barre de vie réutilisé tel quel (déjà
   utilisé par `SphereController` et `RuneMage`), non modifié.
-- `entities/base/base.gd` — assigne `target_base` et `faction` à chaque
-  unité spawnée (voir `Docs/phase7_front.md` pour le spawn par vagues).
+- `entities/base/base.gd` — assigne `target_base`, `target_tower` et
+  `faction` à chaque unité spawnée (voir `Docs/Plans/phase7_front.md` pour le
+  spawn par vagues).
+- `entities/tower/tower.gd` — cible de siège prioritaire ; détail complet
+  (composition `Health`/`EscortGate`) dans `Docs/front/tower.md`.
 - `core/faction.gd` — `Faction.Kind`, groupes, layers physiques.

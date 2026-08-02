@@ -1,6 +1,6 @@
 shader_type spatial;
 
-// Front-line combat feedback (Docs/front_unit_ai.md): calm dim rim-glow at
+// Front-line combat feedback (Docs/front/front_unit_ai.md): calm dim rim-glow at
 // idle, snaps to a hot pulsing color while attack_amount rises. Driven by
 // FrontUnit.is_attacking from script — fragment-only, so it reads the same
 // on the ally sphere and the enemy cube.
