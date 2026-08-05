@@ -28,6 +28,13 @@ func _ready() -> void:
 
 
 func handle_input(ctx: InputContext) -> void:
+	# "select" (phase 8.2) switches to another ally under the cursor — a
+	# possession-layer concern resolved here, before the mage's own input,
+	# so RuneMage stays ignorant of possession swapping (mirrors
+	# BaseControllable.handle_input).
+	if ctx.just_pressed(&"select") and PossessionSwap.try_select_at_cursor(get_tree()):
+		return
+
 	if mage != null:
 		mage.drive(ctx)
 

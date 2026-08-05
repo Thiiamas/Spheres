@@ -83,8 +83,11 @@ func _on_active_changed(controllable: Controllable) -> void:
 	target = controllable.entity as Node3D
 	var sphere := controllable.entity as SphereController
 	reactor = sphere.get_reactor() if sphere != null else null
-	if sphere != null:
-		sphere.bind_camera(self)
+	# Duck-typed rather than a SphereController check only: the RuneMage
+	# (phase 8.2, camera-relative ZQSD) wants the same view-yaw feed and has
+	# no other trait in common with the sphere.
+	if target != null and target.has_method("bind_camera"):
+		target.bind_camera(self)
 
 	var cfg := controllable.get_camera_config()
 	apply_config(cfg if cfg != null else config)
@@ -150,6 +153,23 @@ func get_aim_target(origin: Vector3) -> Vector3:
 ## The possession layer feeds both into each frame's InputContext.
 func get_aim_info(origin: Vector3) -> AimStrategy.AimInfo:
 	return _aim_strategy.resolve_info(self, origin)
+
+
+## Raycasts the current mouse position against `mask`, independent of
+## AimStrategy (which only ever looks for enemies, for combat aiming). Used
+## by the possession layer's "select" action (phase 8.2,
+## Docs/Plans/phase8_foundations.md) to find a clickable ally — a FrontUnit
+## body, or a Base's Area3D SelectionArea — under the cursor.
+func raycast_at_cursor(mask: int) -> Node3D:
+	var m := get_viewport().get_mouse_position()
+	var from := project_ray_origin(m)
+	var dir := project_ray_normal(m)
+	var space := get_world_3d().direct_space_state
+	var query := PhysicsRayQueryParameters3D.create(from, from + dir * 200.0)
+	query.collision_mask = mask
+	query.collide_with_areas = true # Base's SelectionArea is an Area3D, not a body
+	var hit := space.intersect_ray(query)
+	return hit.collider as Node3D if hit else null
 
 
 func _physics_process(delta: float) -> void:

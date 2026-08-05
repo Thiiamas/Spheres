@@ -101,6 +101,22 @@ func transfer_to_next() -> void:
 	_activate(current_index)
 
 
+## Possess a specific, already-registered entity directly (phase 8.2's
+## click-to-select, as opposed to transfer_to_next's cycling). The entity
+## must already be in the pool — Controllable._ready() registers on its own
+## the moment a node enters the tree, so a freshly instantiated RuneMage is
+## already registered by the time its caller gets a reference to call this.
+func request_possession(controllable: Controllable) -> void:
+	if controllable == null or controllable == active():
+		return
+	var idx := entities.find(controllable)
+	if idx == -1:
+		return
+	entities[current_index].on_released()
+	current_index = idx
+	_activate(current_index)
+
+
 ## The currently possessed entity's Controllable (null when the pool is empty).
 func active() -> Controllable:
 	if entities.is_empty():

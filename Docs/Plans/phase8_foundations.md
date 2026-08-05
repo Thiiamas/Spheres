@@ -207,64 +207,129 @@ sa position, HP conservés proportionnellement. Déplacement ZQSD. Clic sur
 une autre unité alliée (ou sur la Base) → relâche la possession courante
 (l'unité relâchée redevient FrontUnit autonome), possède la nouvelle cible.
 
-### Sous-tâches
+### Sous-tâches (implémentées — écarts par rapport à la proposition initiale notés)
 
-**1. Extension de `Consciousness` — possession directe (pas seulement cyclique)**
-- Nouvelle API `request_possession(controllable)` en plus de
-  `transfer_to_next()` (Tab) : bascule directement sur une entité précise
-  au clic.
-- Cas particulier : la cible peut ne **pas encore exister** dans le pool
-  (le RuneMage est spawné à la volée) — géré par le swap (sous-tâche 3),
-  pas par `request_possession` elle-même.
+**1. Extension de `Consciousness` — `request_possession(controllable)`**
+- Bascule directement sur une entité **déjà enregistrée**. Le cas "cible pas
+  encore dans le pool" (RuneMage spawné à la volée) n'a en fait pas besoin
+  d'être géré ici : `Controllable._ready()` enregistre déjà tout nouveau
+  nœud dès qu'`add_child()` l'ajoute à l'arbre — et `add_child()` déclenche
+  `_ready()` de façon synchrone. Au moment où `request_possession()` est
+  appelée sur le RuneMage fraîchement créé, son `Controllable` est donc déjà
+  dans `entities`. `request_possession` reste donc une simple recherche +
+  bascule, sans branche spéciale.
 
-**2. `FrontUnitControllable` (nouveau, contrat `Controllable` sur `ally_unit.tscn`)**
-- Point d'entrée cliquable qui délègue à un remplacement d'entité (sous-tâche 3),
-  pas une possession classique sur place.
-- Cliquable via raycast de sélection (sous-tâche 4), uniquement si
-  `faction == ALLY`.
+**2. Pas de `FrontUnitControllable` — écart déclaré**
+- Proposition initiale rejetée : `FrontUnit` n'a pas besoin de rejoindre le
+  contrat `Controllable` pour être cliquable. Son `CharacterBody3D` a déjà
+  une `CollisionShape3D` sur `Faction.ALLY_LAYER` (mis en place phase 7) —
+  le raycast de sélection le trouve directement, sans composant
+  supplémentaire. Comme la sélection **remplace** l'entité (swap) au lieu de
+  la posséder sur place, un contrat `Controllable` sur `FrontUnit` n'aurait
+  rien eu à faire.
+- La Base, elle, n'avait **aucune** collision propre (seulement sa
+  `GoalZone`, dédiée et sur un autre calque) — ajout d'une `SelectionArea`
+  (`Area3D`, pas `StaticBody3D` : une zone ne bloque pas
+  `FrontUnit.move_and_slide()`, contrairement à un corps solide sur le même
+  calque que les alliés) en calque `Faction.physics_layer(faction)`.
 
-**3. Le swap `FrontUnit` → `RuneMage` et retour**
-- Nouveau service `entities/front_unit/possession_swap.gd` : détruit le
-  `FrontUnit`, fait apparaître un `RuneMage` à sa position avec HP
-  proportionnels (et inversement au relâchement).
-- Point d'attention (comme les bugs de référence périmée en phase 7) : le
-  `FrontUnit` relâché doit retrouver sa cible (`target_tower`/`target_base`)
-  correctement.
+**3. `entities/front_unit/possession_swap.gd` (service statique)**
+- `possess_front_unit(front_unit, tree)` : détruit le `FrontUnit`, fait
+  apparaître un `RuneMage` à sa position, HP proportionnels.
+- `release_to_front_unit(mage, tree)` : inverse — HP proportionnels, et
+  `target_base`/`target_tower` repris directement sur la Base alliée
+  (`find_ally_base()`, scan de `Consciousness.entities`) plutôt que transmis
+  en paramètre : c'est exactement ce que la Base assigne déjà à ses propres
+  vagues, pas de nouvelle donnée à faire circuler.
+- `try_select_at_cursor(tree)` : raycast (`CameraRig.raycast_at_cursor`,
+  nouveau, calque `Faction.ALLY_LAYER`) + résolution + relâche l'éventuel
+  RuneMage courant avant de posséder la nouvelle cible. Retourne `true` si
+  le clic a été consommé.
+- Point d'attention vérifié (comme annoncé, echo des bugs de référence
+  périmée en phase 7) : `release_to_front_unit` reprend bien
+  `target_base`/`target_tower` — testé en headless
+  (`tests/possession_swap_test.tscn`).
 
-**4. Sélection au clic — nouvelle action `select`**
-- Nouvelle action Input Map `select` (clic gauche — coexiste avec `attack`
-  sur la même touche, H2).
-- Raycast souris → monde ; si la collision porte un allié
-  (`FrontUnitControllable`/`BaseControllable`) → `request_possession`.
-  Sinon aucun effet (pas de move-to-click).
-- Actif dans tous les modes caméra.
+**4. `select` géré dans la couche `Controllable`, pas dans le gameplay — écart déclaré**
+- Le plan proposait de lire `select` dans le contexte de chaque état actif ;
+  implémenté un cran plus haut : `BaseControllable.handle_input` et
+  `RuneMageControllable.handle_input` appellent
+  `PossessionSwap.try_select_at_cursor()` **avant** de transmettre le `ctx` à
+  `base.drive()`/`mage.drive()`, et `return`nt si le clic a été consommé.
+  `Base`/`RuneMage` eux-mêmes restent ignorants de la possession — un seul
+  point d'implémentation du raycast (`CameraRig`) et de la résolution
+  (`PossessionSwap`), pas dupliqué dans chaque entité.
+- Ce `return` anticipé a un effet voulu : cliquer sur un allié pour le
+  posséder ne déclenche **pas aussi** le tir au mortier de la Base sur ce
+  même clic (H2 mentionnait le risque de conflit sur le clic gauche partagé
+  — résolu par l'ordre de résolution, pas par une action distincte lue en
+  parallèle).
+- Nouvelle action Input Map `select` (clic gauche, même touche que
+  `attack`) ; ajoutée à `InputContext.TRACKED_ACTIONS`.
 
-**5. Rework du déplacement RuneMage — ZQSD au lieu du click-to-move**
-- Retire le click-to-move Ryze-style ; déplacement direct relatif caméra
-  via `Input.get_vector` sur les actions `move_*` déjà existantes (ZQSD).
-- Les sorts A/Z/E ne changent pas.
+**5. RuneMage — ZQSD au lieu du click-to-move**
+- `move_click` (clic droit) retiré (action Input Map + `TRACKED_ACTIONS` —
+  plus aucun lecteur).
+- Déplacement direct relatif à la caméra : `RuneMage.camera: CameraRig` +
+  `bind_camera()`, même patron que `SphereController.camera`/`apply_roll`.
+  `CameraRig._on_active_changed` appelle `bind_camera()` par duck-typing
+  (`has_method`) plutôt que par un nouveau `if entity is RuneMage`, pour
+  rester ouvert à un futur type d'entité pilotable sans y retoucher encore.
+- Les sorts A/Z/E inchangés (juste retrait des lignes qui coupaient le
+  déplacement au clic pendant un cast — obsolètes sans destination à couper).
+
+**6. Mort en pleine possession (H3) et suppression du RuneMage permanent phase 7**
+- `RuneMage._on_health_died()` appelle désormais
+  `PossessionSwap.find_ally_base()` + `Consciousness.request_possession(...)`
+  — retour automatique sur la Base, pas de respawn.
+- Le RuneMage statique placé dans `level2_front.tscn` (vestige phase 7,
+  "toujours un mage permanent") est **retiré** : en phase 8, un RuneMage
+  n'existe que le temps d'une possession née d'un `FrontUnit`. `mage_scene`/
+  `mage_respawn_delay`/`_on_mage_died`/`_spawn_mage` retirés de
+  `level2_front.gd` — plus rien à gérer côté niveau.
 
 ### Fichiers
 
 - `autoloads/consciousness.gd` (modifié — `request_possession()`)
-- `entities/front_unit/front_unit_controllable.gd` (nouveau)
+- `core/camera_rig.gd` (modifié — `raycast_at_cursor()` ; `bind_camera` par
+  duck-typing)
 - `entities/front_unit/possession_swap.gd` (nouveau)
-- `entities/mage/rune_mage.gd` (modifié — déplacement ZQSD)
-- `core/input_context.gd` (modifié — nouvelle action `select`)
-- Input Map : nouvelle action `select`
+- `entities/base/base.gd`/`.tscn` (modifiés — champ `controllable`,
+  `SelectionArea`)
+- `entities/base/base_controllable.gd` (modifié — `select`)
+- `entities/mage/rune_mage.gd` (modifié — ZQSD, `bind_camera`,
+  `_on_health_died` renvoie sur la Base)
+- `entities/mage/rune_mage_controllable.gd` (modifié — `select`)
+- `levels/level2_front.gd`/`.tscn` (modifiés — retrait RuneMage statique et
+  logique de respawn phase 7)
+- `core/input_context.gd` (modifié — `select` ajouté, `move_click` retiré)
+- Input Map : `select` ajouté, `move_click` retiré
+- `tests/possession_swap_test.gd`/`.tscn` (nouveau — swap, ZQSD, relâche,
+  mort→Base, tous vérifiés headless)
 
 ### Critères de validation
 
-- [ ] Clic sur un `FrontUnit` allié depuis la vue Base → possession en
-      RuneMage, à la bonne position, HP cohérents
-- [ ] ZQSD déplace le RuneMage possédé (plus de click-to-move)
-- [ ] Les sorts A/Z/E fonctionnent toujours normalement
-- [ ] Clic sur une autre unité alliée (ou retour sur la Base) relâche la
-      possession courante → l'ancienne unité redevient un FrontUnit
-      autonome qui reprend son comportement sans crash
-- [ ] Mourir en étant possédé (RuneMage tué) renvoie la possession sur la
-      Base sans crash (H3 — à confirmer en playtest)
-- [ ] Aucune régression sur le comportement Front autonome existant
+- [x] Clic sur un `FrontUnit` allié → possession en RuneMage, à la bonne
+      position, HP cohérents — vérifié headless (`possess_front_unit` +
+      `request_possession`, HP 50% → 50%)
+- [x] ZQSD déplace le RuneMage possédé (plus de click-to-move) — vérifié
+      headless (input synthétique, déplacement mesuré)
+- [ ] Les sorts A/Z/E fonctionnent toujours normalement — logique inchangée,
+      `rune_chain_test` (bolt/flux/mark) toujours au vert, mais pas rejoué
+      manuellement sur un RuneMage né d'une possession
+- [x] Relâche la possession courante → l'ancienne unité redevient un
+      FrontUnit autonome, cible tour/base retrouvée — vérifié headless
+- [x] Mourir en étant possédé renvoie la possession sur la Base sans crash
+      (H3) — vérifié headless
+- [x] Aucune régression sur le comportement Front autonome existant —
+      `synthetic_drive_test`/`rune_chain_test`/`base_possession_test` toujours
+      au vert
+
+> **Non vérifié en conditions réelles** : la résolution du clic
+> souris→monde elle-même (`CameraRig.raycast_at_cursor` + la `SelectionArea`
+> de la Base) — pas de curseur réel en headless. Le test couvre tout ce qui
+> suit "la bonne cible a été trouvée" ; reste à confirmer en jouant que
+> cliquer sur une unité du Front à l'écran sélectionne bien *cette* unité.
 
 ### À ne PAS faire dans cette phase
 

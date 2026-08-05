@@ -72,7 +72,9 @@ res://
 │   │                         aoe_blast.*, sphere_follow.tres, sphere_rts.tres)
 │   ├── mage/                (rune_mage.tscn/.gd, rune_mage_controllable.gd, sorts :
 │   │                         rune_bolt.*, rune_flux.*, rune_mark.gd, rune_cage.gd,
-│   │                         mage_topdown.tres)
+│   │                         mage_topdown.tres ; déplacement ZQSD caméra-relatif
+│   │                         depuis phase 8.2 — plus de click-to-move, chaque
+│   │                         RuneMage naît d'une possession via possession_swap.gd)
 │   ├── beacon/              (shore_beacon.tscn, beacon_controllable.gd, beacon_topdown.tres)
 │   ├── enemy/               (enemy.tscn/.gd — cube, layer 2, groupe "enemies" ; phase 1-4)
 │   ├── base/                (base.tscn/.gd — spawner phase 7, vagues type LoL + GoalZone ;
@@ -81,7 +83,9 @@ res://
 │   ├── front_unit/          (front_unit.gd + ally_unit.tscn/enemy_unit.tscn — phase 7,
 │   │                         unité autonome faction ALLY/ENEMY, indépendante de
 │   │                         Consciousness/GameManager ; comportement détaillé et
-│   │                         tenu à jour dans Docs/front/front_unit_ai.md)
+│   │                         tenu à jour dans Docs/front/front_unit_ai.md ;
+│   │                         possession_swap.gd — service statique FrontUnit ↔
+│   │                         RuneMage (swap, pas contrat Controllable), phase 8.2)
 │   ├── shared/              (health.gd, escort_gate.gd + .tscn — composants réutilisables
 │   │                         PV générique / garde-de-portée-avec-riposte ; phase 7,
 │   │                         détail à jour dans Docs/front/tower.md ; loot_on_death.gd —
@@ -95,7 +99,8 @@ res://
 │   ├── hud.gd               (Label de debug : entité possédée, cooldowns, caméra)
 │   └── hp_bar_3d.gd         (barre de vie billboard)
 ├── tests/                   (synthetic_drive_test.*, rune_chain_test.*,
-│                             base_possession_test.* (phase 8.1) — headless, code retour ;
+│                             base_possession_test.* (phase 8.1),
+│                             possession_swap_test.* (phase 8.2) — headless, code retour ;
 │                             shader_gallery.tscn — revue à plat des 8 shaders ;
 │                             shader_showcase.tscn/.gd — scène deux zones (Sphérique/Angulaire) ;
 │                             shader_lab.tscn — bac à sable shader-artist)
@@ -124,7 +129,7 @@ res://
 | 5 | `phase5_possession.md` | Possession multi-perspective (`Controllable` / `InputContext` / `CameraConfig`) | ✅ Implémenté et playtesté (branche `phase5-possession` ; balise non-sphère possédable + test IA) |
 | 6 | `phase6_runemage.md` | RuneMage : gameplay MOBA à la Ryze (click-to-move, curseur ciblant, sorts A/Z/E) | ✅ Implémenté et playtesté manuellement (branche `gameplay-ryze`) |
 | 7 | `phase7_front.md` (comportement `FrontUnit` : `Docs/front/front_unit_ai.md` ; tour objectif : `Docs/front/tower.md`) | Le Front : bases spawnant des unités autonomes qui s'affrontent entre les deux bases, tour intermédiaire à détruire pour gagner (scène séparée `level2_front.tscn`) | ✅ Implémenté et playtesté manuellement (sans PV de base ni condition de défaite) |
-| 8 | `phase8_foundations.md` | Prérequis : Base jouable + économie (8.1), possession `FrontUnit ↔ RuneMage` complète (8.2) | 🚧 8.1 ✅ implémentée et playtestée ; 8.2 en cours (branche `phase8-foundations`) |
+| 8 | `phase8_foundations.md` | Prérequis : Base jouable + économie (8.1), possession `FrontUnit ↔ RuneMage` complète (8.2) | 🚧 8.1 ✅ playtestée ; 8.2 ✅ implémentée et vérifiée headless, clic souris réel à confirmer (branche `phase8-foundations`) |
 
 ---
 

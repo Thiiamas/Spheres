@@ -1,15 +1,17 @@
 extends Node3D
 
-## Boots the front-line level (Docs/Plans/phase7_front.md): two Base spawners send
-## out minion-style waves toward each other while the player starts
-## possessing the RuneMage. Shows a victory message and stops both bases the
-## first time an ally unit reaches the enemy base's GoalZone — gated behind
-## the enemy Tower's destruction (Docs/front/tower.md), so "reach the goal" alone
-## isn't enough. Also handles the RuneMage's death: EnemyTower's EscortGate
-## can now retaliate against an unescorted push, so respawn is wired here.
-
-@export var mage_scene: PackedScene
-@export var mage_respawn_delay: float = 3.0
+## Boots the front-line level (Docs/Plans/phase7_front.md): two Base spawners
+## send out minion-style waves toward each other while the player starts
+## possessing their own Base (phase 8.1). Shows a victory message and stops
+## both bases the first time an ally unit reaches the enemy base's GoalZone —
+## gated behind the enemy Tower's destruction (Docs/front/tower.md), so
+## "reach the goal" alone isn't enough.
+##
+## No RuneMage is placed or spawned here (phase 8.2, Docs/Plans/
+## phase8_foundations.md): the player gets one only by selecting an ally
+## FrontUnit off the front (PossessionSwap), and losing it just hands control
+## back to the Base (RuneMage._on_health_died) — nothing for the level script
+## to manage.
 
 @onready var _player_base: Base = $PlayerBase
 @onready var _enemy_base: Base = $EnemyBase
@@ -17,7 +19,6 @@ extends Node3D
 @onready var _enemy_tower: Tower = $EnemyTower
 @onready var _message: Label = $UI/MessageLabel
 
-var _rune_mage: RuneMage
 var _enemy_tower_destroyed: bool = false
 
 
@@ -38,9 +39,6 @@ func _ready() -> void:
 	_player_base.spawn_wave_now()
 	_enemy_base.spawn_wave_now()
 
-	_rune_mage = $RuneMage
-	_rune_mage.died.connect(_on_mage_died)
-
 
 func _on_enemy_tower_died() -> void:
 	_enemy_tower_destroyed = true
@@ -56,23 +54,3 @@ func _on_enemy_base_reached(_unit: FrontUnit) -> void:
 	_enemy_base.stop_spawning()
 	_message.text = "Victoire !\nLe front a percé la base ennemie."
 	_message.visible = true
-
-
-## EnemyTower's EscortGate can now kill an unescorted RuneMage. No game-over
-## screen (out of scope, Docs/Plans/phase7_front.md) — just a short delay, then a
-## fresh mage at the player's base, re-adopted by the existing possession
-## system (Consciousness.active_changed) with no extra wiring needed.
-func _on_mage_died() -> void:
-	_message.text = "Vous êtes tombé...\nRespawn dans %.0fs" % mage_respawn_delay
-	_message.visible = true
-	await get_tree().create_timer(mage_respawn_delay).timeout
-	_message.visible = false
-	_spawn_mage()
-
-
-func _spawn_mage() -> void:
-	var mage := mage_scene.instantiate() as RuneMage
-	add_child(mage)
-	mage.global_position = _player_base.global_position + Vector3(3, 0.55, 4)
-	mage.died.connect(_on_mage_died)
-	_rune_mage = mage

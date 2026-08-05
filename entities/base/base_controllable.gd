@@ -20,9 +20,18 @@ func _ready() -> void:
 	base = get_parent() as Base
 	if base != null and base.faction != Faction.Kind.ALLY:
 		return # enemy bases are never possessable
+	if base != null:
+		base.controllable = self
 	super()
 
 
 func handle_input(ctx: InputContext) -> void:
+	# "select" (phase 8.2) is a possession-layer concern, not gameplay — it's
+	# resolved here rather than inside base.drive() so Base itself stays
+	# ignorant of possession swapping. Consumes the click on a hit so the
+	# same left-click doesn't also fire the mortar at whatever ally you just
+	# clicked to switch into.
+	if ctx.just_pressed(&"select") and PossessionSwap.try_select_at_cursor(get_tree()):
+		return
 	if base != null:
 		base.drive(ctx)

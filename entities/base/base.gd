@@ -15,6 +15,12 @@ class_name Base
 
 signal unit_reached_goal(unit: FrontUnit)
 
+## The possession-contract sibling (BaseControllable) — set by it in its
+## _ready, null on the enemy Base (never possessable, see
+## base_controllable.gd). PossessionSwap (phase 8.2) reads this to send
+## control back to the Base by name rather than by scanning node paths.
+var controllable: Controllable = null
+
 @export var faction: Faction.Kind = Faction.Kind.ALLY
 @export var unit_scene: PackedScene
 @export var advance_target: Node3D
@@ -57,6 +63,10 @@ signal unit_reached_goal(unit: FrontUnit)
 @onready var _wave_timer: Timer = $WaveTimer
 @onready var _goal_zone: Area3D = $GoalZone
 @onready var _structure: MeshInstance3D = $Structure
+## Raycast target for the "select" possession action (phase 8.2) — an Area3D
+## so it never physically blocks FrontUnit.move_and_slide() the way a solid
+## StaticBody3D on the same physics layer as allies would.
+@onready var _selection_area: Area3D = $SelectionArea
 
 var _spawning: bool = true
 var _attack_timer: float = 0.0
@@ -68,6 +78,7 @@ func _ready() -> void:
 	_wave_timer.start()
 	_goal_zone.collision_mask = Faction.opposing_physics_layer(faction)
 	_goal_zone.body_entered.connect(_on_goal_zone_body_entered)
+	_selection_area.collision_layer = Faction.physics_layer(faction)
 	var mat := _structure.get_active_material(0)
 	if mat is StandardMaterial3D:
 		mat = mat.duplicate()

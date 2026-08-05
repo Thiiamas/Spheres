@@ -1,11 +1,13 @@
 extends CharacterBody3D
 class_name RuneMage
 
-## MOBA-style caster unit (phase 6 — Ryze-inspired). Controlled entirely with
-## the mouse: right-click ("move_click") walks toward the clicked ground point,
-## LoL style, and the three spells (A/Z/E) are cast at / toward the cursor.
-## Spells arrive in sub-phases 6.3-6.5; this script owns movement, HP and the
-## cast plumbing (cooldown timers).
+## MOBA-style caster unit (phase 6 — Ryze-inspired). The three spells (A/Z/E)
+## are cast at / toward the cursor. Movement was click-to-move (phase 6) but
+## became direct ZQSD in phase 8.2 (Docs/Plans/phase8_foundations.md) once the
+## mage started spawning mid-battle from a possessed FrontUnit — a MOBA-style
+## destination click doesn't fit a unit you just swapped into on a live front
+## line, and left-click was needed for "select" (swapping into another ally)
+## instead. This script owns movement, HP and the cast plumbing (cooldown timers).
 ##
 ## Like the sphere, the mage never reads Input.*: the possession layer pushes
 ## a normalized InputContext through drive(ctx) each frame.
@@ -16,13 +18,16 @@ class_name RuneMage
 @export var faction: Faction.Kind = Faction.Kind.ALLY
 
 @export_group("Movement")
-## Walk speed toward the clicked destination.
+## Walk speed while a move key is held.
 @export var move_speed: float = 6.0
-## Distance at which the destination counts as reached.
-@export var stop_distance: float = 0.15
 ## How fast the body turns to face its walk direction (rad/s factor).
 @export var turn_speed: float = 12.0
 @export var gravity: float = 18.0
+
+@export_group("References")
+## Supplies the view yaw so ZQSD is camera-relative, same convention as
+## SphereController.camera — bound by CameraRig.bind_camera() on possession.
+@export var camera: CameraRig
 
 @export_group("Health")
 ## HP pool (entities/shared/health.gd) — take_damage forwards to it, same
@@ -72,10 +77,6 @@ var is_controlled: bool = false
 ## The possession-contract child; set by RuneMageControllable in its _ready.
 var controllable: Controllable = null
 
-# Click-to-move destination (world space, XZ plane).
-var _destination: Vector3 = Vector3.ZERO
-var _has_destination: bool = false
-
 # Latest InputContext pushed via drive(). Null while not possessed.
 var _ctx: InputContext = null
 
@@ -109,11 +110,6 @@ func drive(ctx: InputContext) -> void:
 	_ctx = ctx
 	_tick_cooldowns(ctx.delta)
 
-	# LoL movement: right-click sets (and, held, keeps updating) the destination.
-	if ctx.pressed(&"move_click"):
-		_destination = ctx.world_cursor
-		_has_destination = true
-
 	if ctx.just_pressed(&"spell_a"):
 		_cast_bolt(ctx)
 	if ctx.just_pressed(&"spell_z"):
@@ -122,24 +118,28 @@ func drive(ctx: InputContext) -> void:
 		_cast_flux(ctx)
 
 
+## Let the shared camera point this mage at the right view yaw — mirrors
+## SphereController.bind_camera, called by CameraRig on possession.
+func bind_camera(cam: CameraRig) -> void:
+	camera = cam
+
+
 func _physics_process(delta: float) -> void:
 	if is_on_floor():
 		velocity.y = 0.0
 	else:
 		velocity.y -= gravity * delta
 
-	if is_controlled and _has_destination:
-		var to := _destination - global_position
-		to.y = 0.0
-		if to.length() <= stop_distance:
-			_has_destination = false
-			velocity.x = 0.0
-			velocity.z = 0.0
-		else:
-			var dir := to.normalized()
-			velocity.x = dir.x * move_speed
-			velocity.z = dir.z * move_speed
-			_face_toward(dir, delta)
+	# _ctx.move_vector is re-sampled at physics rate by the possession layer
+	# (InputContext.refresh_held, called from Consciousness._physics_process
+	# right before this), same as SphereController.apply_roll.
+	if is_controlled and _ctx != null and _ctx.move_vector != Vector2.ZERO:
+		var view_yaw := camera.get_view_yaw() if camera else 0.0
+		var yaw_basis := Basis(Vector3.UP, deg_to_rad(view_yaw))
+		var dir := (yaw_basis * Vector3(_ctx.move_vector.x, 0.0, _ctx.move_vector.y)).normalized()
+		velocity.x = dir.x * move_speed
+		velocity.z = dir.z * move_speed
+		_face_toward(dir, delta)
 	else:
 		velocity.x = 0.0
 		velocity.z = 0.0
@@ -156,7 +156,6 @@ func set_active() -> void:
 
 func set_passive() -> void:
 	is_controlled = false
-	_has_destination = false
 	_ctx = null
 	velocity = Vector3.ZERO
 	_apply_visual()
@@ -168,9 +167,17 @@ func take_damage(amount: float) -> void:
 	health.take_damage(amount)
 
 
+## Death mid-possession (H3, Docs/Plans/phase8_foundations.md): unlike phase
+## 7, there's no permanent mage to respawn — every RuneMage is born from a
+## FrontUnit possession (PossessionSwap), so dying simply hands control back
+## to the player's Base. No new FrontUnit is spawned in its place either;
+## the unit is just gone, same as any other combat death.
 func _on_health_died() -> void:
 	if controllable != null:
 		Consciousness.unregister(controllable)
+	var base := PossessionSwap.find_ally_base()
+	if base != null and base.controllable != null:
+		Consciousness.request_possession(base.controllable)
 	died.emit()
 	queue_free()
 
@@ -195,7 +202,6 @@ func _cast_bolt(ctx: InputContext) -> void:
 	dir = dir.normalized()
 
 	_bolt_timer = bolt_cooldown
-	_has_destination = false
 	rotation.y = atan2(dir.x, dir.z)
 
 	var bolt := bolt_scene.instantiate()
@@ -215,7 +221,6 @@ func _cast_flux(ctx: InputContext) -> void:
 	if target == null:
 		return # no enemy under the cursor: the cast simply doesn't go off
 	_flux_timer = flux_cooldown
-	_has_destination = false
 	var to := target.global_position - global_position
 	rotation.y = atan2(to.x, to.z)
 
@@ -236,7 +241,6 @@ func _cast_cage(ctx: InputContext) -> void:
 	if target == null or not target.has_method("root"):
 		return # no rootable enemy under the cursor
 	_cage_timer = cage_cooldown
-	_has_destination = false
 	var to := target.global_position - global_position
 	rotation.y = atan2(to.x, to.z)
 
@@ -249,7 +253,7 @@ func _cast_cage(ctx: InputContext) -> void:
 ## Cooldown lines shown by the debug HUD (duck-typed — see HUD.gd).
 func get_hud_lines() -> Array[String]:
 	var lines: Array[String] = []
-	lines.append("Right-click: move")
+	lines.append("ZQSD: move   Left-click: switch to another ally")
 	lines.append("A: bolt %s" % _cd_label(_bolt_timer))
 	lines.append("Z: cage %s" % _cd_label(_cage_timer))
 	lines.append("E: flux %s" % _cd_label(_flux_timer))

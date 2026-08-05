@@ -3,7 +3,6 @@
 [ext_resource type="Script" uid="uid://bcclc3nn0krnq" path="res://levels/level2_front.gd" id="1_front"]
 [ext_resource type="Script" uid="uid://du2qpi72se1or" path="res://core/camera_rig.gd" id="2_cam"]
 [ext_resource type="Script" uid="uid://kvu8t082hllc" path="res://ui/hud.gd" id="3_hud"]
-[ext_resource type="PackedScene" uid="uid://briuk5d171ryd" path="res://entities/mage/rune_mage.tscn" id="4_mage"]
 [ext_resource type="PackedScene" path="res://entities/base/base.tscn" id="5_base"]
 [ext_resource type="PackedScene" uid="uid://c7yi0645uwuga" path="res://entities/front_unit/ally_unit.tscn" id="6_ally"]
 [ext_resource type="PackedScene" path="res://entities/front_unit/enemy_unit.tscn" id="7_enemy"]
@@ -59,7 +58,6 @@ size = Vector3(0.5, 2, 51)
 
 [node name="Level2Front" type="Node3D" unique_id=2071922801]
 script = ExtResource("1_front")
-mage_scene = ExtResource("4_mage")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=226396899]
 environment = SubResource("Env")
@@ -146,9 +144,6 @@ tint = Color(0.27, 0.41, 1, 1)
 
 [node name="EnemyTower" parent="." unique_id=798972754 instance=ExtResource("8_tower")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 10)
-
-[node name="RuneMage" parent="." unique_id=1261096820 instance=ExtResource("4_mage")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.55, -16)
 
 [node name="CameraRig" type="Camera3D" parent="." unique_id=1199782817]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.4, 4.35, -18.3)
