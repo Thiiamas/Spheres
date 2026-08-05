@@ -19,6 +19,7 @@ config/icon="res://icon.svg"
 
 Consciousness="*res://autoloads/consciousness.gd"
 GameManager="*res://autoloads/game_manager.gd"
+Economy="*res://autoloads/economy.gd"
 
 [dotnet]
 
@@ -105,6 +106,11 @@ attack={
 aoe={
 "deadzone": 0.5,
 "events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":90,"physical_keycode":0,"key_label":0,"unicode":122,"location":0,"echo":false,"script":null)
+]
+}
+buy_slot={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":66,"physical_keycode":0,"key_label":0,"unicode":98,"location":0,"echo":false,"script":null)
 ]
 }
 cam_pan_left={

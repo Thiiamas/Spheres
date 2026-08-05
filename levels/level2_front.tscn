@@ -8,6 +8,8 @@
 [ext_resource type="PackedScene" uid="uid://c7yi0645uwuga" path="res://entities/front_unit/ally_unit.tscn" id="6_ally"]
 [ext_resource type="PackedScene" path="res://entities/front_unit/enemy_unit.tscn" id="7_enemy"]
 [ext_resource type="PackedScene" path="res://entities/tower/tower.tscn" id="8_tower"]
+[ext_resource type="PackedScene" path="res://entities/base/mortar_shell.tscn" id="9_mortar"]
+[ext_resource type="PackedScene" path="res://entities/sphere/aoe_blast.tscn" id="10_blast"]
 
 [sub_resource type="ProceduralSkyMaterial" id="Sky_mat"]
 sky_top_color = Color(0.33, 0.45, 0.62, 1)
@@ -118,15 +120,14 @@ mesh = SubResource("Box_wall_ew")
 [node name="Col" type="CollisionShape3D" parent="Arena/WallWest" unique_id=1775661138]
 shape = SubResource("Shape_wall_ew")
 
-[node name="RuneMage" parent="." unique_id=1261096820 instance=ExtResource("4_mage")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.55, -16)
-
 [node name="PlayerBase" parent="." unique_id=1660653947 instance=ExtResource("5_base")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -20)
 unit_scene = ExtResource("6_ally")
-wave_size = 6
+wave_size = 0
 wave_spread = 3.425
 tint = Color(0.27, 0.41, 1, 1)
+mortar_scene = ExtResource("9_mortar")
+mortar_blast_scene = ExtResource("10_blast")
 
 [node name="EnemyBase" parent="." unique_id=356358028 instance=ExtResource("5_base")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 20)
@@ -145,6 +146,9 @@ tint = Color(0.27, 0.41, 1, 1)
 
 [node name="EnemyTower" parent="." unique_id=798972754 instance=ExtResource("8_tower")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 10)
+
+[node name="RuneMage" parent="." unique_id=1261096820 instance=ExtResource("4_mage")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.55, -16)
 
 [node name="CameraRig" type="Camera3D" parent="." unique_id=1199782817]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.4, 4.35, -18.3)

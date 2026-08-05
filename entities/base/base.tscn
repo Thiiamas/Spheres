@@ -1,6 +1,9 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://entities/base/base.gd" id="1_base"]
+[ext_resource type="Script" path="res://entities/base/base_controllable.gd" id="2_possess"]
+[ext_resource type="Script" uid="uid://btf42jnq5hi48" path="res://core/camera_config.gd" id="3_camcfg"]
+[ext_resource type="Resource" path="res://entities/base/base_freepan.tres" id="4_cfg_freepan"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_structure"]
 albedo_color = Color(0.6, 0.6, 0.65, 1)
@@ -29,3 +32,7 @@ collision_layer = 0
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="GoalZone"]
 shape = SubResource("Shape_goal")
+
+[node name="Controllable" type="Node" parent="."]
+script = ExtResource("2_possess")
+camera_configs = Array[ExtResource("3_camcfg")]([ExtResource("4_cfg_freepan")])

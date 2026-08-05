@@ -33,6 +33,11 @@ class_name CameraConfig
 @export var zoom_max: float = 45.0
 ## Mouse-wheel zoom step.
 @export var zoom_step: float = 2.5
+## RTS free-pan (topdown only): the camera doesn't track the entity and is
+## panned by the player instead (edge-scroll + cam_pan_* fallback, see
+## CameraRig._apply_pan). False keeps the classic entity-following topdown
+## (sphere_rts.tres).
+@export var free_pan: bool = false
 
 @export_group("Lens")
 @export var fov: float = 75.0

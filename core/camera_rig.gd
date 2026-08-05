@@ -9,10 +9,11 @@ class_name CameraRig
 ## Modes (CameraConfig.mode):
 ##   &"follow"  - smooth chase cam trailing the entity based on reactor yaw.
 ##                Mouse is captured for aiming.
-##   &"topdown" - high, angled, StarCraft/LoL-style overhead view that follows
-##                the entity. The mouse is freed and used to aim the reactor;
-##                zoom with the mouse wheel. Free-panning is available via
-##                exports but off by default.
+##   &"topdown" - high, angled, StarCraft/LoL-style overhead view. By default
+##                follows the entity; the mouse is freed and used to aim the
+##                reactor, zoom with the mouse wheel. CameraConfig.free_pan
+##                switches this to an RTS-style free camera instead (edge-scroll
+##                + cam_pan_* fallback, no entity tracking) — see base_freepan.tres.
 ##   &"fixed"   - the camera stays where it is and only looks at the entity.
 
 @export_group("Targets")
@@ -23,12 +24,14 @@ class_name CameraRig
 ## Pan units/sec (scaled up when zoomed out). Only used when not following.
 @export var pan_speed: float = 22.0
 ## Pixels from a screen edge that start scrolling.
-@export var edge_margin: float = 18.0
-## Mouse-edge panning. Off so the mouse only aims the reactor.
+@export var edge_margin: float = 90.0
+## Mouse-edge panning. Overridden per possession by CameraConfig.free_pan in
+## apply_config() — the export is only the value before any config has applied.
 @export var edge_scroll: bool = false
 ## Snap focus to the entity when entering topdown.
 @export var recenter_on_enter: bool = true
-## Camera tracks the entity instead of free-panning.
+## Camera tracks the entity instead of free-panning. Overridden per possession
+## by CameraConfig.free_pan in apply_config(), same as edge_scroll above.
 @export var follow_target: bool = true
 
 ## The configuration currently applied (null until the first possession).
@@ -41,6 +44,11 @@ var _zoom: float = -1.0
 # The ground point the topdown camera looks at.
 var _rts_focus: Vector3 = Vector3.ZERO
 const _ZOOM_REF: float = 18.0 # zoom at which pan_speed is unscaled
+
+# Smoothed pan input (see _apply_pan) — keeps free-pan from snapping straight
+# to full speed the instant the cursor crosses edge_margin.
+var _pan_velocity: Vector2 = Vector2.ZERO
+const _PAN_SMOOTHING: float = 10.0
 
 # How the active entity's attack resolves "where the mouse points", swapped per
 # camera mode (Strategy pattern). See AimStrategy.
@@ -118,6 +126,13 @@ func apply_config(cfg: CameraConfig) -> void:
 	_aim_strategy = ScreenCenterAim.new() if is_follow else MouseCursorAim.new()
 
 	if cfg.mode == &"topdown":
+		# The two pan behaviours below were exports on the rig itself before
+		# free_pan existed on the config (they still are — this just makes
+		# them follow the possessed entity's own config instead of staying
+		# fixed for the whole scene). False for every config restores the
+		# original follow-the-entity topdown (sphere_rts.tres, mage_topdown.tres).
+		follow_target = not cfg.free_pan
+		edge_scroll = cfg.free_pan
 		if _zoom < 0.0:
 			_zoom = cfg.zoom # first topdown ever: seed from data
 		_zoom = clampf(_zoom, cfg.zoom_min, cfg.zoom_max)
@@ -222,19 +237,26 @@ func _apply_pan(delta: float) -> void:
 		var m := get_viewport().get_mouse_position()
 		# Only react when the cursor is actually inside the window.
 		if m.x >= 0.0 and m.y >= 0.0 and m.x <= view_size.x and m.y <= view_size.y:
+			# Graduated by proximity to the edge (0 at edge_margin, 1 at the
+			# screen edge) rather than an on/off flag — a hard binary snap to
+			# full speed the instant the cursor crosses edge_margin is what
+			# made this feel jerky.
 			if m.x < edge_margin:
-				pan.x -= 1.0
+				pan.x -= 1.0 - m.x / edge_margin
 			elif m.x > view_size.x - edge_margin:
-				pan.x += 1.0
+				pan.x += (m.x - (view_size.x - edge_margin)) / edge_margin
 			if m.y < edge_margin:
-				pan.y -= 1.0
+				pan.y -= 1.0 - m.y / edge_margin
 			elif m.y > view_size.y - edge_margin:
-				pan.y += 1.0
-
-	if pan == Vector2.ZERO:
-		return
+				pan.y += (m.y - (view_size.y - edge_margin)) / edge_margin
 
 	pan = pan.limit_length(1.0)
+	# Smooth the applied velocity itself, on top of the graduated edge speed
+	# above, so panning ramps in/out instead of jumping frame-to-frame.
+	_pan_velocity = _pan_velocity.lerp(pan, 1.0 - exp(-_PAN_SMOOTHING * delta))
+	if _pan_velocity.length() < 0.001:
+		return
+
 	# Pan in the camera's compass plane; move faster when zoomed further out.
-	var move := Basis(Vector3.UP, deg_to_rad(config.yaw)) * Vector3(pan.x, 0.0, pan.y)
+	var move := Basis(Vector3.UP, deg_to_rad(config.yaw)) * Vector3(_pan_velocity.x, 0.0, _pan_velocity.y)
 	_rts_focus += move * pan_speed * (_zoom / _ZOOM_REF) * delta

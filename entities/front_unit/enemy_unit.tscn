@@ -4,6 +4,7 @@
 [ext_resource type="Shader" uid="uid://dlnbjft0403wj" path="res://shaders/front_unit_attack.gdshader" id="2_attack"]
 [ext_resource type="Script" path="res://ui/hp_bar_3d.gd" id="3_hpbar"]
 [ext_resource type="Script" path="res://entities/shared/health.gd" id="4_health"]
+[ext_resource type="Script" path="res://entities/shared/loot_on_death.gd" id="5_loot"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_enemy"]
 render_priority = 0
@@ -74,3 +75,7 @@ mesh = SubResource("Box_bar_fill")
 script = ExtResource("4_health")
 max_hp = 40.0
 hp_bar = NodePath("../HPBar3D")
+
+[node name="LootOnDeath" type="Node" parent="." node_paths=PackedStringArray("health")]
+script = ExtResource("5_loot")
+health = NodePath("../Health")

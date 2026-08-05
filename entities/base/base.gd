@@ -8,6 +8,10 @@ class_name Base
 ## Reports when an opposing-faction unit reaches its GoalZone via
 ## unit_reached_goal, but doesn't decide what that means (win, later: damage)
 ## — the level script does, keeping Base ignorant of win/loss state.
+##
+## Also the player's entry point (phase 8.1, Docs/Plans/phase8_foundations.md):
+## a sibling BaseControllable exposes this node to the possession layer, which
+## drives it via drive() below — a ranged attack and wave-slot purchases.
 
 signal unit_reached_goal(unit: FrontUnit)
 
@@ -32,11 +36,30 @@ signal unit_reached_goal(unit: FrontUnit)
 ## sides without needing two separate meshes/materials.
 @export var tint: Color = Color(0.6, 0.6, 0.65)
 
+@export_group("Attack")
+## Lobbed at the mouse cursor with "attack" (A / left-click) while this Base
+## is possessed (phase 8.1, MortarShell — Docs/Plans/phase8_foundations.md).
+## A flat-flying Projectile (the sphere's) was tried first and sailed clean
+## over every ground unit; a mortar arcs down onto the target point instead.
+@export var mortar_scene: PackedScene
+@export var mortar_blast_scene: PackedScene
+@export var attack_cooldown: float = 0.9
+@export var mortar_damage: float = 25.0
+@export var mortar_radius: float = 2.5
+@export var mortar_flight_time: float = 0.9
+
+@export_group("Economy")
+## Cost of the next wave-size slot: slot_cost_base + wave_size * slot_cost_step,
+## so each purchase makes the next one pricier.
+@export var slot_cost_base: int = 20
+@export var slot_cost_step: int = 10
+
 @onready var _wave_timer: Timer = $WaveTimer
 @onready var _goal_zone: Area3D = $GoalZone
 @onready var _structure: MeshInstance3D = $Structure
 
 var _spawning: bool = true
+var _attack_timer: float = 0.0
 
 
 func _ready() -> void:
@@ -96,3 +119,44 @@ func _on_wave_timer_timeout() -> void:
 func _on_goal_zone_body_entered(body: Node3D) -> void:
 	if body is FrontUnit and body.faction != faction:
 		unit_reached_goal.emit(body)
+
+
+## Per-frame input while this Base is possessed (BaseControllable.handle_input).
+## The Base doesn't move — firing at the cursor and buying wave slots is the
+## entirety of its possession behaviour for this milestone.
+func drive(ctx: InputContext) -> void:
+	_attack_timer -= ctx.delta
+	if ctx.just_pressed(&"attack"):
+		_try_fire(ctx)
+	if ctx.just_pressed(&"buy_slot"):
+		_try_buy_slot()
+
+
+func _try_fire(ctx: InputContext) -> void:
+	if mortar_scene == null or _attack_timer > 0.0:
+		return
+	_attack_timer = attack_cooldown
+
+	var shell := mortar_scene.instantiate()
+	get_tree().current_scene.add_child(shell)
+	shell.global_position = global_position + Vector3.UP * 1.5
+	if shell is MortarShell:
+		shell.setup(ctx.world_cursor, mortar_radius, mortar_damage,
+			mortar_flight_time, mortar_blast_scene)
+
+
+func _try_buy_slot() -> void:
+	if Economy.try_spend(_next_slot_cost()):
+		wave_size += 1
+
+
+func _next_slot_cost() -> int:
+	return slot_cost_base + wave_size * slot_cost_step
+
+
+## Debug HUD block (duck-typed, see ui/hud.gd) shown while this Base is possessed.
+func get_hud_lines() -> Array[String]:
+	return [
+		"Left-click/A: fire   B: buy wave slot",
+		"Resources: %d   Slot: %d   Next: %d" % [Economy.resources, wave_size, _next_slot_cost()],
+	]

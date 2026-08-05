@@ -16,7 +16,7 @@ class_name InputContext
 ## are harmless: each entity only consumes its own actions.
 const TRACKED_ACTIONS: Array[StringName] = [
 	&"jump", &"boost", &"attack", &"aoe", &"mode_toggle",
-	&"move_click", &"spell_a", &"spell_z", &"spell_e",
+	&"move_click", &"spell_a", &"spell_z", &"spell_e", &"buy_slot",
 ]
 
 ## WASD / left stick, in input space (x = left/right, y = forward/back).
