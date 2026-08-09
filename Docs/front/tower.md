@@ -90,10 +90,10 @@ et redimensionneraient la forme de l'autre.
 
 ```gdscript
 func is_protected() -> bool:
-    for body in _zone.get_overlapping_bodies():
-        if body is FrontUnit and body.faction == Faction.opposite(_faction):
-            return true
-    return false
+	for body in _zone.get_overlapping_bodies():
+		if body is FrontUnit and body.faction == Faction.opposite(_faction):
+			return true
+	return false
 ```
 
 Vrai tant qu'un `FrontUnit` hostile (relatif à la faction de ce composant)
@@ -155,14 +155,14 @@ les dégâts directement :
 
 ```gdscript
 func _fire_at(target: Node) -> void:
-    if retaliation_projectile == null:
-        target.take_damage(retaliation_damage)
-        return
-    var bolt := retaliation_projectile.instantiate()
-    get_tree().current_scene.add_child(bolt)
-    bolt.global_position = global_position + Vector3.UP * muzzle_height
-    if bolt.has_method("launch"):
-        bolt.launch(target, retaliation_projectile_speed, retaliation_damage)
+	if retaliation_projectile == null:
+		target.take_damage(retaliation_damage)
+		return
+	var bolt := retaliation_projectile.instantiate()
+	get_tree().current_scene.add_child(bolt)
+	bolt.global_position = global_position + Vector3.UP * muzzle_height
+	if bolt.has_method("launch"):
+		bolt.launch(target, retaliation_projectile_speed, retaliation_damage)
 ```
 
 - `retaliation_projectile` est un `PackedScene` exporté, laissé `null` par
@@ -187,8 +187,8 @@ seule de leur interaction :
 
 ```gdscript
 func take_damage(amount: float) -> void:
-    if escort_gate.is_protected():
-        health.take_damage(amount)
+	if escort_gate.is_protected():
+		health.take_damage(amount)
 ```
 
 - `collision_layer = Faction.physics_layer(faction)` (2 pour `ENEMY`, comme
@@ -224,12 +224,12 @@ est en vie, exactement comme demandé.
   Sinon, repli sur `_nearest_hostile()` comme avant.
   ```gdscript
   func _current_target() -> Node3D:
-      if target_tower != null and is_instance_valid(target_tower):
-          var to := target_tower.global_position - global_position
-          to.y = 0.0
-          if to.length_squared() <= ENGAGE_RANGE * ENGAGE_RANGE:
-              return target_tower
-      return _nearest_hostile()
+	  if target_tower != null and is_instance_valid(target_tower):
+		  var to := target_tower.global_position - global_position
+		  to.y = 0.0
+		  if to.length_squared() <= ENGAGE_RANGE * ENGAGE_RANGE:
+			  return target_tower
+	  return _nearest_hostile()
   ```
   Aucun état mis en cache : réévalué chaque tick physique, donc dès que
   `Tower.queue_free()` rend `target_tower` invalide (mort), l'unité retombe

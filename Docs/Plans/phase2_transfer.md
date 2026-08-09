@@ -98,25 +98,25 @@ var spheres: Array = []
 var current_index := 0
 
 func _ready() -> void:
-    pass
+	pass
 
 func _input(event: InputEvent) -> void:
-    if event.is_action_pressed("transfer"):
-        transfer_to_next()
+	if event.is_action_pressed("transfer"):
+		transfer_to_next()
 
 func register(sphere) -> void:
-    spheres.append(sphere)
-    if spheres.size() == 1:
-        sphere.set_active()
-    else:
-        sphere.set_passive()
+	spheres.append(sphere)
+	if spheres.size() == 1:
+		sphere.set_active()
+	else:
+		sphere.set_passive()
 
 func transfer_to_next() -> void:
-    if spheres.size() < 2:
-        return
-    spheres[current_index].set_passive()
-    current_index = (current_index + 1) % spheres.size()
-    spheres[current_index].set_active()
+	if spheres.size() < 2:
+		return
+	spheres[current_index].set_passive()
+	current_index = (current_index + 1) % spheres.size()
+	spheres[current_index].set_active()
 ```
 
 ### 3. Modifier `Sphere.gd` — ajout du register
@@ -125,7 +125,7 @@ Dans la fonction `_ready()` de `Sphere.gd`, ajouter :
 
 ```gdscript
 func _ready() -> void:
-    Consciousness.register(self)
+	Consciousness.register(self)
 ```
 
 ### 4. Modifier `Main.tscn`

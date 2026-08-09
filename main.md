@@ -50,18 +50,3 @@ principale), `levels/level2_front.tscn` (Le Front), `levels/test_scene.tscn`
 (bac à sable parkour, sans rapport avec la boucle de jeu),
 `tests/shader_gallery.tscn` / `shader_showcase.tscn` (revue des shaders
 sphère/tribu, hors gameplay).
-
-## Pour une discussion game design
-
-Les questions qui n'ont **pas** de réponse dans le code aujourd'hui (détail
-dans `Docs/Plans/PLAN.md`, « Questions ouvertes ») :
-
-- Laquelle des deux boucles (défense de vagues vs Le Front) est le vrai
-  prototype à pousser — ou les deux coexistent-elles délibérément ?
-- Quel système de mouvement retenir pour la sphère active ?
-- Comment le joueur obtient-il de nouvelles sphères/capacités en cours de
-  run, et sont-elles choisies avant ou pendant la partie ?
-- La conscience doit-elle pouvoir posséder autre chose que des sphères (déjà
-  esquissé : balise, RuneMage) ?
-- La caméra doit-elle montrer tout le champ de bataille ou rester proche de
-  la sphère active ?

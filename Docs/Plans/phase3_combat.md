@@ -39,7 +39,7 @@ CharacterBody3D  (Enemy)
 ├── CollisionShape3D  (BoxShape3D, taille 1×1×1)
 ├── MeshInstance3D    (BoxMesh, taille 1×1×1, couleur gris #888888)
 └── Area3D  (AttackZone)
-    └── CollisionShape3D  (SphereShape3D, radius = 1.2)
+	└── CollisionShape3D  (SphereShape3D, radius = 1.2)
 ```
 
 ### 2. Créer `Enemy.gd`
@@ -55,35 +55,35 @@ var target = null
 var attack_timer := 0.0
 
 func _ready() -> void:
-    $AttackZone.body_entered.connect(_on_attack_zone_body_entered)
+	$AttackZone.body_entered.connect(_on_attack_zone_body_entered)
 
 func _physics_process(delta: float) -> void:
-    attack_timer -= delta
-    find_target()
+	attack_timer -= delta
+	find_target()
 
-    if target == null:
-        return
+	if target == null:
+		return
 
-    # Déplacement sur le plan XZ uniquement
-    var dir := (target.global_position - global_position)
-    dir.y = 0.0
-    dir = dir.normalized()
+	# Déplacement sur le plan XZ uniquement
+	var dir := (target.global_position - global_position)
+	dir.y = 0.0
+	dir = dir.normalized()
 
-    velocity.x = dir.x * SPEED
-    velocity.z = dir.z * SPEED
-    if not is_on_floor():
-        velocity.y -= 9.8 * delta
+	velocity.x = dir.x * SPEED
+	velocity.z = dir.z * SPEED
+	if not is_on_floor():
+		velocity.y -= 9.8 * delta
 
-    move_and_slide()
+	move_and_slide()
 
 func find_target() -> void:
-    if Consciousness.spheres.size() > 0:
-        target = Consciousness.spheres[Consciousness.current_index]
+	if Consciousness.spheres.size() > 0:
+		target = Consciousness.spheres[Consciousness.current_index]
 
 func _on_attack_zone_body_entered(body) -> void:
-    if body.has_method("take_damage") and attack_timer <= 0.0:
-        body.take_damage(ATTACK_DAMAGE)
-        attack_timer = ATTACK_COOLDOWN
+	if body.has_method("take_damage") and attack_timer <= 0.0:
+		body.take_damage(ATTACK_DAMAGE)
+		attack_timer = ATTACK_COOLDOWN
 ```
 
 ### 3. Modifier `Sphere.gd` — ajout HP
@@ -96,23 +96,23 @@ const MAX_HP = 100.0
 const PASSIVE_DEFENSE = 3.0
 
 func take_damage(amount: float) -> void:
-    var actual := amount / PASSIVE_DEFENSE if not is_controlled else amount
-    hp -= actual
-    hp = max(hp, 0.0)
-    update_hp_bar()
-    if hp <= 0.0:
-        die()
+	var actual := amount / PASSIVE_DEFENSE if not is_controlled else amount
+	hp -= actual
+	hp = max(hp, 0.0)
+	update_hp_bar()
+	if hp <= 0.0:
+		die()
 
 func die() -> void:
-    Consciousness.spheres.erase(self)
-    if Consciousness.spheres.size() > 0:
-        Consciousness.current_index = Consciousness.current_index % Consciousness.spheres.size()
-        Consciousness.spheres[Consciousness.current_index].set_active()
-    queue_free()
+	Consciousness.spheres.erase(self)
+	if Consciousness.spheres.size() > 0:
+		Consciousness.current_index = Consciousness.current_index % Consciousness.spheres.size()
+		Consciousness.spheres[Consciousness.current_index].set_active()
+	queue_free()
 
 func update_hp_bar() -> void:
-    if has_node("HPBar3D"):
-        $HPBar3D.update_bar(hp, MAX_HP)
+	if has_node("HPBar3D"):
+		$HPBar3D.update_bar(hp, MAX_HP)
 ```
 
 ### 4. Ajouter une barre de HP 3D à `Sphere.tscn`
@@ -133,15 +133,15 @@ extends Node3D
 @onready var fill: MeshInstance3D = $Fill
 
 func _process(_delta: float) -> void:
-    # Toujours face à la caméra (billboard)
-    if get_viewport().get_camera_3d():
-        look_at(get_viewport().get_camera_3d().global_position, Vector3.UP)
+	# Toujours face à la caméra (billboard)
+	if get_viewport().get_camera_3d():
+		look_at(get_viewport().get_camera_3d().global_position, Vector3.UP)
 
 func update_bar(current: float, maximum: float) -> void:
-    var ratio := current / maximum
-    fill.scale.x = ratio
-    # Décaler pour que la barre se vide depuis la droite
-    fill.position.x = (ratio - 1.0) * 0.5
+	var ratio := current / maximum
+	fill.scale.x = ratio
+	# Décaler pour que la barre se vide depuis la droite
+	fill.position.x = (ratio - 1.0) * 0.5
 ```
 
 ### 5. Spawner les ennemis dans `Main.tscn`
@@ -160,21 +160,21 @@ const SPAWN_RADIUS = 12.0
 const CAM_OFFSET := Vector3(0, 18, 14)
 
 func _ready() -> void:
-    spawn_enemies()
+	spawn_enemies()
 
 func _process(_delta: float) -> void:
-    if Consciousness.spheres.is_empty():
-        return
-    var active = Consciousness.spheres[Consciousness.current_index]
-    camera.global_position = active.global_position + CAM_OFFSET
-    camera.look_at(active.global_position, Vector3.UP)
+	if Consciousness.spheres.is_empty():
+		return
+	var active = Consciousness.spheres[Consciousness.current_index]
+	camera.global_position = active.global_position + CAM_OFFSET
+	camera.look_at(active.global_position, Vector3.UP)
 
 func spawn_enemies() -> void:
-    for i in ENEMY_COUNT:
-        var e = enemy_scene.instantiate()
-        var angle := (TAU / ENEMY_COUNT) * i
-        e.global_position = Vector3(cos(angle), 0.5, sin(angle)) * SPAWN_RADIUS
-        add_child(e)
+	for i in ENEMY_COUNT:
+		var e = enemy_scene.instantiate()
+		var angle := (TAU / ENEMY_COUNT) * i
+		e.global_position = Vector3(cos(angle), 0.5, sin(angle)) * SPAWN_RADIUS
+		add_child(e)
 ```
 
 Assigner `Enemy.tscn` à la variable `enemy_scene` dans l'inspecteur.

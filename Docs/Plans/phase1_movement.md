@@ -114,19 +114,19 @@ FLYING    - en l'air ET boost maintenu. La poussée du réacteur est appliquée
 
 ```gdscript
 func _apply_roll(physics_state: PhysicsDirectBodyState3D) -> void:
-    var input := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
-    if input == Vector2.ZERO:
-        return
+	var input := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	if input == Vector2.ZERO:
+		return
 
-    var view_yaw := camera.get_view_yaw() if camera else (reactor.yaw if reactor else 0.0)
-    var yaw_basis := Basis(Vector3.UP, deg_to_rad(view_yaw))
-    var dir := (yaw_basis * Vector3(input.x, 0.0, input.y)).normalized()
+	var view_yaw := camera.get_view_yaw() if camera else (reactor.yaw if reactor else 0.0)
+	var yaw_basis := Basis(Vector3.UP, deg_to_rad(view_yaw))
+	var dir := (yaw_basis * Vector3(input.x, 0.0, input.y)).normalized()
 
-    physics_state.apply_torque(Vector3.UP.cross(dir) * roll_torque)
+	physics_state.apply_torque(Vector3.UP.cross(dir) * roll_torque)
 
-    var spin := physics_state.angular_velocity
-    if spin.length() > max_roll_speed:
-        physics_state.angular_velocity = spin.normalized() * max_roll_speed
+	var spin := physics_state.angular_velocity
+	if spin.length() > max_roll_speed:
+		physics_state.angular_velocity = spin.normalized() * max_roll_speed
 ```
 
 ---
