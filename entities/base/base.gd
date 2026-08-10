@@ -14,6 +14,10 @@ class_name Base
 ## drives it via drive() below — a ranged attack and wave-slot purchases.
 
 signal unit_reached_goal(unit: FrontUnit)
+## Forwarded from the Health child's died (phase 9.1, Docs/Plans/
+## phase9_micro_poc.md) — same pattern as Tower's own `died`. Emitted once,
+## when this Base's HP first reaches zero.
+signal died
 
 ## The possession-contract sibling (BaseControllable) — set by it in its
 ## _ready, null on the enemy Base (never possessable, see
@@ -60,6 +64,11 @@ var controllable: Controllable = null
 @export var slot_cost_base: int = 20
 @export var slot_cost_step: int = 10
 
+## HP pool (phase 9.1, Docs/Plans/phase9_micro_poc.md) — same component as
+## Tower/FrontUnit. Unlike Tower, damage is unconditional (no EscortGate
+## gating): this Base isn't a siege objective, just something that can die.
+@export var health: Health
+
 @onready var _wave_timer: Timer = $WaveTimer
 @onready var _goal_zone: Area3D = $GoalZone
 @onready var _structure: MeshInstance3D = $Structure
@@ -67,9 +76,17 @@ var controllable: Controllable = null
 ## so it never physically blocks FrontUnit.move_and_slide() the way a solid
 ## StaticBody3D on the same physics layer as allies would.
 @onready var _selection_area: Area3D = $SelectionArea
+## Solid attack target (phase 9.1) — a separate StaticBody3D child rather
+## than making Base itself a physics body, so PossessionSwap's
+## `hit.get_parent() as Base` (resolving a click on _selection_area) still
+## works unchanged whichever of the two the "select" raycast happens to hit.
+@onready var _hull: StaticBody3D = $Hull
 
 var _spawning: bool = true
 var _attack_timer: float = 0.0
+## True once health reaches zero (phase 9.1) — Base stays in the tree (it
+## may be the actively possessed entity) but ignores further damage/input.
+var _defeated: bool = false
 
 
 func _ready() -> void:
@@ -79,6 +96,9 @@ func _ready() -> void:
 	_goal_zone.collision_mask = Faction.opposing_physics_layer(faction)
 	_goal_zone.body_entered.connect(_on_goal_zone_body_entered)
 	_selection_area.collision_layer = Faction.physics_layer(faction)
+	_hull.collision_layer = Faction.physics_layer(faction)
+	_hull.collision_mask = 0 # detects nothing itself, only detected by others
+	health.died.connect(_on_health_died)
 	var mat := _structure.get_active_material(0)
 	if mat is StandardMaterial3D:
 		mat = mat.duplicate()
@@ -132,10 +152,32 @@ func _on_goal_zone_body_entered(body: Node3D) -> void:
 		unit_reached_goal.emit(body)
 
 
+## Damage from a FrontUnit's bite (phase 9.1) — forwarded to the Health
+## child unconditionally (no escort gating, unlike Tower). No take_hit():
+## MortarShell only targets bodies with take_hit() on the enemy layer, so
+## the player's own mortar deliberately can't damage an enemy Base this way
+## — this POC is about killing units, not sieging structures.
+func take_damage(amount: float) -> void:
+	if _defeated:
+		return
+	health.take_damage(amount)
+
+
+## Doesn't queue_free() like Tower/FrontUnit do — this Base may be the
+## actively possessed entity when it dies, and there's no fallback entity
+## to hand control to in this POC. It just goes inert; the level script
+## reacts to `died` (stop enemy spawning, show defeat).
+func _on_health_died() -> void:
+	_defeated = true
+	died.emit()
+
+
 ## Per-frame input while this Base is possessed (BaseControllable.handle_input).
 ## The Base doesn't move — firing at the cursor and buying wave slots is the
 ## entirety of its possession behaviour for this milestone.
 func drive(ctx: InputContext) -> void:
+	if _defeated:
+		return
 	_attack_timer -= ctx.delta
 	if ctx.just_pressed(&"attack"):
 		_try_fire(ctx)

@@ -256,9 +256,24 @@ func _avoidance(exclude: Node3D) -> Vector3:
 
 func _try_attack() -> void:
 	for body in _attack_zone.get_overlapping_bodies():
-		if (body is FrontUnit and body.faction != faction) or body is Tower:
-			body.take_damage(attack_damage)
-			_attack_timer = attack_cooldown
-			_attacking_timer = attack_duration
-			attack_started.emit()
-			return
+		var victim := _damageable(body)
+		if victim == null:
+			continue
+		victim.take_damage(attack_damage)
+		_attack_timer = attack_cooldown
+		_attacking_timer = attack_duration
+		attack_started.emit()
+		return
+
+
+## Maps an overlapping body to the node that should actually take the damage,
+## or null if it isn't a valid victim. A Base (phase 9.1) is reached through
+## its Hull child rather than matched directly: Base is a plain Node3D, so the
+## body in the zone is the Hull, and take_damage lives on the Base itself.
+## No faction test needed — AttackZone's mask is already the opposing layer.
+func _damageable(body: Node3D) -> Node3D:
+	if body is FrontUnit and body.faction != faction:
+		return body
+	if body is Tower:
+		return body
+	return body.get_parent() as Base

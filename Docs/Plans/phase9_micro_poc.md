@@ -135,11 +135,15 @@ Phase 8 stable (`BaseControllable`, `MortarShell`, `Economy`,
   achat de slot plutôt que de crasher sur une entité à moitié morte.
 
 **2. `FrontUnit` reconnaît la `Base` comme cible d'attaque**
-- `entities/front_unit/front_unit.gd`, `_try_attack()` :
-  ```gdscript
-  if (body is FrontUnit and body.faction != faction) or body is Tower or body is Base:
-  ```
-  Aucune vérification de faction supplémentaire nécessaire — comme pour
+- `entities/front_unit/front_unit.gd`, `_try_attack()`. **Écart déclaré par
+  rapport au plan initial** : le test `body is Base` proposé ici ne peut pas
+  marcher — `Base` est un `Node3D`, jamais retourné par
+  `Area3D.get_overlapping_bodies()` ; le corps présent dans la zone est son
+  enfant `Hull`, qui n'a lui-même pas de `take_damage`. La boucle passe donc
+  par un helper `_damageable(body)` qui traduit un corps en *victime réelle*
+  (`body.get_parent() as Base` pour une Base) au lieu de tester le type sur
+  place et d'appeler `body.take_damage` en aveugle.
+- Aucune vérification de faction supplémentaire nécessaire — comme pour
   `Tower`, le filtrage se fait déjà par le masque de collision de
   `AttackZone` (`Faction.opposing_physics_layer(faction)`), qui ne peut de
   toute façon renvoyer que des corps de la faction adverse.
@@ -148,6 +152,14 @@ Phase 8 stable (`BaseControllable`, `MortarShell`, `Economy`,
   ni tour ni hostile ne sont trouvés (aucune des deux n'existe dans ce
   POC) — les unités marchent donc déjà droit sur la Base adverse
   aujourd'hui, sans code supplémentaire.
+- **Quirk découvert en écrivant le test** (pas un bug en jeu réel, mais un
+  piège pour tout futur test ou spawn manuel) : un `FrontUnit` sans
+  `target_base` *ni* `target_tower` ni hostile à portée fait un `return`
+  dans `_physics_process` **avant** d'atteindre `_try_attack()` — il ne mord
+  donc rien, même avec une cible valide dans sa `AttackZone`. `Base` assigne
+  toujours `target_base` aux unités qu'elle spawne, donc le cas ne se
+  produit pas en jeu ; il faut juste penser à l'assigner quand on instancie
+  une unité à la main.
 
 **3. Nouvelle scène `gameplay_loop/micro/micro_base_defense.tscn` / `.gd`**
 - Décor copié/adapté de `level2_front.tscn` (sol, murs, lumière,
@@ -187,25 +199,44 @@ Phase 8 stable (`BaseControllable`, `MortarShell`, `Economy`,
 - `entities/base/base.gd` (modifié — `Hull`, `Health`, `died`,
   `take_damage`, garde `_defeated` sur `drive()`)
 - `entities/base/base.tscn` (modifié — nœuds `Hull`, `Health`, `HPBar3D`)
-- `entities/front_unit/front_unit.gd` (modifié — `_try_attack()` reconnaît
-  `Base`)
+- `entities/front_unit/front_unit.gd` (modifié — helper `_damageable()`,
+  la Base atteinte via son `Hull`)
 - `gameplay_loop/micro/micro_base_defense.tscn`/`.gd` (nouveau)
+- `tests/base_health_test.gd`/`.tscn` (nouveau — test headless, même
+  convention que `base_possession_test`/`possession_swap_test`)
 
 ### Critères de validation
 
-- [ ] La partie démarre avec la Base du joueur possédée, caméra libre,
-      tir mortier fonctionnel (hérité de 8.1, à revérifier sans régression)
-- [ ] Des vagues de `FrontUnit` ennemis spawnent depuis `EnemyBase` et
-      avancent en ligne droite vers `PlayerBase`
-- [ ] Un `FrontUnit` ennemi arrivé à portée **endommage** la Base (barre de
-      vie visible qui baisse)
-- [ ] Tuer un ennemi (mortier ou, à défaut, corps-à-corps s'il y avait une
-      unité alliée — hors scope ici) rapporte des ressources visibles au HUD
-- [ ] La Base à 0 PV affiche un message Game Over, arrête le spawn ennemi,
-      et ignore silencieusement tir/achat de slot ensuite (pas de crash)
-- [ ] Cliquer sur la Base ennemie ou une zone quelconque ne casse pas la
-      sélection de la Base du joueur (`SelectionArea` toujours résolue
-      correctement malgré le nouveau `Hull`)
+Vérifié **headless** (`tests/base_health_test.tscn`, code retour 0) :
+
+- [x] Un `FrontUnit` ennemi arrivé à portée endommage la Base du montant
+      exact de son `attack_damage` (150 → 142 PV)
+- [x] La Base à 0 PV émet `died`, **reste dans l'arbre** (H5) et ignore
+      silencieusement les entrées suivantes (pas de crash sur un `attack`
+      envoyé après la défaite)
+- [x] Une vague **autonome** (sans intervention du test) sort de `EnemyBase`,
+      traverse le couloir et endommage la Base en ~11s — la boucle tourne
+      d'elle-même, ce n'est pas qu'un dégât synthétique
+- [x] Aucune régression : `base_possession_test`, `possession_swap_test`,
+      `rune_chain_test`, `synthetic_drive_test` toujours au vert
+
+Reste à confirmer **en playtest manuel** (pas vérifiable headless — pas de
+rendu, pas de souris réelle) :
+
+- [ ] La partie démarre avec la Base possédée, caméra libre, tir mortier
+      fonctionnel (hérité de 8.1, à revérifier sans régression visuelle)
+- [ ] La barre de vie de la Base est **visible et lisible** (position/taille
+      choisies à l'aveugle : `height = 3.0` au-dessus d'une structure de
+      2.5m — à ajuster si elle flotte trop haut/bas ou est trop petite)
+- [ ] Tuer un ennemi au mortier rapporte des ressources visibles au HUD
+- [ ] Le message de défaite s'affiche correctement à 0 PV
+- [ ] Cliquer sur la Base sélectionne toujours bien la Base malgré le
+      nouveau `Hull` (le raycast peut désormais toucher `Hull` **ou**
+      `SelectionArea` — les deux résolvent vers la Base, mais seul un vrai
+      curseur le prouve)
+- [ ] Équilibrage du *feel* : `wave_interval = 6s`, `wave_size = 2`,
+      `max_hp = 150` sont des valeurs de départ choisies sans playtest —
+      c'est précisément ce que ce POC doit régler
 
 ### À ne PAS faire dans ce jalon
 
@@ -372,6 +403,18 @@ concave ou un goulot d'étranglement — il n'y a **aucun vrai pathfinding**
   robustesse graduel, pas un niveau fini
 - Pas de `NavigationAgent3D` par défaut — seulement si 9.3 démontre que
   c'est nécessaire (voir sous-tâche 2b)
+
+---
+
+## Effet de bord sur `level2_front.tscn` (phase 7) — à traiter avec la défaite
+
+`base.tscn` est partagé par les deux niveaux : donner des PV à `Base` (9.1)
+en donne donc **aussi** aux deux bases de `level2_front.tscn`, et les
+`FrontUnit` peuvent désormais y mordre. Rien n'y écoute `Base.died` — une
+base tombée y devient donc silencieusement inerte, sans message ni fin de
+partie. **Exactement le même trou que `PlayerTower.died`** déjà noté dans
+`Docs/Plans/phase7_front.md` (« hors scope … à câbler en même temps que la
+défaite plus généralement ») — à traiter avec lui, pas séparément.
 
 ---
 
