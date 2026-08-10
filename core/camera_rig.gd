@@ -11,7 +11,8 @@ class_name CameraRig
 ##                Mouse is captured for aiming.
 ##   &"topdown" - high, angled, StarCraft/LoL-style overhead view. By default
 ##                follows the entity; the mouse is freed and used to aim the
-##                reactor, zoom with the mouse wheel. CameraConfig.free_pan
+##                reactor, zoom with the mouse wheel, rotate by dragging the
+##                middle mouse button (RuneScape-style). CameraConfig.free_pan
 ##                switches this to an RTS-style free camera instead (edge-scroll
 ##                + cam_pan_* fallback, no entity tracking) — see base_freepan.tres.
 ##   &"fixed"   - the camera stays where it is and only looks at the entity.
@@ -33,6 +34,8 @@ class_name CameraRig
 ## Camera tracks the entity instead of free-panning. Overridden per possession
 ## by CameraConfig.free_pan in apply_config(), same as edge_scroll above.
 @export var follow_target: bool = true
+## Degrees of orbit per pixel of middle-button drag (phase 9.1 finitions).
+@export var rotate_sensitivity: float = 0.35
 
 ## The configuration currently applied (null until the first possession).
 var config: CameraConfig = null
@@ -41,6 +44,13 @@ var config: CameraConfig = null
 # cycling and possession transfers (as it did when it was an export). It is
 # seeded from the first topdown config applied, then only clamped.
 var _zoom: float = -1.0
+# Orbit yaw, same deal as _zoom: RIG state, not config state, so a camera the
+# player turned stays turned across config cycling and possession transfers.
+# Seeded from the first topdown CameraConfig applied (INF = never seeded);
+# CameraConfig.yaw is therefore the *starting* compass angle, not a constant.
+var _yaw: float = INF
+# True while the middle mouse button is held (orbit drag in progress).
+var _rotating: bool = false
 # The ground point the topdown camera looks at.
 var _rts_focus: Vector3 = Vector3.ZERO
 const _ZOOM_REF: float = 18.0 # zoom at which pan_speed is unscaled
@@ -103,13 +113,31 @@ func _input(event: InputEvent) -> void:
 				apply_config(cfg)
 		return
 
-	# Mouse-wheel zoom, topdown only.
-	if config != null and config.mode == &"topdown" \
-			and event is InputEventMouseButton and event.pressed:
+	if config == null or config.mode != &"topdown":
+		return
+
+	# Mouse-wheel zoom and middle-drag orbit, topdown only. Both read raw mouse
+	# events rather than Input Map actions: the wheel has no action either, and
+	# keeping the orbit off the action list avoids competing with the arrows
+	# (cam_pan_*) or the left click (select/attack — see PLAN.md's known debt).
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_MIDDLE:
+		_rotating = event.pressed
+		return
+
+	if event is InputEventMouseButton and event.pressed:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
 			_zoom = clampf(_zoom - config.zoom_step, config.zoom_min, config.zoom_max)
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 			_zoom = clampf(_zoom + config.zoom_step, config.zoom_min, config.zoom_max)
+		return
+
+	if _rotating and event is InputEventMouseMotion:
+		# Horizontal drag only: pitch stays a per-config authored value, so the
+		# view can't be tipped into an unreadable angle mid-fight.
+		# Negated so the world follows the cursor (drag right and the scene
+		# swings right, like grabbing the ground) — the opposite sign felt
+		# backwards in playtest.
+		_yaw = fposmod(_yaw - event.relative.x * rotate_sensitivity, 360.0)
 
 
 ## Reconfigure the rig from data. Follow captures the mouse (for aiming) and
@@ -139,6 +167,8 @@ func apply_config(cfg: CameraConfig) -> void:
 		if _zoom < 0.0:
 			_zoom = cfg.zoom # first topdown ever: seed from data
 		_zoom = clampf(_zoom, cfg.zoom_min, cfg.zoom_max)
+		if is_inf(_yaw):
+			_yaw = cfg.yaw # first topdown ever: seed from data, then player-owned
 		if recenter_on_enter and target != null:
 			_rts_focus = target.global_position
 
@@ -185,13 +215,22 @@ func _physics_process(delta: float) -> void:
 
 
 ## The horizontal yaw the player is "looking along" in the current mode. The
-## sphere controller uses this so ground movement is camera-relative the same
-## way in every mode: follow trails the reactor aim, topdown uses its fixed
-## compass yaw.
+## sphere controller and the RuneMage's ZQSD use this so ground movement stays
+## camera-relative in every mode: follow trails the reactor aim, topdown uses
+## the current orbit angle — which the player can now turn, so "forward"
+## follows the camera around rather than being a fixed compass direction.
 func get_view_yaw() -> float:
 	if config != null and config.mode == &"topdown":
-		return config.yaw
+		return _current_yaw()
 	return reactor.yaw if reactor else 0.0
+
+
+## Orbit angle in degrees: the player-turned value once a topdown config has
+## seeded it, the raw config value before that.
+func _current_yaw() -> float:
+	if is_inf(_yaw):
+		return config.yaw if config != null else 0.0
+	return _yaw
 
 
 func _update_follow(delta: float) -> void:
@@ -215,7 +254,7 @@ func _update_topdown(delta: float) -> void:
 	var p := deg_to_rad(config.pitch)
 	var flat := cos(p) * _zoom # horizontal distance from focus
 	var up := sin(p) * _zoom   # height above focus
-	var offset := Basis(Vector3.UP, deg_to_rad(config.yaw)) * Vector3(0.0, up, flat)
+	var offset := Basis(Vector3.UP, deg_to_rad(_current_yaw())) * Vector3(0.0, up, flat)
 
 	global_position = _rts_focus + offset
 	look_at(_rts_focus, Vector3.UP)
@@ -278,5 +317,7 @@ func _apply_pan(delta: float) -> void:
 		return
 
 	# Pan in the camera's compass plane; move faster when zoomed further out.
-	var move := Basis(Vector3.UP, deg_to_rad(config.yaw)) * Vector3(_pan_velocity.x, 0.0, _pan_velocity.y)
+	# Reads the live orbit angle, so panning stays screen-relative ("left" is
+	# always screen-left) after the player turns the view.
+	var move := Basis(Vector3.UP, deg_to_rad(_current_yaw())) * Vector3(_pan_velocity.x, 0.0, _pan_velocity.y)
 	_rts_focus += move * pan_speed * (_zoom / _ZOOM_REF) * delta

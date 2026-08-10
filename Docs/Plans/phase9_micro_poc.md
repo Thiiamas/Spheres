@@ -223,8 +223,8 @@ Vérifié **headless** (`tests/base_health_test.tscn`, code retour 0) :
 Reste à confirmer **en playtest manuel** (pas vérifiable headless — pas de
 rendu, pas de souris réelle) :
 
-- [ ] La partie démarre avec la Base possédée, caméra libre, tir mortier
-      fonctionnel (hérité de 8.1, à revérifier sans régression visuelle)
+- [x] La partie démarre avec la Base possédée, caméra libre, tir mortier
+      fonctionnel (hérité de 8.1, revérifié sans régression visuelle)
 - [x] La barre de vie de la Base est **visible et lisible** — première
       version jugée trop petite en playtest, élargie (mesh 1 → 2.5 unités de
       large), validée. A nécessité un correctif générique dans
@@ -232,8 +232,8 @@ rendu, pas de souris réelle) :
       largeur de 1 unité (`(ratio - 1.0) * 0.5`), donc toute barre plus large
       se serait vidée depuis le mauvais côté ; la largeur est maintenant lue
       depuis le mesh (tour et unités inchangées visuellement, revérifiées)
-- [ ] Tuer un ennemi au mortier rapporte des ressources visibles au HUD
-- [ ] Le message de défaite s'affiche correctement à 0 PV
+- [x] Tuer un ennemi au mortier rapporte des ressources visibles au HUD
+- [x] Le message de défaite s'affiche correctement à 0 PV
 - [x] Cliquer sur la Base sélectionne toujours bien la Base malgré le
       nouveau `Hull` — confirmé en playtest : le raycast peut toucher `Hull`
       **ou** `SelectionArea`, les deux résolvent vers la `Base` via
@@ -243,6 +243,78 @@ rendu, pas de souris réelle) :
       `max_hp = 150` — jugés « ok pour l'instant » en playtest, gardés
       comme valeurs de travail (à réajuster quand 9.2 ajoutera la possession,
       qui change la pression ressentie)
+
+### Finitions (après validation de la boucle, avant de passer à 9.2)
+
+Le squelette de 9.1 validé, trois finitions demandées en playtest — du
+*feel*, pas de la mécanique :
+
+**1. Effet visuel à la mort — `DeathBurst`, sur les deux factions**
+- `entities/shared/death_burst.gd`/`.tscn` : l'unité éclate en une poignée
+  de débris qui partent vers l'extérieur, tournent, retombent (balistique
+  simple, sans collision) et s'estompent, puis la scène se libère seule.
+  Même contrat de cycle de vie qu'`AoeBlast`.
+- Construit **en code** plutôt qu'en `GPUParticles3D` : contrôle direct de
+  la forme des débris sans écrire un `ParticleProcessMaterial` à la main.
+  Précédent déjà dans le projet : `LootOnDeath` fabrique son `Label3D` en
+  code.
+- Déclenché par un composant séparé, `entities/shared/death_effect.gd`
+  (Node, écoute `Health.died`, sibling de `LootOnDeath`) — présentation et
+  économie restent indépendantes : les unités **alliées** éclatent sans
+  rien rapporter (pas de `LootOnDeath` chez elles), les ennemies font les
+  deux.
+- **Forme des débris par faction** : `spherical_shards` sur `DeathBurst`,
+  d'où deux variantes de scène (`death_burst.tscn` cubique pour les
+  ennemis, `death_burst_sphere.tscn` sphérique pour les alliés). Le langage
+  visuel du projet est entièrement sphère (allié) contre cube (ennemi)
+  — `Docs/LORE.md` — donc un allié qui explose en petits cubes se lit comme
+  un bug. Teinte assortie au `base_color` de chaque unité.
+- **Taille revue à la hausse** après premier playtest : débris 0.22 → 0.34,
+  nombre 9 → 12, vitesses et durée montées d'autant — la première version
+  était trop discrète face à une unité d'environ 1m.
+- L'effet est parenté à la **scène courante**, pas à l'entité mourante :
+  celle-ci se `queue_free()` dès que `died` est résolu
+  (`FrontUnit._on_health_died`) et emporterait l'effet avec elle.
+
+**2. Gain de ressource — `ResourceMote` vers la base la plus proche**
+- `entities/shared/resource_mote.gd`/`.tscn` : une petite bille émissive
+  qui décrit un arc depuis le kill jusqu'à la base qui encaisse (même
+  parabole que `MortarShell`), rétrécit sur le dernier quart du trajet, puis
+  se libère.
+- `LootOnDeath` gagne `mote_scene` et un scan `_nearest_ally_base()` sur
+  `Consciousness.entities` — la même source que
+  `PossessionSwap.find_ally_base()`, mais **la plus proche** et non la
+  première, puisque Méso/Macro mettront plusieurs bases sur le terrain.
+- Le `+N` flottant existant est **conservé** au point de mort (retour
+  immédiat du kill) ; le mote est la moitié « c'est arrivé à ta base ».
+- **Le mote ne touche jamais `Economy`** : le pool est crédité à la mort
+  (H4 de la phase 8), donc un mote perdu — ou une base détruite en cours de
+  vol — ne peut rien coûter au joueur.
+
+**3. Rotation de la caméra (façon RuneScape) — bien plus simple que prévu**
+- Doute levé en lisant le code : `_zoom` établissait **déjà** exactement le
+  patron nécessaire (« état du rig, pas de la config, initialisé depuis la
+  première `CameraConfig` topdown puis possédé par le joueur »). La
+  rotation est le même refactor appliqué à `yaw` : `CameraConfig.yaw`
+  devient l'angle de **départ** au lieu d'une constante.
+- `core/camera_rig.gd` : nouvel état `_yaw` (sentinelle `INF` = jamais
+  initialisé) + `_current_yaw()`, et les **trois** sites qui lisaient
+  `config.yaw` le lisent maintenant : placement de la caméra
+  (`_update_topdown`), direction du pan (`_apply_pan`, pour que « gauche »
+  reste la gauche de l'écran après rotation) et `get_view_yaw()`.
+- Entrée : **glisser au bouton du milieu**, lu directement en
+  `InputEventMouseButton`/`MouseMotion` — aucune action Input Map ajoutée,
+  comme le zoom molette qui n'en a pas non plus. Choix délibéré : les
+  flèches sont prises (`cam_pan_*`) et le clic gauche est déjà surchargé
+  (`select`/`attack`, cf. la dette notée dans `PLAN.md`).
+- Glissement **horizontal seulement** : le `pitch` reste une valeur
+  d'auteur par config, la vue ne peut pas être basculée dans un angle
+  illisible en pleine vague.
+- Conséquence à surveiller en playtest, pas un bug : `get_view_yaw()`
+  alimente le déplacement caméra-relatif du RuneMage (ZQSD) et le roulement
+  de la sphère. Tourner la caméra **change donc « l'avant »** — c'est le
+  comportement attendu (LoL/RuneScape font pareil), mais tourner en pleine
+  course dévie la trajectoire.
 
 ### À ne PAS faire dans ce jalon
 

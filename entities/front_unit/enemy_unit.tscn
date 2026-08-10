@@ -1,10 +1,13 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=15 format=3]
 
 [ext_resource type="Script" path="res://entities/front_unit/front_unit.gd" id="1_unit"]
 [ext_resource type="Shader" uid="uid://dlnbjft0403wj" path="res://shaders/front_unit_attack.gdshader" id="2_attack"]
 [ext_resource type="Script" path="res://ui/hp_bar_3d.gd" id="3_hpbar"]
 [ext_resource type="Script" path="res://entities/shared/health.gd" id="4_health"]
 [ext_resource type="Script" path="res://entities/shared/loot_on_death.gd" id="5_loot"]
+[ext_resource type="PackedScene" path="res://entities/shared/resource_mote.tscn" id="6_mote"]
+[ext_resource type="Script" path="res://entities/shared/death_effect.gd" id="7_deathfx"]
+[ext_resource type="PackedScene" path="res://entities/shared/death_burst.tscn" id="8_burst"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_enemy"]
 render_priority = 0
@@ -79,3 +82,10 @@ hp_bar = NodePath("../HPBar3D")
 [node name="LootOnDeath" type="Node" parent="." node_paths=PackedStringArray("health")]
 script = ExtResource("5_loot")
 health = NodePath("../Health")
+mote_scene = ExtResource("6_mote")
+
+[node name="DeathEffect" type="Node" parent="." node_paths=PackedStringArray("health")]
+script = ExtResource("7_deathfx")
+health = NodePath("../Health")
+effect_scene = ExtResource("8_burst")
+tint = Color(0.53, 0.53, 0.53, 1)

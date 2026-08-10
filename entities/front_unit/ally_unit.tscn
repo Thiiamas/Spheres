@@ -1,9 +1,11 @@
-[gd_scene load_steps=12 format=3 uid="uid://c7yi0645uwuga"]
+[gd_scene load_steps=14 format=3 uid="uid://c7yi0645uwuga"]
 
 [ext_resource type="Script" uid="uid://bgrx8kmk3mc08" path="res://entities/front_unit/front_unit.gd" id="1_unit"]
 [ext_resource type="Shader" uid="uid://dlnbjft0403wj" path="res://shaders/front_unit_attack.gdshader" id="2_tgebk"]
 [ext_resource type="Script" path="res://ui/hp_bar_3d.gd" id="3_hpbar"]
 [ext_resource type="Script" path="res://entities/shared/health.gd" id="4_health"]
+[ext_resource type="Script" path="res://entities/shared/death_effect.gd" id="5_deathfx"]
+[ext_resource type="PackedScene" path="res://entities/shared/death_burst_sphere.tscn" id="6_burst"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_ally"]
 render_priority = 0
@@ -74,3 +76,9 @@ mesh = SubResource("Box_bar_fill")
 script = ExtResource("4_health")
 max_hp = 40.0
 hp_bar = NodePath("../HPBar3D")
+
+[node name="DeathEffect" type="Node" parent="." node_paths=PackedStringArray("health")]
+script = ExtResource("5_deathfx")
+health = NodePath("../Health")
+effect_scene = ExtResource("6_burst")
+tint = Color(0.15, 0.3, 0.95, 1)
