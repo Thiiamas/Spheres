@@ -310,20 +310,20 @@ une autre unité alliée (ou sur la Base) → relâche la possession courante
 ### Critères de validation
 
 - [x] Clic sur un `FrontUnit` allié → possession en RuneMage, à la bonne
-      position, HP cohérents — vérifié headless (`possess_front_unit` +
-      `request_possession`, HP 50% → 50%)
+	  position, HP cohérents — vérifié headless (`possess_front_unit` +
+	  `request_possession`, HP 50% → 50%)
 - [x] ZQSD déplace le RuneMage possédé (plus de click-to-move) — vérifié
-      headless (input synthétique, déplacement mesuré)
+	  headless (input synthétique, déplacement mesuré)
 - [x] Les sorts A/Z/E fonctionnent toujours normalement — logique inchangée,
-      `rune_chain_test` (bolt/flux/mark) toujours au vert, rejoué manuellement
-      sur un RuneMage né d'une possession : confirmé
+	  `rune_chain_test` (bolt/flux/mark) toujours au vert, rejoué manuellement
+	  sur un RuneMage né d'une possession : confirmé
 - [x] Relâche la possession courante → l'ancienne unité redevient un
-      FrontUnit autonome, cible tour/base retrouvée — vérifié headless
+	  FrontUnit autonome, cible tour/base retrouvée — vérifié headless
 - [x] Mourir en étant possédé renvoie la possession sur la Base sans crash
-      (H3) — vérifié headless
+	  (H3) — vérifié headless
 - [x] Aucune régression sur le comportement Front autonome existant —
-      `synthetic_drive_test`/`rune_chain_test`/`base_possession_test` toujours
-      au vert
+	  `synthetic_drive_test`/`rune_chain_test`/`base_possession_test` toujours
+	  au vert
 
 > **Vérifié en conditions réelles (2026-08-10)** : la résolution du clic
 > souris→monde (`CameraRig.raycast_at_cursor` + la `SelectionArea` de la

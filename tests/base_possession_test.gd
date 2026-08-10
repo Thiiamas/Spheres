@@ -86,11 +86,23 @@ func _process(delta: float) -> void:
 
 		State.BUY_SLOT:
 			_initial_wave_size = _base.wave_size
-			_slot_cost = _base.slot_cost_base + _base.wave_size * _base.slot_cost_step
+			# Since phase 9.2 the wave slot is one Upgrade among the Base's list
+			# rather than a hardcoded buy_slot purchase: its cost comes from the
+			# resource, and its buy key is whichever UPGRADE_ACTIONS slot it
+			# occupies. Resolved by id so reordering the array can't break this.
+			var slot_index := -1
+			for i in _base.upgrades.size():
+				if _base.upgrades[i] != null and _base.upgrades[i].id == &"wave_slot":
+					slot_index = i
+					break
+			if slot_index < 0:
+				_fail("player Base offers no wave_slot upgrade")
+				return
+			_slot_cost = Progression.cost_of(_base.upgrades[slot_index])
 			Economy.add(_slot_cost)
 			var ctx := InputContext.new()
 			ctx.delta = delta
-			ctx.set_action(&"buy_slot", false, true)
+			ctx.set_action(Base.UPGRADE_ACTIONS[slot_index], false, true)
 			Consciousness.active().handle_input(ctx)
 			_state = State.CHECK_SLOT
 

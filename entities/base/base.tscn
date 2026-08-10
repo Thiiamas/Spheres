@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=21 format=3]
 
 [ext_resource type="Script" path="res://entities/base/base.gd" id="1_base"]
 [ext_resource type="Script" path="res://entities/base/base_controllable.gd" id="2_possess"]
@@ -6,6 +6,11 @@
 [ext_resource type="Resource" path="res://entities/base/base_freepan.tres" id="4_cfg_freepan"]
 [ext_resource type="Script" path="res://entities/shared/health.gd" id="5_health"]
 [ext_resource type="Script" path="res://ui/hp_bar_3d.gd" id="6_hpbar"]
+[ext_resource type="Resource" path="res://entities/base/upgrades/mortar_rate.tres" id="7_up_rate"]
+[ext_resource type="Resource" path="res://entities/base/upgrades/mortar_damage.tres" id="8_up_dmg"]
+[ext_resource type="Resource" path="res://entities/base/upgrades/base_hp.tres" id="9_up_hp"]
+[ext_resource type="Resource" path="res://entities/base/upgrades/wave_slot.tres" id="10_up_slot"]
+[ext_resource type="Script" path="res://core/upgrade.gd" id="11_upscript"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_structure"]
 albedo_color = Color(0.6, 0.6, 0.65, 1)
@@ -47,6 +52,7 @@ size = Vector3(2.5, 0.28, 0.05)
 [node name="Base" type="Node3D" node_paths=PackedStringArray("health")]
 script = ExtResource("1_base")
 health = NodePath("Health")
+upgrades = Array[ExtResource("11_upscript")]([ExtResource("7_up_rate"), ExtResource("8_up_dmg"), ExtResource("9_up_hp"), ExtResource("10_up_slot")])
 
 [node name="Structure" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.25, 0)

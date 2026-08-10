@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="Upgrade" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/upgrade.gd" id="1_upgrade"]
+
+[resource]
+resource_name = "mortar_damage"
+script = ExtResource("1_upgrade")
+id = &"mortar_damage"
+display_name = "Degats mortier"
+max_level = 5
+cost_base = 20
+cost_step = 15
+per_level = 8.0

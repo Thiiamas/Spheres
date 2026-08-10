@@ -16,7 +16,10 @@ class_name InputContext
 ## are harmless: each entity only consumes its own actions.
 const TRACKED_ACTIONS: Array[StringName] = [
 	&"jump", &"boost", &"attack", &"aoe", &"mode_toggle",
-	&"spell_a", &"spell_z", &"spell_e", &"buy_slot", &"select",
+	&"spell_a", &"spell_z", &"spell_e", &"select",
+	# Upgrade buy keys 1-4 (phase 9.2) — replaced the single buy_slot (B), which
+	# was a one-off hardcoded purchase on Base before Progression existed.
+	&"upgrade_1", &"upgrade_2", &"upgrade_3", &"upgrade_4",
 ]
 
 ## WASD / left stick, in input space (x = left/right, y = forward/back).

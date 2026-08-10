@@ -7,12 +7,19 @@
 > contrôle que sa **Base** (8.1) ; en face, uniquement des `FrontUnit` en
 > mode ennemi — pas de vague alliée pour le joueur (ça viendra en Méso).
 >
-> Découpée en trois jalons, chacun dépendant de **9.1** : **9.1** (boucle de
-> défense sur terrain plat — la fondation jouable), **9.2** (possession
-> d'une unité — le palier Micro s'applique aussi au combat rapproché d'une
-> entité possédée, pas seulement à la bombarde immobile de la Base), et
-> **9.3** (relief/obstacles — le vrai test de robustesse du mouvement
-> `FrontUnit`, identifié comme le point dur de ce POC).
+> Découpée en quatre jalons, chacun dépendant de **9.1** : **9.1** (boucle de
+> défense sur terrain plat — la fondation jouable), **9.2** (progression —
+> le débouché des ressources, sans quoi la récompense du palier Micro reste
+> décorative), **9.3** (possession d'une unité — le palier Micro s'applique
+> aussi au combat rapproché d'une entité possédée, pas seulement à la
+> bombarde immobile de la Base), et **9.4** (relief/obstacles — le vrai test
+> de robustesse du mouvement `FrontUnit`, identifié comme le point dur de ce
+> POC).
+>
+> *(9.2 est un ajout postérieur au plan initial, d'où la renumérotation :
+> l'ancien 9.2 devient 9.3, l'ancien 9.3 devient 9.4. Raison : le playtest de
+> 9.1 a montré que tuer des ennemis rapportait des ressources qui ne
+> pouvaient rien acheter — la boucle Micro ne se refermait pas.)*
 
 ---
 
@@ -25,20 +32,26 @@ pour les deux prototypes historiques, `main.tscn`/`level2_front.tscn`) —
 en phases 10/11. Snake_case, cohérent avec le reste du projet
 (`entities/`, `front_unit/`…).
 
-À l'intérieur de `gameplay_loop/micro/`, **une scène par jalon**, pas une
-seule scène qui évolue au fil de 9.1→9.2→9.3 :
+À l'intérieur de `gameplay_loop/micro/`, **une scène par jalon** qui change
+la composition du niveau, pas une seule scène qui évolue au fil des jalons :
 
 - `micro_base_defense.tscn`/`.gd` (9.1)
-- `micro_possession.tscn`/`.gd` (9.2)
-- `micro_terrain.tscn`/`.gd` (9.3)
+- `micro_possession.tscn`/`.gd` (9.3)
+- `micro_terrain.tscn`/`.gd` (9.4)
 
 Chaque scène est **dupliquée et étendue** depuis celle du jalon précédent
-(9.2 part de 9.1 + possession, 9.3 part de 9.2 + relief) plutôt que
-modifiée en place — décision explicite pour que chaque jalon reste
-rejouable et testable **isolément** même une fois le jalon suivant
+plutôt que modifiée en place — décision explicite pour que chaque jalon
+reste rejouable et testable **isolément** même une fois le jalon suivant
 commencé, ce qui est précisément le test de découplage recherché. Coût
-accepté : de la duplication entre les trois scènes (mêmes `PlayerBase`/
+accepté : de la duplication entre les scènes (mêmes `PlayerBase`/
 `EnemyBase`/décor recopiés) plutôt qu'un seul fichier partagé.
+
+**9.2 n'a pas de scène propre** : la progression modifie l'entité `Base`
+elle-même (`base.tscn`) et un autoload, pas la composition du niveau — elle
+se teste dans `micro_base_defense.tscn`. Corollaire assumé de la
+convention : les changements au niveau des **entités** se propagent à toutes
+les scènes, y compris celles des jalons déjà validés ; seule la composition
+du niveau est figée par scène.
 
 ---
 
@@ -64,10 +77,10 @@ travail réel de cette phase, pas juste du level design — détaillé en 9.1.
 
 | # | Sujet | Décision | Pourquoi |
 |---|-------|----------|----------|
-| H1 | Enjeu de la Base | La Base du joueur gagne des **PV réels** (composant `Health`, comme `Tower`/`FrontUnit`) ; à 0, **Game Over** (en 9.1, seule entité contrôlable du POC — 9.2 généralise cette règle à *toutes* les entités contrôlables du joueur). | Choix explicite : sans ça, le critère Micro *« les ennemis sont dangereux »* n'a pas de sens — il n'y aurait aucune conséquence à laisser une vague passer. |
+| H1 | Enjeu de la Base | La Base du joueur gagne des **PV réels** (composant `Health`, comme `Tower`/`FrontUnit`) ; à 0, **Game Over** (en 9.1, seule entité contrôlable du POC — 9.3 généralise cette règle à *toutes* les entités contrôlables du joueur). | Choix explicite : sans ça, le critère Micro *« les ennemis sont dangereux »* n'a pas de sens — il n'y aurait aucune conséquence à laisser une vague passer. |
 | H2 | Type d'ennemi | **`FrontUnit` en mode `ENEMY`** (`enemy_unit.tscn`), pas `Enemy.tscn` (phase 3/4). | `Enemy.gd` cible exclusivement un `SphereController` via `Consciousness.entities` (`_nearest_sphere()`) — il ne peut pas du tout viser une `Base` sans réécriture. `FrontUnit`, lui, sait déjà avancer vers un `target_base: Node3D` générique (mécanique de la phase 7) : aucune modification de son ciblage/mouvement n'est nécessaire, seule son *attaque* doit apprendre à reconnaître une `Base` (H1). |
-| H3 | Relief/obstacles | **9.1 sur couloir plat, 9.3 ajoute le relief** une fois la boucle de base validée en playtest — pas les deux d'un coup. | Isoler la variable : si le *feel* casse après l'ajout d'obstacles, on sait que c'est le relief et pas le spawn/l'équilibrage qui est en cause. |
-| H4 | Économie (`buy_slot`/`wave_size`) | **Laissée inerte** dans ce POC — les ressources s'accumulent (`LootOnDeath` fonctionne déjà) mais rien ne les dépense ici. | Décision explicite de l'utilisateur : cette économie sert le palier Méso (vagues alliées), pas Micro. Pas de mécanique de dépense inventée prématurément. |
+| H3 | Relief/obstacles | **9.1 sur couloir plat, 9.4 ajoute le relief** une fois la boucle de base validée en playtest — pas les deux d'un coup. | Isoler la variable : si le *feel* casse après l'ajout d'obstacles, on sait que c'est le relief et pas le spawn/l'équilibrage qui est en cause. |
+| H4 | Économie (`buy_slot`/`wave_size`) | **Inerte en 9.1**, débouché ajouté en **9.2** (progression). | D'abord une décision explicite de l'utilisateur (ne rien inventer prématurément), puis **révisée après le playtest de 9.1** : la définition du palier Micro promet « des ressources pour devenir plus puissant », donc sans dépense la boucle ne se referme pas. `wave_size`/`buy_slot` restent hors sujet pour ce POC (pas de vague alliée) et sont absorbés par le nouveau système en 9.2. |
 | H5 | La Base ne se `queue_free()` pas à 0 PV | Contrairement à `Tower`/`FrontUnit` (qui se libèrent à la mort), la Base **reste dans l'arbre**, juste inerte (`drive()` ignore les entrées suivantes) ; c'est le script de niveau qui affiche Game Over et arrête le spawn ennemi. | La Base du joueur est l'entité **possédée** activement au moment de sa mort (contrairement à `Tower`/`FrontUnit`, jamais possédées) — la libérer créerait une possession orpheline sans entité de repli (pas de RuneMage/Base de secours dans ce POC, contrairement au H3 de la phase 8 qui pouvait renvoyer sur la Base). |
 
 ---
@@ -241,8 +254,8 @@ rendu, pas de souris réelle) :
       **enfant** et non la racine de `Base`)
 - [x] Équilibrage du *feel* : `wave_interval = 6s`, `wave_size = 2`,
       `max_hp = 150` — jugés « ok pour l'instant » en playtest, gardés
-      comme valeurs de travail (à réajuster quand 9.2 ajoutera la possession,
-      qui change la pression ressentie)
+      comme valeurs de travail (à réajuster quand 9.2 ajoutera la progression
+      et 9.3 la possession, qui changent tous deux la pression ressentie)
 
 ### Finitions (après validation de la boucle, avant de passer à 9.2)
 
@@ -320,13 +333,196 @@ Le squelette de 9.1 validé, trois finitions demandées en playtest — du
 
 - Pas de Tour, pas de siège d'objectif (Méso, phase 10)
 - Pas de vague alliée pour le joueur
-- Pas de dépense de l'économie (`buy_slot` reste inerte, H4)
-- Pas de relief/obstacles (9.3)
-- Pas de possession d'unité (9.2)
+- Pas de dépense de l'économie (`buy_slot` reste inerte — H4, traité en 9.2)
+- Pas de relief/obstacles (9.4)
+- Pas de possession d'unité (9.3)
 
 ---
 
-## 9.2 — Gameplay : possession d'unité (variante RuneMage)
+## 9.2 — Progression : le débouché des ressources
+
+### Objectif
+
+Fermer la boucle Micro. Sa définition (`LOOP_SPHERE_FRONT.md`) promet
+« **Récompense : ressources pour devenir plus puissant** » ; à la fin de 9.1
+les ressources s'accumulent et n'achètent **rien** (`buy_slot` est inerte,
+H4 — pas de vague alliée dans ce POC). Deux tiers de la boucle existent,
+la récompense est décorative.
+
+Ce jalon pose un **système** de progression générique, appliqué d'abord à la
+Base, et prévu pour que le contrôlable de 9.3 s'y branche sans réécriture.
+
+### Prérequis
+
+9.1 stable. `Economy` (8.1) fournit déjà le portefeuille.
+
+### La contrainte qui décide de l'architecture
+
+`PossessionSwap.possess_front_unit()` fait `queue_free()` sur le `FrontUnit`
+puis `instantiate()` un mage : **posséder une unité la détruit et en crée une
+autre**. Toute progression stockée *sur l'instance* est donc perdue au
+prochain swap — c'est-à-dire en permanence, dès 9.3.
+
+Le projet a déjà résolu ce problème une fois, sur la caméra : `_zoom` et
+`_yaw` sont de l'**état du rig, pas de la config**, précisément pour survivre
+au cycle des configs et aux transferts de possession. La progression suit la
+même règle : c'est de l'état **joueur**, pas de l'état entité. Ça tombe juste
+avec le lore — c'est la *conscience* qui monte en puissance, les corps sont
+jetables.
+
+### Décisions actées
+
+| # | Sujet | Décision | Pourquoi |
+|---|-------|----------|----------|
+| D1 | Pool de ressources | **Un seul portefeuille partagé** (l'`Economy` existant) entre Base et unité possédée. | Améliorer la Base ou son unité devient un choix concurrent — une vraie tension de décision. Cohérent avec le commentaire d'`Economy` : « un seul joueur, un seul portefeuille ». |
+| D2 | Portée des upgrades | **Globale** : les niveaux sont stockés par upgrade, pas par unité, donc toute entité possédée bénéficie de tout ce qui est acheté. **Mais l'API doit garder la place** pour des upgrades *par unité* plus tard, sans réécrire les appelants. | Simple, colle au lore, et gratuit avec le pattern ci-dessous. Concrètement : `Progression.level_of(id, scope := &"global")` — le paramètre `scope` existe dès maintenant avec une valeur par défaut, le stockage est clé composite, et le jour où on veut du par-unité on passe un scope sans toucher au code appelant. |
+| D3 | Achat | **Une touche par upgrade** (`1`/`2`/`3`/`4`), pas de panneau UI. | Cohérent avec le « pas de vraie UI » des jalons précédents. Ne passe pas l'échelle au-delà de ~4 upgrades — c'est assumé pour un POC. |
+| D4 | Montée de `max_hp` | Augmenter les PV max **soigne aussi du delta** immédiatement. | Sinon l'upgrade ne fait rien de perceptible quand on l'achète en pleine vague (le plafond monte, les PV courants non). Fait aussi office de mécanique de retour en jeu, notée comme manquante au playtest de 9.1. |
+
+### Le pattern : `Resource` (données) + store autoload + application idempotente
+
+Trois pièces, chacune calquée sur un patron déjà en place dans le projet.
+
+**1. `core/upgrade.gd` — `Upgrade extends Resource`**
+
+Les données vivent en `.tres`, comme `CameraConfig` (phase 5) :
+
+```gdscript
+@export var id: StringName        # &"mortar_rate"
+@export var display_name: String
+@export var max_level: int = 5
+@export var cost_base: int = 20
+@export var cost_step: int = 10
+## Ce qu'un niveau vaut — interprété par l'entité, pas par l'upgrade.
+@export var per_level: float = 0.08
+func cost_at(level: int) -> int   # cost_base + level * cost_step
+```
+
+**2. `autoloads/progression.gd` — le store**
+
+À côté d'`Economy`, et pour la même raison (état joueur, pas état entité) :
+
+```gdscript
+signal changed
+func level_of(id: StringName, scope := &"global") -> int
+func try_buy(up: Upgrade, scope := &"global") -> bool  # Economy.try_spend + niveau + changed
+func bonus(up: Upgrade, scope := &"global") -> float   # level * up.per_level
+```
+
+**3. L'application, côté entité — duck-typée**
+
+`apply_progression()`, appelée en `_ready()` **et** sur `Progression.changed`
+(même patron duck-typé que `get_hud_lines`/`bind_camera`/`update_bar`) :
+
+```gdscript
+func apply_progression() -> void:
+    attack_cooldown = _base_cooldown * (1.0 - Progression.bonus(mortar_rate_up))
+    mortar_damage   = _base_damage + Progression.bonus(mortar_damage_up)
+```
+
+C'est là que la contrainte plus haut se dissout : une entité fraîchement
+créée par un swap lit le store dans son `_ready()` et arrive **déjà** au
+niveau acheté. Aucun code de transfert, aucune sérialisation.
+
+> **Piège à ne pas manquer : l'application doit être idempotente.** Garder la
+> valeur d'auteur (`_base_cooldown`, capturée en `_ready()` avant toute
+> application) et **toujours recalculer depuis elle**. Muter la stat en place
+> (`attack_cooldown *= 0.92`) compose à chaque réapplication et la valeur
+> dérive à l'infini — `Progression.changed` étant émis à chaque achat, ça
+> arriverait dès le deuxième.
+
+### Sous-tâches
+
+**1. `Upgrade` + `Progression`** (les deux fichiers ci-dessus, `Progression`
+ajouté aux autoloads de `project.godot` après `Economy`).
+
+**2. Absorber l'achat en dur existant.** `Base._try_buy_slot()`/
+`_next_slot_cost()` sont un mécanisme d'achat parallèle, à retirer au profit
+du système générique — sinon deux façons d'acheter coexistent. Impacts
+identifiés :
+- `core/input_context.gd:19` — `&"buy_slot"` retiré de `TRACKED_ACTIONS`,
+  remplacé par `&"upgrade_1"`…`&"upgrade_4"`
+- `entities/base/base.gd` — `drive()` boucle sur la liste d'upgrades au lieu
+  du cas spécial `buy_slot` ; `slot_cost_base`/`slot_cost_step` migrent dans
+  un `.tres`
+- Input Map — `buy_slot` (B) retiré, `upgrade_1..4` sur les touches `1`-`4`
+- `tests/base_possession_test.gd:93` — utilise `set_action(&"buy_slot", …)`,
+  à mettre à jour (sinon le test vérifie une action qui n'existe plus)
+
+**3. Les upgrades de la Base** (`entities/base/upgrades/*.tres`) :
+`mortar_rate` (touche `1`), `mortar_damage` (`2`), `base_hp` (`3`),
+`wave_slot` (`4`, l'ancien `buy_slot` — gardé pour ne rien perdre, même s'il
+est sans effet dans ce POC faute de vague alliée).
+`Base.apply_progression()` les applique, avec les baselines capturées.
+
+Le catalogue est assigné dans **`base.tscn`** (donc partagé par toutes les
+`Base`, y compris ennemies) plutôt que par niveau : une Base ennemie n'est
+jamais possédée, ne reçoit donc jamais `drive()` et ne peut rien acheter — et
+`_bonus()` renvoie 0 pour un id absent, donc ses stats restent celles de son
+auteur. Bénéfice : les scènes de niveau et de test n'ont rien à recâbler.
+
+**4. HUD.** `Base.get_hud_lines()` liste les upgrades avec touche, niveau et
+coût du prochain — le HUD debug existant suffit (D3).
+
+**5. Test headless** `tests/progression_test.gd`/`.tscn` : achat refusé sans
+ressources, accepté avec, `max_level` respecté, **idempotence** (appliquer
+deux fois de suite donne la même valeur), et le point qui compte le plus —
+une entité créée **après** l'achat arrive déjà améliorée.
+
+### Fichiers
+
+- `core/upgrade.gd` (nouveau)
+- `autoloads/progression.gd` (nouveau, + autoload dans `project.godot`)
+- `entities/base/upgrades/*.tres` (nouveaux)
+- `entities/base/base.gd` (modifié — `apply_progression`, baselines, `drive`
+  générique, retrait de `_try_buy_slot`/`_next_slot_cost`)
+- `core/input_context.gd` (modifié — `TRACKED_ACTIONS`)
+- `project.godot` (modifié — Input Map, autoload)
+- `tests/progression_test.gd`/`.tscn` (nouveau)
+- `tests/base_possession_test.gd` (modifié — action renommée)
+
+### Critères de validation
+
+Vérifié **headless** (`tests/progression_test.tscn`) :
+
+- [x] Un achat refusé faute de ressources ne débite rien, ne monte pas le
+      niveau et ne touche pas la stat
+- [x] Un achat au coût exact passe et débite la totalité (0 restant)
+- [x] La stat de l'entité vivante suit l'achat (25 → 33 de dégâts mortier)
+- [x] **Idempotence** : réappliquer deux fois de suite ne fait pas dériver la
+      valeur — le test échouerait si la stat était mutée en place au lieu
+      d'être recalculée depuis sa baseline
+- [x] **Une entité créée *après* l'achat arrive déjà améliorée** (33.0) —
+      le critère qui justifie toute l'architecture, et ce qui fera que le
+      détruire/recréer de `PossessionSwap` sera un non-problème en 9.3
+- [x] `max_level` bloque les achats au-delà, sans rien dépenser
+- [x] Aucune régression : les cinq tests headless précédents au vert (six
+      avec celui-ci)
+
+Reste à confirmer **en playtest manuel** :
+
+- [ ] Le HUD affiche correctement touche, niveau et coût de chaque upgrade,
+      et le coût grimpe visiblement après un achat
+- [ ] L'effet est **perceptible en jeu** : cadence de tir, dégâts, PV max
+- [ ] Les touches `1`-`4` achètent bien, et n'entrent pas en conflit avec le
+      reste des entrées (l'ancien `B` a disparu)
+- [ ] D4 se sent juste : acheter des PV max en pleine vague soigne
+      immédiatement du delta
+
+### À ne PAS faire dans ce jalon
+
+- Pas de pile de modificateurs / buffs temporaires — le pattern
+  Decorator devient le bon choix quand il y aura du temporaire ou du
+  multiplicatif ; surdimensionné pour des upgrades permanents et additifs, et
+  migrable plus tard puisque le store centralise déjà « ce qui est acheté »
+- Pas d'upgrades **par unité** (D2 : la place est réservée dans l'API, rien
+  de plus)
+- Pas de panneau UI (D3), pas de sauvegarde entre parties
+- Pas d'upgrades du contrôlable — il n'existe qu'en 9.3
+
+---
+
+## 9.3 — Gameplay : possession d'unité (variante RuneMage)
 
 ### Objectif
 
@@ -347,6 +543,12 @@ la règle de défaite de 9.1 devient un cas particulier de celle-ci, pas un
 mécanisme à refaire). `gameplay_loop/micro/micro_possession.tscn` part
 d'une **copie** de `micro_base_defense.tscn` (voir « Organisation des
 scènes » plus haut) — pas une modification du fichier de 9.1.
+
+9.2 aussi : le contrôlable introduit ici doit se brancher sur le système de
+progression (`apply_progression()` + une liste d'upgrades qui lui sont
+propres), ce qui est le vrai test de généricité de ce système — et le point
+où D2 (portée globale) se vérifie concrètement, puisqu'un mage né d'une
+possession doit arriver déjà amélioré.
 
 ### Ce qui reste délibérément non tranché ici
 
@@ -407,11 +609,11 @@ scènes » plus haut) — pas une modification du fichier de 9.1.
 
 ---
 
-## 9.3 — Relief et obstacles (test de robustesse du mouvement)
+## 9.4 — Relief et obstacles (test de robustesse du mouvement)
 
 ### Prérequis
 
-9.2 stable. `gameplay_loop/micro/micro_terrain.tscn` part d'une **copie**
+9.3 stable. `gameplay_loop/micro/micro_terrain.tscn` part d'une **copie**
 de `micro_possession.tscn` (voir « Organisation des scènes ») — relief
 ajouté par-dessus la boucle base + possession déjà validée.
 
@@ -479,7 +681,7 @@ concave ou un goulot d'étranglement — il n'y a **aucun vrai pathfinding**
 
 - Pas de relief complexe/labyrinthique — l'objectif est un test de
   robustesse graduel, pas un niveau fini
-- Pas de `NavigationAgent3D` par défaut — seulement si 9.3 démontre que
+- Pas de `NavigationAgent3D` par défaut — seulement si ce jalon démontre que
   c'est nécessaire (voir sous-tâche 2b)
 
 ---

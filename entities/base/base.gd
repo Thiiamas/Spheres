@@ -58,11 +58,12 @@ var controllable: Controllable = null
 @export var mortar_radius: float = 2.5
 @export var mortar_flight_time: float = 0.9
 
-@export_group("Economy")
-## Cost of the next wave-size slot: slot_cost_base + wave_size * slot_cost_step,
-## so each purchase makes the next one pricier.
-@export var slot_cost_base: int = 20
-@export var slot_cost_step: int = 10
+@export_group("Progression")
+## Upgrades this Base offers (phase 9.2), in buy-key order: index 0 is bought
+## with "upgrade_1", index 1 with "upgrade_2"… Order here only decides which
+## key buys what — apply_progression() below matches on Upgrade.id, so
+## reordering the array can't silently change what an upgrade does.
+@export var upgrades: Array[Upgrade] = []
 
 ## HP pool (phase 9.1, Docs/Plans/phase9_micro_poc.md) — same component as
 ## Tower/FrontUnit. Unlike Tower, damage is unconditional (no EscortGate
@@ -82,11 +83,25 @@ var controllable: Controllable = null
 ## works unchanged whichever of the two the "select" raycast happens to hit.
 @onready var _hull: StaticBody3D = $Hull
 
+## Buy keys, in the same order as `upgrades` above.
+const UPGRADE_ACTIONS: Array[StringName] = [
+	&"upgrade_1", &"upgrade_2", &"upgrade_3", &"upgrade_4",
+]
+
 var _spawning: bool = true
 var _attack_timer: float = 0.0
 ## True once health reaches zero (phase 9.1) — Base stays in the tree (it
 ## may be the actively possessed entity) but ignores further damage/input.
 var _defeated: bool = false
+
+# Authored values, captured once before the first apply_progression(). Every
+# apply recomputes from these instead of mutating the live stats: Progression
+# emits `changed` on every purchase, so multiplying in place would compound and
+# the values would drift from the second purchase on.
+var _base_attack_cooldown: float = 0.0
+var _base_mortar_damage: float = 0.0
+var _base_wave_size: int = 0
+var _base_max_hp: float = 0.0
 
 
 func _ready() -> void:
@@ -99,6 +114,16 @@ func _ready() -> void:
 	_hull.collision_layer = Faction.physics_layer(faction)
 	_hull.collision_mask = 0 # detects nothing itself, only detected by others
 	health.died.connect(_on_health_died)
+
+	# Captured after Health's own _ready (children ready first, so max_hp is
+	# still the authored value here) and before the first apply below.
+	_base_attack_cooldown = attack_cooldown
+	_base_mortar_damage = mortar_damage
+	_base_wave_size = wave_size
+	_base_max_hp = health.max_hp
+	Progression.changed.connect(apply_progression)
+	apply_progression()
+
 	var mat := _structure.get_active_material(0)
 	if mat is StandardMaterial3D:
 		mat = mat.duplicate()
@@ -181,8 +206,9 @@ func drive(ctx: InputContext) -> void:
 	_attack_timer -= ctx.delta
 	if ctx.just_pressed(&"attack"):
 		_try_fire(ctx)
-	if ctx.just_pressed(&"buy_slot"):
-		_try_buy_slot()
+	for i in mini(upgrades.size(), UPGRADE_ACTIONS.size()):
+		if ctx.just_pressed(UPGRADE_ACTIONS[i]):
+			Progression.try_buy(upgrades[i])
 
 
 func _try_fire(ctx: InputContext) -> void:
@@ -198,18 +224,47 @@ func _try_fire(ctx: InputContext) -> void:
 			mortar_flight_time, mortar_blast_scene)
 
 
-func _try_buy_slot() -> void:
-	if Economy.try_spend(_next_slot_cost()):
-		wave_size += 1
+## Recomputes every upgradable stat from its authored baseline. Connected to
+## Progression.changed AND called in _ready — which is what makes progression
+## survive PossessionSwap freeing and recreating entities: a Base (or, from 9.3,
+## a possessed unit) built after a purchase applies it on the way in, with no
+## state to hand over.
+##
+## Must stay idempotent: recompute from _base_*, never mutate the live value.
+func apply_progression() -> void:
+	# Rate is a fraction off the cooldown; floored so a fully-upgraded Base
+	# can't reach a zero or negative cooldown.
+	attack_cooldown = maxf(0.05, _base_attack_cooldown * (1.0 - _bonus(&"mortar_rate")))
+	mortar_damage = _base_mortar_damage + _bonus(&"mortar_damage")
+	wave_size = _base_wave_size + int(roundf(_bonus(&"wave_slot")))
+	# grant_delta: raising the ceiling also heals the difference (D4), so
+	# buying this mid-wave is felt instead of only widening the bar.
+	health.set_max_hp(_base_max_hp + _bonus(&"base_hp"), true)
 
 
-func _next_slot_cost() -> int:
-	return slot_cost_base + wave_size * slot_cost_step
+## Accumulated bonus for an upgrade id, or 0 when this Base doesn't offer it —
+## so the enemy Base (empty `upgrades`) keeps its authored stats untouched.
+func _bonus(id: StringName) -> float:
+	for up in upgrades:
+		if up != null and up.id == id:
+			return Progression.bonus(up)
+	return 0.0
 
 
 ## Debug HUD block (duck-typed, see ui/hud.gd) shown while this Base is possessed.
 func get_hud_lines() -> Array[String]:
-	return [
-		"Left-click/A: fire   B: buy wave slot",
-		"Resources: %d   Slot: %d   Next: %d" % [Economy.resources, wave_size, _next_slot_cost()],
+	var lines: Array[String] = [
+		"Left-click/A: fire",
+		"Resources: %d" % Economy.resources,
 	]
+	for i in mini(upgrades.size(), UPGRADE_ACTIONS.size()):
+		var up: Upgrade = upgrades[i]
+		if up == null:
+			continue
+		var level := Progression.level_of(up.id)
+		if level >= up.max_level:
+			lines.append("  %d: %s  MAX (%d)" % [i + 1, up.display_name, level])
+		else:
+			lines.append("  %d: %s  %d/%d  cout %d" % [
+				i + 1, up.display_name, level, up.max_level, up.cost_at(level)])
+	return lines

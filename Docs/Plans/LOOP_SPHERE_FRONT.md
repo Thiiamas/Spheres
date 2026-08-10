@@ -14,12 +14,13 @@
 **Phase 8 est terminée** (8.1 + 8.2, implémentées et playtestées
 manuellement — cf. `phase8_foundations.md`). **Phase 9 (POC Micro) est
 planifiée en détail** dans `phase9_micro_poc.md` — pas encore implémentée,
-découpée en trois jalons : **9.1** défense de Base (PV réels + Game Over,
-ennemis en `FrontUnit` plutôt qu'`Enemy.tscn`), **9.2** possession d'une
-unité (variante RuneMage flaguée, détails différés à l'implémentation ;
-Game Over généralisé à « toutes les entités contrôlables mortes »),
-**9.3** relief/obstacles. Économie `buy_slot` laissée inerte (réservée au
-palier Méso).
+découpée en quatre jalons : **9.1 ✅** défense de Base (PV réels + Game Over,
+ennemis en `FrontUnit` plutôt qu'`Enemy.tscn`) — implémentée et playtestée ;
+**9.2** progression (débouché des ressources : `Upgrade` en `Resource` +
+autoload `Progression`, portée globale, un seul portefeuille partagé) ;
+**9.3** possession d'une unité (variante RuneMage flaguée, détails différés
+à l'implémentation ; Game Over généralisé à « toutes les entités
+contrôlables mortes ») ; **9.4** relief/obstacles.
 
 ---
 
@@ -53,9 +54,11 @@ indépendantes.
 ### Trous identifiés (non résolus par la phase en cours)
 - **Micro → Méso** : le lien "montée en puissance" du joueur n'existait pas
   du tout avant la phase 8. La phase 8 donne une économie **côté Base**
-  (achat de slots de vague), mais **pas encore** de progression pour
-  l'unité possédée elle-même (le RuneMage ne devient pas plus fort en jeu).
-  → à traiter après les POC 9-11 (voir plus bas), pas oublié.
+  (achat de slots de vague), mais pas de progression pour l'unité possédée
+  elle-même. → **en cours de traitement en 9.2** (`phase9_micro_poc.md`) :
+  un système `Upgrade`/`Progression` générique, appliqué d'abord à la Base
+  et branché sur le contrôlable en 9.3. Le playtest de 9.1 a rendu le trou
+  criant — tuer rapportait des ressources qui n'achetaient rien.
 - **Macro** n'a pas de fin de cycle définie ("ouverture du front suivant"
   est une progression linéaire, pas une boucle qui se referme) — pas
   bloquant pour l'instant, à trancher plus tard.

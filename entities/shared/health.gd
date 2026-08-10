@@ -43,6 +43,25 @@ func is_dead() -> bool:
 	return _dead
 
 
+## Moves the HP ceiling. `grant_delta` also adds the increase to current HP, so
+## a max-HP upgrade bought mid-fight is immediately felt instead of only
+## widening the bar (D4, Docs/Plans/phase9_micro_poc.md).
+##
+## Lives here rather than in the caller because refreshing hp_changed and the
+## health bar are this component's own invariants — poking max_hp from outside
+## would leave the bar showing a stale ratio.
+func set_max_hp(value: float, grant_delta: bool = false) -> void:
+	if value <= 0.0 or is_equal_approx(value, max_hp):
+		return
+	var delta := value - max_hp
+	max_hp = value
+	if grant_delta and delta > 0.0:
+		hp += delta
+	hp = minf(hp, max_hp)
+	hp_changed.emit(hp, max_hp)
+	_update_hp_bar()
+
+
 func _update_hp_bar() -> void:
 	if hp_bar and hp_bar.has_method("update_bar"):
 		hp_bar.update_bar(hp, max_hp)
