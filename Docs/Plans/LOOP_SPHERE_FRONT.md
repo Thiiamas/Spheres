@@ -12,17 +12,14 @@
 ## 🎯 Objectif actuel
 
 **Phase 8 est terminée** (8.1 + 8.2, implémentées et playtestées
-manuellement — cf. `phase8_foundations.md`). Prochaine étape : **Phase 9,
-POC Micro** (défense de Base, cf. plus bas) — pas encore planifiée en
-détail, pas de `phase9_micro_poc.md` encore écrit.
-
-Deux décisions à prendre **avant** d'écrire ce doc de phase 9 (notées plus
-bas dans leur contexte, pas de suppositions silencieuses type H1-H5) :
-- Les ennemis du POC Micro sont-ils des `Enemy.tscn` (phase 3/4) ou des
-  `FrontUnit` en mode ennemi (phase 7) ?
-- Le relief/obstacles sur la route des ennemis — à quel point du POC les
-  introduire (dès le départ, ou une fois le spawn/comportement de base
-  validé sur terrain plat) ?
+manuellement — cf. `phase8_foundations.md`). **Phase 9 (POC Micro) est
+planifiée en détail** dans `phase9_micro_poc.md` — pas encore implémentée,
+découpée en trois jalons : **9.1** défense de Base (PV réels + Game Over,
+ennemis en `FrontUnit` plutôt qu'`Enemy.tscn`), **9.2** possession d'une
+unité (variante RuneMage flaguée, détails différés à l'implémentation ;
+Game Over généralisé à « toutes les entités contrôlables mortes »),
+**9.3** relief/obstacles. Économie `buy_slot` laissée inerte (réservée au
+palier Méso).
 
 ---
 
@@ -118,7 +115,7 @@ confirmés, au-delà de la couverture headless.
 > "feel" abouti à chaque palier. Ordre : Micro → Méso → Macro, cohérent avec
 > le fait que Méso et Macro **contiennent** Micro (cf. tableau plus haut).
 
-### Phase 9 — POC Micro : défense de Base *(prochaine phase à planifier)*
+### Phase 9 — POC Micro : défense de Base *(planifiée, cf. `phase9_micro_poc.md` — pas encore implémentée)*
 | | |
 |---|---|
 | **Le joueur contrôle** | Uniquement la **Base** (8.1) |
@@ -168,8 +165,7 @@ confirmés, au-delà de la couverture headless.
 
 ---
 
-## Prochaine phase à planifier en détail
+## Prochaine étape
 
-**Phase 9 (POC Micro)**. Un doc `phase9_micro_poc.md` sera écrit sur le
-même modèle que `phase8_foundations.md` une fois les deux décisions
-ouvertes ci-dessus tranchées.
+**Implémenter la phase 9** (`phase9_micro_poc.md`), en commençant par 9.1
+(terrain plat) avant 9.2 (relief).
