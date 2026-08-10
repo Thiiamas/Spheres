@@ -1,13 +1,10 @@
-[gd_resource type="Resource" script_class="Upgrade" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="Upgrade" format=3 uid="uid://bfnags1rr1q5k"]
 
-[ext_resource type="Script" path="res://core/upgrade.gd" id="1_upgrade"]
+[ext_resource type="Script" uid="uid://bmycxscrr10ll" path="res://core/upgrade.gd" id="1_upgrade"]
 
 [resource]
 resource_name = "mortar_rate"
 script = ExtResource("1_upgrade")
 id = &"mortar_rate"
 display_name = "Cadence mortier"
-max_level = 5
-cost_base = 15
-cost_step = 10
-per_level = 0.08
+cost_base = 5

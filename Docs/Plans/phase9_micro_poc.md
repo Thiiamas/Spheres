@@ -499,15 +499,24 @@ Vérifié **headless** (`tests/progression_test.tscn`) :
 - [x] Aucune régression : les cinq tests headless précédents au vert (six
       avec celui-ci)
 
-Reste à confirmer **en playtest manuel** :
+Confirmé **en playtest manuel** :
 
-- [ ] Le HUD affiche correctement touche, niveau et coût de chaque upgrade,
-      et le coût grimpe visiblement après un achat
-- [ ] L'effet est **perceptible en jeu** : cadence de tir, dégâts, PV max
-- [ ] Les touches `1`-`4` achètent bien, et n'entrent pas en conflit avec le
-      reste des entrées (l'ancien `B` a disparu)
+- [x] Le HUD affiche touche, niveau et coût de chaque upgrade, et le coût
+      grimpe après un achat
+- [x] L'effet est **perceptible en jeu** : cadence de tir, dégâts, PV max
+- [x] Les touches `1`-`4` achètent bien, sans conflit avec le reste des
+      entrées (l'ancien `B` a disparu)
+
+Reste à confirmer :
+
 - [ ] D4 se sent juste : acheter des PV max en pleine vague soigne
       immédiatement du delta
+
+**Réglage issu du playtest** : `cost_base` descendu de 15-25 à **5** sur
+`mortar_rate`, `mortar_damage` et `base_hp` — le premier achat arrivait trop
+tard (3 à 5 kills à 5 ressources l'unité). `cost_step` inchangé, donc seule
+l'entrée dans la piste est accélérée, pas sa fin. `wave_slot` reste à 20,
+volontairement ou non (il est sans effet dans ce POC).
 
 ### Ajustements faits en préparation de 9.3
 

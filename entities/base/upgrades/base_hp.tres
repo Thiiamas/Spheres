@@ -1,13 +1,12 @@
-[gd_resource type="Resource" script_class="Upgrade" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="Upgrade" format=3 uid="uid://ca5si38x04k2s"]
 
-[ext_resource type="Script" path="res://core/upgrade.gd" id="1_upgrade"]
+[ext_resource type="Script" uid="uid://bmycxscrr10ll" path="res://core/upgrade.gd" id="1_upgrade"]
 
 [resource]
 resource_name = "base_hp"
 script = ExtResource("1_upgrade")
 id = &"base_hp"
 display_name = "PV de base"
-max_level = 5
-cost_base = 25
+cost_base = 5
 cost_step = 15
 per_level = 40.0
