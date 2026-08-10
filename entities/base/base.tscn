@@ -34,7 +34,7 @@ albedo_color = Color(0.33, 0.04, 0.04, 1)
 
 [sub_resource type="BoxMesh" id="Box_bar_bg"]
 material = SubResource("Mat_bar_bg")
-size = Vector3(1.04, 0.14, 0.04)
+size = Vector3(2.6, 0.34, 0.04)
 
 [sub_resource type="StandardMaterial3D" id="Mat_bar_fill"]
 shading_mode = 0
@@ -42,7 +42,7 @@ albedo_color = Color(0, 0.8, 0.27, 1)
 
 [sub_resource type="BoxMesh" id="Box_bar_fill"]
 material = SubResource("Mat_bar_fill")
-size = Vector3(1, 0.1, 0.05)
+size = Vector3(2.5, 0.28, 0.05)
 
 [node name="Base" type="Node3D" node_paths=PackedStringArray("health")]
 script = ExtResource("1_base")

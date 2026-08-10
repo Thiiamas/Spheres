@@ -172,6 +172,24 @@ Voir `LOOP_SPHERE_FRONT.md` — la boucle Micro/Méso/Macro visée, l'état de
 son implémentation par rapport à cette table de phases, et la prochaine
 phase (9, POC Micro) à planifier en détail.
 
+## Points à régler dans le jeu (dette identifiée, pas des questions de design)
+
+- **Différenciation `select` / `attack` sur le clic gauche — à revoir.**
+  Les deux actions sont mappées sur le même bouton et se départagent
+  uniquement par **l'ordre de résolution** : `BaseControllable`/
+  `RuneMageControllable` lisent `select` et font un `return` anticipé si le
+  clic a touché une cible possédable, sinon le clic descend vers
+  `drive()`/`attack` (mis en place phase 8.2, cf. H2 de
+  `phase8_foundations.md` ; le `Hull` ajouté en 9.1 rend la résolution
+  encore un peu plus subtile, deux nœuds différents pouvant désormais
+  résoudre vers la même `Base`). Ça marche et c'est playtesté, mais c'est
+  implicite : le comportement d'un clic dépend de ce qui se trouve sous le
+  curseur, sans aucun retour visuel préalable au joueur, et toute nouvelle
+  entité possédable doit penser à respecter cet ordre. À reprendre avec un
+  mécanisme explicite (curseur contextuel, modificateur clavier, boutons
+  distincts, ou un vrai routeur d'entrée) plutôt qu'à étendre l'ordre
+  actuel indéfiniment.
+
 ## Questions ouvertes (pour v0.2)
 
 - Quel(s) système(s) de mouvement retenir parmi ceux prototypés ?

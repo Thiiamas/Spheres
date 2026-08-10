@@ -9,10 +9,18 @@ extends Node3D
 @onready var _fill: MeshInstance3D = $Fill
 @onready var _anchor: Node3D = get_parent()
 
+## Width of the Fill mesh in local units. Read from the mesh instead of
+## assumed to be 1.0: the left-anchoring offset in update_bar() scales with
+## it, so a bar authored wider than 1 unit (the Base's, phase 9.1) would
+## otherwise drain from the wrong side.
+var _fill_width: float = 1.0
+
 
 func _ready() -> void:
 	# Detach from the parent's (spinning) transform; we position it manually.
 	top_level = true
+	if _fill.mesh is BoxMesh:
+		_fill_width = _fill.mesh.size.x
 
 
 func _process(_delta: float) -> void:
@@ -31,6 +39,6 @@ func _process(_delta: float) -> void:
 
 func update_bar(current: float, maximum: float) -> void:
 	var ratio := clampf(current / maximum, 0.0, 1.0)
-	# Bar mesh is 1 unit wide; shrink from full and keep it left-anchored.
+	# Shrink from full while keeping the left edge pinned where it was.
 	_fill.scale.x = maxf(ratio, 0.0001)
-	_fill.position.x = (ratio - 1.0) * 0.5
+	_fill.position.x = (ratio - 1.0) * _fill_width * 0.5

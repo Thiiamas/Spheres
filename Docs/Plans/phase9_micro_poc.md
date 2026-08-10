@@ -225,18 +225,24 @@ rendu, pas de souris réelle) :
 
 - [ ] La partie démarre avec la Base possédée, caméra libre, tir mortier
       fonctionnel (hérité de 8.1, à revérifier sans régression visuelle)
-- [ ] La barre de vie de la Base est **visible et lisible** (position/taille
-      choisies à l'aveugle : `height = 3.0` au-dessus d'une structure de
-      2.5m — à ajuster si elle flotte trop haut/bas ou est trop petite)
+- [x] La barre de vie de la Base est **visible et lisible** — première
+      version jugée trop petite en playtest, élargie (mesh 1 → 2.5 unités de
+      large), validée. A nécessité un correctif générique dans
+      `ui/hp_bar_3d.gd` : l'ancrage à gauche du remplissage codait en dur une
+      largeur de 1 unité (`(ratio - 1.0) * 0.5`), donc toute barre plus large
+      se serait vidée depuis le mauvais côté ; la largeur est maintenant lue
+      depuis le mesh (tour et unités inchangées visuellement, revérifiées)
 - [ ] Tuer un ennemi au mortier rapporte des ressources visibles au HUD
 - [ ] Le message de défaite s'affiche correctement à 0 PV
-- [ ] Cliquer sur la Base sélectionne toujours bien la Base malgré le
-      nouveau `Hull` (le raycast peut désormais toucher `Hull` **ou**
-      `SelectionArea` — les deux résolvent vers la Base, mais seul un vrai
-      curseur le prouve)
-- [ ] Équilibrage du *feel* : `wave_interval = 6s`, `wave_size = 2`,
-      `max_hp = 150` sont des valeurs de départ choisies sans playtest —
-      c'est précisément ce que ce POC doit régler
+- [x] Cliquer sur la Base sélectionne toujours bien la Base malgré le
+      nouveau `Hull` — confirmé en playtest : le raycast peut toucher `Hull`
+      **ou** `SelectionArea`, les deux résolvent vers la `Base` via
+      `hit.get_parent()` (c'est précisément pourquoi `Hull` est un nœud
+      **enfant** et non la racine de `Base`)
+- [x] Équilibrage du *feel* : `wave_interval = 6s`, `wave_size = 2`,
+      `max_hp = 150` — jugés « ok pour l'instant » en playtest, gardés
+      comme valeurs de travail (à réajuster quand 9.2 ajoutera la possession,
+      qui change la pression ressentie)
 
 ### À ne PAS faire dans ce jalon
 
