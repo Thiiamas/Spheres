@@ -16,6 +16,32 @@
 
 ---
 
+## Organisation des scènes (`gameplay_loop/`)
+
+Décision actée : chaque **palier de boucle** (Micro maintenant, Méso/Macro
+plus tard) a son propre dossier de scènes, séparé de `levels/` (qui reste
+pour les deux prototypes historiques, `main.tscn`/`level2_front.tscn`) —
+`gameplay_loop/micro/`, puis `gameplay_loop/meso/`/`gameplay_loop/macro/`
+en phases 10/11. Snake_case, cohérent avec le reste du projet
+(`entities/`, `front_unit/`…).
+
+À l'intérieur de `gameplay_loop/micro/`, **une scène par jalon**, pas une
+seule scène qui évolue au fil de 9.1→9.2→9.3 :
+
+- `micro_base_defense.tscn`/`.gd` (9.1)
+- `micro_possession.tscn`/`.gd` (9.2)
+- `micro_terrain.tscn`/`.gd` (9.3)
+
+Chaque scène est **dupliquée et étendue** depuis celle du jalon précédent
+(9.2 part de 9.1 + possession, 9.3 part de 9.2 + relief) plutôt que
+modifiée en place — décision explicite pour que chaque jalon reste
+rejouable et testable **isolément** même une fois le jalon suivant
+commencé, ce qui est précisément le test de découplage recherché. Coût
+accepté : de la duplication entre les trois scènes (mêmes `PlayerBase`/
+`EnemyBase`/décor recopiés) plutôt qu'un seul fichier partagé.
+
+---
+
 ## Ce que l'exploration du code a montré (avant de coder quoi que ce soit)
 
 Point important, pas dans `LOOP_SPHERE_FRONT.md` : **rien aujourd'hui ne
@@ -123,7 +149,7 @@ Phase 8 stable (`BaseControllable`, `MortarShell`, `Economy`,
   POC) — les unités marchent donc déjà droit sur la Base adverse
   aujourd'hui, sans code supplémentaire.
 
-**3. Nouvelle scène `levels/level3_micro_poc.tscn` / `.gd`**
+**3. Nouvelle scène `gameplay_loop/micro/micro_base_defense.tscn` / `.gd`**
 - Décor copié/adapté de `level2_front.tscn` (sol, murs, lumière,
   `WorldEnvironment`) — couloir plat pour 9.1, relief ajouté en 9.3.
 - **`PlayerBase`** (`Base.tscn`) : `faction = ALLY`, `mortar_scene`/
@@ -138,7 +164,7 @@ Phase 8 stable (`BaseControllable`, `MortarShell`, `Economy`,
   `null`.
 - Pas de `Tower` dans cette scène (le siège d'objectif est le palier
   Méso, phase 10).
-- `level3_micro_poc.gd` : câble `enemy_base.advance_target = player_base`,
+- `micro_base_defense.gd` : câble `enemy_base.advance_target = player_base`,
   déclenche `enemy_base.spawn_wave_now()` au démarrage (même patron que
   `level2_front.gd`, pour ne pas attendre `wave_interval` avant le premier
   contact), connecte `player_base.died` → affichage d'un message Game Over
@@ -163,7 +189,7 @@ Phase 8 stable (`BaseControllable`, `MortarShell`, `Economy`,
 - `entities/base/base.tscn` (modifié — nœuds `Hull`, `Health`, `HPBar3D`)
 - `entities/front_unit/front_unit.gd` (modifié — `_try_attack()` reconnaît
   `Base`)
-- `levels/level3_micro_poc.tscn`/`.gd` (nouveau)
+- `gameplay_loop/micro/micro_base_defense.tscn`/`.gd` (nouveau)
 
 ### Critères de validation
 
@@ -209,7 +235,9 @@ pas terminer la partie si la Base tient encore, et inversement.
 
 9.1 stable (Base attaquable, scène, vagues ennemies, Game Over de base —
 la règle de défaite de 9.1 devient un cas particulier de celle-ci, pas un
-mécanisme à refaire).
+mécanisme à refaire). `gameplay_loop/micro/micro_possession.tscn` part
+d'une **copie** de `micro_base_defense.tscn` (voir « Organisation des
+scènes » plus haut) — pas une modification du fichier de 9.1.
 
 ### Ce qui reste délibérément non tranché ici
 
@@ -236,7 +264,7 @@ mécanisme à refaire).
 2. Généraliser la condition de défaite : suivre l'ensemble des entités
    contrôlables du joueur (Base + unité(s) possédée(s)/possédable(s)) et ne
    déclencher Game Over que lorsque plus aucune n'est en vie — probablement
-   dans `level3_micro_poc.gd`, plutôt que dans `Base` elle-même (`Base.died`
+   dans `micro_possession.gd`, plutôt que dans `Base` elle-même (`Base.died`
    seule ne suffit plus : elle ne doit plus, à elle seule, terminer la
    partie).
 3. Réutiliser `PossessionSwap` (phase 8.2) tel quel si compatible avec la
@@ -244,9 +272,9 @@ mécanisme à refaire).
 
 ### Fichiers (provisoire — à confirmer à l'implémentation de ce jalon)
 
+- Nouveau : `gameplay_loop/micro/micro_possession.tscn`/`.gd` (copie de
+  `micro_base_defense.tscn`, cf. « Organisation des scènes »)
 - Nouveau : variante RuneMage (nom de fichier à définir au moment de coder)
-- Modifié : `levels/level3_micro_poc.gd` (suivi des entités contrôlables,
-  condition de défaite généralisée)
 - Modifié, potentiellement : `entities/base/base.gd` (`died` ne déclenche
   plus directement Game Over à lui seul, cf. sous-tâche 2)
 
@@ -271,6 +299,12 @@ mécanisme à refaire).
 ---
 
 ## 9.3 — Relief et obstacles (test de robustesse du mouvement)
+
+### Prérequis
+
+9.2 stable. `gameplay_loop/micro/micro_terrain.tscn` part d'une **copie**
+de `micro_possession.tscn` (voir « Organisation des scènes ») — relief
+ajouté par-dessus la boucle base + possession déjà validée.
 
 ### Objectif
 
@@ -317,7 +351,8 @@ concave ou un goulot d'étranglement — il n'y a **aucun vrai pathfinding**
 
 ### Fichiers
 
-- `levels/level3_micro_poc.tscn` (modifié — ajout d'obstacles)
+- `gameplay_loop/micro/micro_terrain.tscn`/`.gd` (nouveau — copie de
+  `micro_possession.tscn` + obstacles)
 - `entities/front_unit/front_unit.gd` (modifié **seulement si** le
   playtest montre un blocage — voir sous-tâche 2)
 
