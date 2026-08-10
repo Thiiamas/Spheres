@@ -21,6 +21,15 @@ Consciousness="*res://autoloads/consciousness.gd"
 GameManager="*res://autoloads/game_manager.gd"
 Economy="*res://autoloads/economy.gd"
 
+[display]
+
+window/size/viewport_width=1920
+window/size/viewport_height=1080
+; Start maximized so the window fills the screen whatever its resolution —
+; without this the game ran at Godot's default 1152x648 (there was no
+; [display] section at all), which read as a small box on a large monitor.
+window/size/mode=2
+
 [dotnet]
 
 project/assembly_name="Spheres"
