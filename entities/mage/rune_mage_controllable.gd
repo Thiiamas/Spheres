@@ -28,6 +28,7 @@ func _ready() -> void:
 
 
 func handle_input(ctx: InputContext) -> void:
+	super(ctx) # upgrade buy keys — see Controllable._handle_upgrade_keys
 	# "select" (phase 8.2) switches to another ally under the cursor — a
 	# possession-layer concern resolved here, before the mage's own input,
 	# so RuneMage stays ignorant of possession swapping (mirrors

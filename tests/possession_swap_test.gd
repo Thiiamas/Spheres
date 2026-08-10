@@ -66,8 +66,20 @@ func _process(delta: float) -> void:
 				_fail("HP not carried over proportionally: mage hp=%.1f/%.1f, expected 50%%"
 					% [_mage.health.hp, _mage.health.max_hp])
 				return
-			print("[PossessionSwapTest] FrontUnit -> RuneMage: PASS (hp %.0f/%.0f, active=%s)"
-				% [_mage.health.hp, _mage.health.max_hp, active.entity.name])
+			# The bar has to agree with the carried-over HP, not just the number:
+			# the swap used to assign Health.hp directly, which refreshes nothing,
+			# so a mage handed 50% HP displayed a FULL bar until its first hit.
+			# Health.set_hp() fixed that; this pins it.
+			var fill := _mage.health.hp_bar.get_node_or_null("Fill") as Node3D
+			if fill == null:
+				_fail("mage's HPBar3D has no Fill node — can't verify the bar")
+				return
+			if not is_equal_approx(fill.scale.x, 0.5):
+				_fail("health bar shows %.0f%% after a 50%% swap — bar not refreshed"
+					% [fill.scale.x * 100.0])
+				return
+			print("[PossessionSwapTest] FrontUnit -> RuneMage: PASS (hp %.0f/%.0f, bar %.0f%%, active=%s)"
+				% [_mage.health.hp, _mage.health.max_hp, fill.scale.x * 100.0, active.entity.name])
 			_start_pos = _mage.global_position
 			_state = State.MOVE
 

@@ -43,6 +43,21 @@ func is_dead() -> bool:
 	return _dead
 
 
+## Sets current HP directly — for carrying HP across a possession swap
+## (PossessionSwap, phase 8.2), not a damage path: it never triggers `died`.
+##
+## Goes through here rather than letting callers assign `hp` from outside so the
+## bar and hp_changed stay in step. Assigning it directly is why an entity handed
+## 50% HP by a possession swap showed a FULL bar until its first hit — nothing
+## refreshed the bar between _ready (which fills it) and the next take_damage.
+func set_hp(value: float) -> void:
+	if _dead:
+		return
+	hp = clampf(value, 0.0, max_hp)
+	hp_changed.emit(hp, max_hp)
+	_update_hp_bar()
+
+
 ## Moves the HP ceiling. `grant_delta` also adds the increase to current HP, so
 ## a max-HP upgrade bought mid-fight is immediately felt instead of only
 ## widening the bar (D4, Docs/Plans/phase9_micro_poc.md).

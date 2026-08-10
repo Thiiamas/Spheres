@@ -68,7 +68,11 @@ static func possess_front_unit(front_unit: FrontUnit, tree: SceneTree) -> RuneMa
 	mage.faction = faction
 	tree.current_scene.add_child(mage)
 	mage.global_position = pos
-	mage.health.hp = mage.health.max_hp * hp_ratio
+	# After add_child, so max_hp already includes whatever the entity applied
+	# from Progression in its _ready (phase 9.2) — the ratio carries over onto
+	# the upgraded ceiling, which is what we want. set_hp rather than assigning
+	# `hp` so the health bar actually refreshes (see Health.set_hp).
+	mage.health.set_hp(mage.health.max_hp * hp_ratio)
 	return mage
 
 
@@ -90,7 +94,7 @@ static func release_to_front_unit(mage: RuneMage, tree: SceneTree) -> FrontUnit:
 	unit.target_tower = base.advance_target_tower if base != null else null
 	tree.current_scene.add_child(unit)
 	unit.global_position = pos
-	unit.health.hp = unit.health.max_hp * hp_ratio
+	unit.health.set_hp(unit.health.max_hp * hp_ratio)
 	return unit
 
 

@@ -19,6 +19,7 @@ func _ready() -> void:
 
 
 func handle_input(ctx: InputContext) -> void:
+	super(ctx)
 	if controller != null:
 		controller.drive(ctx)
 

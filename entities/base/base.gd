@@ -83,11 +83,6 @@ var controllable: Controllable = null
 ## works unchanged whichever of the two the "select" raycast happens to hit.
 @onready var _hull: StaticBody3D = $Hull
 
-## Buy keys, in the same order as `upgrades` above.
-const UPGRADE_ACTIONS: Array[StringName] = [
-	&"upgrade_1", &"upgrade_2", &"upgrade_3", &"upgrade_4",
-]
-
 var _spawning: bool = true
 var _attack_timer: float = 0.0
 ## True once health reaches zero (phase 9.1) — Base stays in the tree (it
@@ -206,9 +201,8 @@ func drive(ctx: InputContext) -> void:
 	_attack_timer -= ctx.delta
 	if ctx.just_pressed(&"attack"):
 		_try_fire(ctx)
-	for i in mini(upgrades.size(), UPGRADE_ACTIONS.size()):
-		if ctx.just_pressed(UPGRADE_ACTIONS[i]):
-			Progression.try_buy(upgrades[i])
+	# Buying is handled a layer up, in Controllable._handle_upgrade_keys — Base
+	# only declares which upgrades it offers (`upgrades` above).
 
 
 func _try_fire(ctx: InputContext) -> void:
@@ -257,7 +251,7 @@ func get_hud_lines() -> Array[String]:
 		"Left-click/A: fire",
 		"Resources: %d" % Economy.resources,
 	]
-	for i in mini(upgrades.size(), UPGRADE_ACTIONS.size()):
+	for i in mini(upgrades.size(), InputContext.UPGRADE_ACTIONS.size()):
 		var up: Upgrade = upgrades[i]
 		if up == null:
 			continue

@@ -102,7 +102,7 @@ func _process(delta: float) -> void:
 			Economy.add(_slot_cost)
 			var ctx := InputContext.new()
 			ctx.delta = delta
-			ctx.set_action(Base.UPGRADE_ACTIONS[slot_index], false, true)
+			ctx.set_action(InputContext.UPGRADE_ACTIONS[slot_index], false, true)
 			Consciousness.active().handle_input(ctx)
 			_state = State.CHECK_SLOT
 

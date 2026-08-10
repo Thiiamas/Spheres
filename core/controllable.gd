@@ -47,8 +47,32 @@ func cycle_camera_config() -> CameraConfig:
 
 
 ## Per-frame normalized input, pushed by the possession layer while possessed.
-func handle_input(_ctx: InputContext) -> void:
-	pass
+## Overriding subclasses should call super(ctx) — the base implementation
+## resolves the meta actions that belong to the possession layer rather than to
+## any single entity's gameplay (currently: buying upgrades).
+func handle_input(ctx: InputContext) -> void:
+	_handle_upgrade_keys(ctx)
+
+
+## Spends the player's wallet on the possessed entity's upgrades (phase 9.2).
+##
+## Handled here, not in each entity's drive(), for the same reason "select" is:
+## it's meta — it spends a shared, player-level resource and doesn't belong to
+## any one entity's gameplay. Every possessable entity that exposes an
+## `upgrades` array therefore gets buying with no per-entity plumbing, which is
+## what lets 9.3's mage participate without duplicating this loop.
+##
+## Duck-typed via get(): entities with nothing to upgrade (sphere, beacon)
+## simply return null and are skipped.
+func _handle_upgrade_keys(ctx: InputContext) -> void:
+	if entity == null:
+		return
+	var upgrades = entity.get(&"upgrades")
+	if upgrades == null:
+		return
+	for i in mini(upgrades.size(), InputContext.UPGRADE_ACTIONS.size()):
+		if ctx.just_pressed(InputContext.UPGRADE_ACTIONS[i]):
+			Progression.try_buy(upgrades[i])
 
 
 ## The consciousness takes control of this entity.

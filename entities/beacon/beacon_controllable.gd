@@ -26,8 +26,8 @@ func _ready() -> void:
 
 
 ## A beacon is a vantage point, not a fighter: input is simply ignored.
-func handle_input(_ctx: InputContext) -> void:
-	pass
+func handle_input(ctx: InputContext) -> void:
+	super(ctx)
 
 
 func on_possessed() -> void:

@@ -26,6 +26,7 @@ func _ready() -> void:
 
 
 func handle_input(ctx: InputContext) -> void:
+	super(ctx) # upgrade buy keys — see Controllable._handle_upgrade_keys
 	# "select" (phase 8.2) is a possession-layer concern, not gameplay — it's
 	# resolved here rather than inside base.drive() so Base itself stays
 	# ignorant of possession swapping. Consumes the click on a hit so the

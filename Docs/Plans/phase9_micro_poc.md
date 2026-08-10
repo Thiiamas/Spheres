@@ -509,6 +509,53 @@ Reste à confirmer **en playtest manuel** :
 - [ ] D4 se sent juste : acheter des PV max en pleine vague soigne
       immédiatement du delta
 
+### Ajustements faits en préparation de 9.3
+
+Trois points relevés en vérifiant que le système convenait au
+`RuneMageMinimal` de 9.3 (upgrades PV + cooldown). Confirmation d'abord :
+`RuneMage` a déjà un composant `Health` (donc `set_max_hp` marche tel quel)
+et ses cooldowns sont de simples `float` exportés (`bolt_cooldown`,
+`flux_cooldown`, `cage_cooldown`), donc le patron de baseline s'applique sans
+adaptation. Détail utile : `_tick_cooldowns` réarme les timers depuis ces
+exports **au moment du cast**, donc changer la valeur n'a aucun effet
+étrange sur un cooldown en cours.
+
+**1. `UPGRADE_ACTIONS` déplacé de `Base` vers `InputContext`.** Le mage aurait
+dû écrire `Base.UPGRADE_ACTIONS` pour lire ses propres touches d'achat. Sa
+place est à côté de `TRACKED_ACTIONS`, qui doit de toute façon rester
+synchronisé avec elle (une action absente de `TRACKED_ACTIONS` n'est jamais
+échantillonnée : la touche serait silencieusement inerte).
+
+**2. La boucle d'achat est montée dans `Controllable`.** Elle était dans
+`Base.drive()` et il aurait fallu la dupliquer dans chaque entité. Acheter un
+upgrade est une préoccupation de la **couche possession** (c'est du méta, ça
+dépense le portefeuille partagé du joueur), exactement comme `select` — même
+raisonnement, même endroit. `Controllable._handle_upgrade_keys()` lit
+`entity.upgrades` en duck-typing via `get()`, donc :
+- toute entité possédable exposant un tableau `upgrades` peut acheter, sans
+  plomberie — le mage de 9.3 y compris ;
+- les entités sans upgrades (sphère, balise) renvoient `null` et sont ignorées ;
+- `Base` ne fait plus que **déclarer** ce qu'elle propose.
+Les quatre sous-classes appellent désormais `super(ctx)` dans
+`handle_input`. Couvert par `base_possession_test`, qui achète via le chemin
+des touches réel (`set_action` → `handle_input`).
+
+**3. Bug préexistant corrigé : la barre de vie après un swap de possession.**
+`PossessionSwap` assignait `health.hp` directement, ce qui ne rafraîchit
+rien — seuls `take_damage`, `set_max_hp` et `_ready` le font. Une entité
+possédée à 50% de PV **affichait donc une barre pleine** jusqu'à son premier
+coup encaissé. Datait de la phase 8.2 ; 9.3 l'aurait rendu systématique,
+puisque chaque possession passe par ce chemin. Corrigé par
+`Health.set_hp()` (symétrique de `set_max_hp`), utilisé aux deux endroits du
+swap. Régression pincée dans `possession_swap_test` : vérifié en remettant
+l'ancienne ligne, le test échoue bien avec « bar shows 100% after a 50%
+swap ».
+
+> Effet de bord vérifié et voulu : le `set_hp` du swap tourne **après**
+> `add_child`, donc après l'`apply_progression()` du `_ready` de la nouvelle
+> entité. Le ratio de PV se reporte sur le plafond **déjà amélioré**, ce qui
+> est le comportement souhaité.
+
 ### À ne PAS faire dans ce jalon
 
 - Pas de pile de modificateurs / buffs temporaires — le pattern

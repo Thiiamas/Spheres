@@ -17,8 +17,17 @@ class_name InputContext
 const TRACKED_ACTIONS: Array[StringName] = [
 	&"jump", &"boost", &"attack", &"aoe", &"mode_toggle",
 	&"spell_a", &"spell_z", &"spell_e", &"select",
-	# Upgrade buy keys 1-4 (phase 9.2) — replaced the single buy_slot (B), which
-	# was a one-off hardcoded purchase on Base before Progression existed.
+	# Keep in sync with UPGRADE_ACTIONS below — an action absent from this list
+	# is never sampled, so a buy key would silently do nothing.
+	&"upgrade_1", &"upgrade_2", &"upgrade_3", &"upgrade_4",
+]
+
+## Buy keys, in the order an entity's `upgrades` array maps onto them (phase
+## 9.2). Lives here rather than on Base — it's an input concern, and any
+## possessable entity buys through Controllable._handle_upgrade_keys(), so
+## nothing should have to reach into a concrete entity type for these. Replaced
+## the single buy_slot (B) that Base hardcoded before Progression existed.
+const UPGRADE_ACTIONS: Array[StringName] = [
 	&"upgrade_1", &"upgrade_2", &"upgrade_3", &"upgrade_4",
 ]
 
