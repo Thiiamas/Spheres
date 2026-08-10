@@ -15,12 +15,12 @@
 manuellement — cf. `phase8_foundations.md`). **Phase 9 (POC Micro) est
 planifiée en détail** dans `phase9_micro_poc.md` — pas encore implémentée,
 découpée en quatre jalons : **9.1 ✅** défense de Base (PV réels + Game Over,
-ennemis en `FrontUnit` plutôt qu'`Enemy.tscn`) — implémentée et playtestée ;
-**9.2** progression (débouché des ressources : `Upgrade` en `Resource` +
-autoload `Progression`, portée globale, un seul portefeuille partagé) ;
-**9.3** possession d'une unité (variante RuneMage flaguée, détails différés
-à l'implémentation ; Game Over généralisé à « toutes les entités
-contrôlables mortes ») ; **9.4** relief/obstacles.
+ennemis en `FrontUnit` plutôt qu'`Enemy.tscn`) ; **9.2 ✅** progression
+(débouché des ressources : `Upgrade` en `Resource` + autoload `Progression`,
+portée globale, un seul portefeuille partagé) — les deux implémentées et
+playtestées ; **9.3** possession d'une unité (variante RuneMage flaguée,
+détails différés à l'implémentation ; Game Over généralisé à « toutes les
+entités contrôlables mortes ») ; **9.4** relief/obstacles.
 
 ---
 
@@ -52,13 +52,16 @@ indépendantes.
 | **Récompense** | Contrôle du front entier, accès aux ressources près de la base conquise, ouverture du front suivant |
 
 ### Trous identifiés (non résolus par la phase en cours)
-- **Micro → Méso** : le lien "montée en puissance" du joueur n'existait pas
-  du tout avant la phase 8. La phase 8 donne une économie **côté Base**
-  (achat de slots de vague), mais pas de progression pour l'unité possédée
-  elle-même. → **en cours de traitement en 9.2** (`phase9_micro_poc.md`) :
-  un système `Upgrade`/`Progression` générique, appliqué d'abord à la Base
-  et branché sur le contrôlable en 9.3. Le playtest de 9.1 a rendu le trou
-  criant — tuer rapportait des ressources qui n'achetaient rien.
+- **Micro → Méso** : ~~le lien "montée en puissance" du joueur n'existe
+  pas~~ → **comblé côté Base par 9.2** (`phase9_micro_poc.md`) : système
+  `Upgrade`/`Progression` générique, playtesté, où tuer des ennemis finance
+  de vraies améliorations (cadence/dégâts du mortier, PV de base). Le
+  playtest de 9.1 avait rendu le trou criant — les ressources
+  s'accumulaient sans rien pouvoir acheter.
+  **Reste à faire** : brancher le contrôlable lui-même dessus (9.3), pour
+  que le joueur sente sa propre unité progresser et pas seulement sa
+  structure. Le système est déjà prêt pour ça (achat géré dans
+  `Controllable`, donc toute entité possédable en hérite).
 - **Macro** n'a pas de fin de cycle définie ("ouverture du front suivant"
   est une progression linéaire, pas une boucle qui se referme) — pas
   bloquant pour l'instant, à trancher plus tard.

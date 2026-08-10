@@ -507,10 +507,10 @@ Confirmé **en playtest manuel** :
 - [x] Les touches `1`-`4` achètent bien, sans conflit avec le reste des
       entrées (l'ancien `B` a disparu)
 
-Reste à confirmer :
-
-- [ ] D4 se sent juste : acheter des PV max en pleine vague soigne
+- [x] D4 se sent juste : acheter des PV max en pleine vague soigne
       immédiatement du delta
+
+**9.2 est complète et validée.**
 
 **Réglage issu du playtest** : `cost_base` descendu de 15-25 à **5** sur
 `mortar_rate`, `mortar_damage` et `base_hp` — le premier achat arrivait trop
