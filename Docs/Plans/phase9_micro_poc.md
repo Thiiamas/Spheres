@@ -602,66 +602,145 @@ scènes » plus haut) — pas une modification du fichier de 9.1.
 
 9.2 aussi : le contrôlable introduit ici doit se brancher sur le système de
 progression (`apply_progression()` + une liste d'upgrades qui lui sont
-propres), ce qui est le vrai test de généricité de ce système — et le point
-où D2 (portée globale) se vérifie concrètement, puisqu'un mage né d'une
-possession doit arriver déjà amélioré.
+propres), ce qui est le vrai test de généricité de ce système.
 
-### Ce qui reste délibérément non tranché ici
+### Décisions actées
 
-> Décidé ensemble : les détails d'implémentation de ce jalon seront
-> discutés **au moment de l'attaquer**, pas anticipés maintenant. Cette
-> section note seulement ce qui est déjà acté, pour ne pas le redécider
-> par erreur plus tard.
+| # | Sujet | Décision | Pourquoi |
+|---|-------|----------|----------|
+| D5 | Sorts de la variante | **A (`RuneBolt`) et E (`RuneFlux`) uniquement**, Z (`RuneCage`) désactivé. Via **un flag par sort** (`enable_bolt`/`enable_flux`/`enable_cage`, tous `true` par défaut) sur `RuneMage`, la variante minimale mettant `enable_cage = false`. | Garde l'esprit léger du POC. Un flag par sort plutôt qu'un unique `minimal_mode` : aucun sort n'est traité comme un cas particulier, et recomposer la panoplie plus tard se fait en données, pas en code. |
+| D6 | Origine des unités | **Roster fixe pré-placé**, aucun spawn : N corps posés dans la scène au chargement. | Décision explicite de l'utilisateur. Conséquence majeure et voulue : le roster est **fini et décroissant**, chaque corps perdu l'est définitivement — ce qui donne enfin un sens concret à la règle de défaite (D8). |
+| D7 | Nature des corps | Des **`RuneMageMinimal` inertes**, pas des `FrontUnit` convertis au clic. Posséder = **simple transfert** via `Consciousness`, pas un swap détruire/recréer. | Colle à la fiction d'origine (« les autres sphères sont passives, cristallisées, immobiles » — `PLAN.md`), et surtout : ça marche presque sans code neuf, cf. « Ce qui fonctionne déjà » ci-dessous. `PossessionSwap` n'est **pas** utilisé ici — l'écart avec la 8.2 est assumé, cette scène n'a pas de `FrontUnit` allié à élever. |
+| D8 | Défaite | **Game Over quand la Base *et* tous les corps du roster sont morts.** Mourir en possession rend le contrôle à la Base si elle vit, sinon à un corps survivant, sinon défaite. | Généralise la règle de 9.1 au lieu de la refaire. Avec un roster fini (D6), c'est une vraie condition de perte progressive : chaque mort coûte définitivement une option. |
 
-- **Nature de la « variante RuneMage »** : une version à part du RuneMage
-  existant (phases 6-8), distinguée par un **flag**, pensée pour rester
-  dans l'esprit léger du POC plutôt que de réutiliser tous les sorts/l'UI
-  du RuneMage complet — quels sorts/mouvements gardés ou simplifiés reste
-  à discuter à l'implémentation.
-- **Origine des unités possédables** dans ce POC (roster fixe pré-placé ?
-  conversion d'un `FrontUnit` existant comme en 8.2 ? autre chose ?) — non
-  tranché.
-- **Une possession à la fois ou plusieurs unités en réserve** — non
-  tranché.
+### Ce qui fonctionne déjà (vérifié dans le code, et ce qui rend D7 peu coûteux)
 
-### Sous-tâches (esquisse — à affiner en attaquant ce jalon, pas figée)
+Le roster inerte tient debout presque sans code neuf :
 
-1. Introduire la variante RuneMage flaguée (détails ci-dessus, à discuter
-   avant de coder ce point précis).
-2. Généraliser la condition de défaite : suivre l'ensemble des entités
-   contrôlables du joueur (Base + unité(s) possédée(s)/possédable(s)) et ne
-   déclencher Game Over que lorsque plus aucune n'est en vie — probablement
-   dans `micro_possession.gd`, plutôt que dans `Base` elle-même (`Base.died`
-   seule ne suffit plus : elle ne doit plus, à elle seule, terminer la
-   partie).
-3. Réutiliser `PossessionSwap` (phase 8.2) tel quel si compatible avec la
-   variante flaguée ; noter explicitement tout écart si ce n'est pas le cas.
+- **Un mage non possédé est déjà inerte** : `_physics_process` remet
+  `velocity.x/z` à zéro dès que `is_controlled` est faux (il ne subit que la
+  gravité). Aucun garde-fou à ajouter pour l'empêcher de dériver.
+- **La distinction visuelle existe déjà** : `_apply_visual()` applique
+  `possessed_energy` (1.8) ou `idle_energy` (0.3) — les corps en réserve
+  luisent faiblement, le corps actif brille. Exactement la lecture
+  « cristallisé / actif » voulue.
+- **L'enregistrement est automatique** : `RuneMageControllable._ready()` fait
+  `mage.controllable = self` puis `super()` → `Consciousness.register()`. Un
+  mage posé dans la scène rejoint donc le pool de possession tout seul, et
+  **le cycle Tab fonctionne gratuitement** comme moyen de changer de corps,
+  en plus du clic.
+- **Les corps morts se nettoient** : `_on_health_died()` fait déjà
+  `unregister` + `queue_free()`, donc aucun cadavre ne traîne dans le cycle
+  de possession.
 
-### Fichiers (provisoire — à confirmer à l'implémentation de ce jalon)
+### Deux bloqueurs à corriger (trouvés en préparant ce jalon)
 
-- Nouveau : `gameplay_loop/micro/micro_possession.tscn`/`.gd` (copie de
-  `micro_base_defense.tscn`, cf. « Organisation des scènes »)
-- Nouveau : variante RuneMage (nom de fichier à définir au moment de coder)
-- Modifié, potentiellement : `entities/base/base.gd` (`died` ne déclenche
-  plus directement Game Over à lui seul, cf. sous-tâche 2)
+**1. Un mage pré-placé n'est pas cliquable.** `rune_mage.gd` fait
+`collision_layer |= Faction.PLAYER_LAYER` et la scène ne déclare aucune
+couche, donc le mage vit sur `1 | 8` — jamais sur `ALLY_LAYER` (4), la seule
+couche que `CameraRig.raycast_at_cursor` interroge pour `select`. Le rayon le
+traverserait purement et simplement.
+
+**2. Un mage possédé est aujourd'hui invulnérable.**
+`FrontUnit._try_attack()` n'accepte que `FrontUnit` adverse, `Tower` et
+`Base` — jamais `RuneMage`. Et la scène Micro n'a pas de Tour, donc pas de
+riposte `EscortGate` (le seul chose qui pouvait blesser le mage en phase 7).
+Le joueur pourrait donc se promener au milieu des cubes sans perdre un PV,
+ce qui viderait ce jalon de son sens (« le combat rapproché doit se sentir
+dangereux »).
+
+Les deux se règlent ensemble : poser le mage sur `ALLY_LAYER` (en plus de ses
+couches actuelles) **et** ajouter `RuneMage` aux cibles valides de
+`_try_attack`. Effets de bord vérifiés : le mortier ne masque que la couche
+ennemie (2), donc **pas de tir ami** ; `EscortGate` détecte la couche 8, que
+le mage conserve.
+
+> **Conséquence à surveiller en playtest** : une fois le mage attaquable, les
+> corps **en réserve** le sont aussi — une vague peut donc décimer ton roster
+> pendant que tu es à la Base. C'est une tension intéressante (il faut
+> défendre ses corps), mais potentiellement punitive. Valeur de départ :
+> dégâts pleins. Si c'est brutal, le concept d'origine offre déjà une porte
+> de sortie — les corps passifs y sont décrits comme « très résistantes »,
+> donc réduire les dégâts subis hors possession serait un précédent
+> assumé, pas une rustine.
+
+### Sous-tâches
+
+**1. Variante `RuneMageMinimal`**
+- Flags `enable_bolt`/`enable_flux`/`enable_cage` sur `RuneMage` (D5), lus
+  dans `drive()` avant chaque `_cast_*`, et reflétés dans `get_hud_lines()`
+  pour ne pas afficher un sort indisponible.
+- Nouvelle scène `entities/mage/rune_mage_minimal.tscn` : hérite de
+  `rune_mage.tscn`, met `enable_cage = false`, et ajoute `ALLY_LAYER` à sa
+  couche de collision (bloqueur 1).
+
+**2. Rendre le mage attaquable** — `FrontUnit._try_attack()` accepte
+`RuneMage` (bloqueur 2), même patron que l'ajout de `Base` en 9.1 : aucun
+test de faction nécessaire, le masque de l'`AttackZone` s'en charge déjà.
+
+**3. Sélection au clic d'un corps du roster** —
+`PossessionSwap.try_select_at_cursor()` résout aujourd'hui `FrontUnit` et
+`Base` ; ajouter une branche `hit is RuneMage` →
+`Consciousness.request_possession(hit.controllable)`. Pas de swap, juste un
+transfert (D7).
+
+**4. Généraliser la mort en possession** — `RuneMage._on_health_died()`
+renvoie aujourd'hui **inconditionnellement** sur la Base alliée. Il doit
+désormais : Base si vivante → sinon un corps du roster survivant → sinon
+laisser le niveau déclarer la défaite (D8).
+
+**5. Progression du mage** (le vrai test de généricité de 9.2) — upgrades
+propres au mage (`entities/mage/upgrades/*.tres` : PV, cooldown) +
+`apply_progression()` avec baselines capturées. **Rien à écrire côté
+entrée** : `Controllable._handle_upgrade_keys()` gère déjà l'achat pour
+toute entité exposant un tableau `upgrades`.
+
+**6. Scène `gameplay_loop/micro/micro_possession.tscn`/`.gd`** — copie de
+`micro_base_defense.tscn` + N corps du roster (3 pour commencer, à régler en
+playtest) placés près de la Base. Attention à l'**ordre des nœuds** :
+`PlayerBase` doit rester avant les mages dans l'arbre pour que sa
+`Controllable` s'enregistre en premier et soit l'entité possédée au
+démarrage (même contrainte qu'en 8.1 pour `level2_front.tscn`).
+Le script de niveau porte la règle de défaite généralisée (D8) plutôt que
+`Base.died` seul.
+
+### Fichiers
+
+- `entities/mage/rune_mage.gd` (modifié — flags de sorts, `_on_health_died`
+  généralisé, `apply_progression` + baselines)
+- `entities/mage/rune_mage_minimal.tscn` (nouveau — hérite de
+  `rune_mage.tscn`, `enable_cage = false`, `ALLY_LAYER`)
+- `entities/mage/upgrades/*.tres` (nouveaux — PV, cooldown)
+- `entities/front_unit/front_unit.gd` (modifié — `_try_attack` accepte
+  `RuneMage`)
+- `entities/front_unit/possession_swap.gd` (modifié — branche `RuneMage`
+  dans `try_select_at_cursor`)
+- `gameplay_loop/micro/micro_possession.tscn`/`.gd` (nouveau)
+- `tests/micro_possession_test.gd`/`.tscn` (nouveau)
 
 ### Critères de validation
 
-- [ ] Le joueur peut posséder une unité alliée pendant la défense de Base
-      (comme en 8.2), depuis cette scène POC
-- [ ] Mourir en tant qu'unité possédée ne termine PAS la partie si la Base
-      (ou une autre entité contrôlable) est encore en vie
-- [ ] Game Over seulement quand la Base **et** toute unité possédée/
-      possédable sont mortes
-- [ ] Le combat rapproché possédé se sent dangereux/positionnel (feel
-      Micro), pas juste une formalité à côté de la bombarde de Base
+- [ ] Cliquer un corps du roster prend son contrôle ; le corps quitté
+      redevient inerte (faible lueur), le nouveau s'allume
+- [ ] `Tab` fait aussi tourner entre Base et corps du roster
+- [ ] Seuls A et E répondent ; Z ne fait rien et n'apparaît pas au HUD
+- [ ] Un ennemi au contact **endommage** le mage possédé (bloqueur 2 levé)
+- [ ] Mourir en possession ne termine pas la partie tant qu'il reste la Base
+      ou un corps du roster ; le contrôle bascule proprement
+- [ ] Game Over seulement quand la Base **et** tout le roster sont morts
+- [ ] Les upgrades du mage s'achètent aux mêmes touches et s'appliquent
+      (preuve que 9.2 est bien générique)
+- [ ] Aucune régression : les six tests headless au vert
 
 ### À ne PAS faire dans ce jalon
 
-- Ne pas figer maintenant les détails de la variante RuneMage (flag) —
-  décision différée à l'attaque de ce jalon, pas à anticiper en amont
-- Pas de vague alliée spawnée automatiquement, sauf décision contraire
-  prise à ce moment-là
+- Pas de spawn d'unité alliée (D6) — le roster est fixe et ne se reconstitue
+  pas
+- Pas de `PossessionSwap` détruire/recréer ici (D7) — ce chemin reste couvert
+  par `level2_front` et son test
+- Pas de relief/obstacles (9.4)
+- Pas de vraie UI de roster (qui est vivant, qui est mort) — le HUD debug
+  suffit
 
 ---
 
