@@ -38,6 +38,7 @@ ouvert, pas un choix figé.
 
 | Doc | Contenu |
 |---|---|
+| `Docs/Plans/LOOP_SPHERE_FRONT.md` | **Doc « objectif courant »** : la boucle de gameplay visée (Micro/Méso/Macro), où en est son implémentation, et la prochaine phase à faire — à lire en premier pour savoir quoi faire ensuite |
 | `Docs/Plans/PLAN.md` | Plan d'implémentation phase par phase, structure du projet, état de chaque phase (✅/à faire), **« Questions ouvertes »** — la liste la plus utile avant une discussion game design |
 | `Docs/Plans/phaseN_*.md` | Spec/prompt d'origine de chaque phase (1 à 7) — historique, pas la référence de comportement actuel |
 | `Docs/front/front_unit_ai.md` | Référence technique **à jour** : mouvement/combat de `FrontUnit` (phase 7) |

@@ -129,7 +129,7 @@ res://
 | 5 | `phase5_possession.md` | Possession multi-perspective (`Controllable` / `InputContext` / `CameraConfig`) | ✅ Implémenté et playtesté (branche `phase5-possession` ; balise non-sphère possédable + test IA) |
 | 6 | `phase6_runemage.md` | RuneMage : gameplay MOBA à la Ryze (click-to-move, curseur ciblant, sorts A/Z/E) | ✅ Implémenté et playtesté manuellement (branche `gameplay-ryze`) |
 | 7 | `phase7_front.md` (comportement `FrontUnit` : `Docs/front/front_unit_ai.md` ; tour objectif : `Docs/front/tower.md`) | Le Front : bases spawnant des unités autonomes qui s'affrontent entre les deux bases, tour intermédiaire à détruire pour gagner (scène séparée `level2_front.tscn`) | ✅ Implémenté et playtesté manuellement (sans PV de base ni condition de défaite) |
-| 8 | `phase8_foundations.md` | Prérequis : Base jouable + économie (8.1), possession `FrontUnit ↔ RuneMage` complète (8.2) | 🚧 8.1 ✅ playtestée ; 8.2 ✅ implémentée et vérifiée headless, clic souris réel à confirmer (branche `phase8-foundations`) |
+| 8 | `phase8_foundations.md` | Prérequis : Base jouable + économie (8.1), possession `FrontUnit ↔ RuneMage` complète (8.2) | ✅ 8.1 et 8.2 implémentées et playtestées manuellement (branche `phase8-foundations`) |
 
 ---
 
@@ -164,6 +164,12 @@ res://
 > cours d'application aux entités de jeu réelles (RuneMage).
 
 ---
+
+## Boucle de gameplay visée et prochaine phase
+
+Voir `LOOP_SPHERE_FRONT.md` — la boucle Micro/Méso/Macro visée, l'état de
+son implémentation par rapport à cette table de phases, et la prochaine
+phase (9, POC Micro) à planifier en détail.
 
 ## Questions ouvertes (pour v0.2)
 

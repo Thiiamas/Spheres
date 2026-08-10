@@ -314,9 +314,9 @@ une autre unité alliée (ou sur la Base) → relâche la possession courante
       `request_possession`, HP 50% → 50%)
 - [x] ZQSD déplace le RuneMage possédé (plus de click-to-move) — vérifié
       headless (input synthétique, déplacement mesuré)
-- [ ] Les sorts A/Z/E fonctionnent toujours normalement — logique inchangée,
-      `rune_chain_test` (bolt/flux/mark) toujours au vert, mais pas rejoué
-      manuellement sur un RuneMage né d'une possession
+- [x] Les sorts A/Z/E fonctionnent toujours normalement — logique inchangée,
+      `rune_chain_test` (bolt/flux/mark) toujours au vert, rejoué manuellement
+      sur un RuneMage né d'une possession : confirmé
 - [x] Relâche la possession courante → l'ancienne unité redevient un
       FrontUnit autonome, cible tour/base retrouvée — vérifié headless
 - [x] Mourir en étant possédé renvoie la possession sur la Base sans crash
@@ -325,11 +325,10 @@ une autre unité alliée (ou sur la Base) → relâche la possession courante
       `synthetic_drive_test`/`rune_chain_test`/`base_possession_test` toujours
       au vert
 
-> **Non vérifié en conditions réelles** : la résolution du clic
-> souris→monde elle-même (`CameraRig.raycast_at_cursor` + la `SelectionArea`
-> de la Base) — pas de curseur réel en headless. Le test couvre tout ce qui
-> suit "la bonne cible a été trouvée" ; reste à confirmer en jouant que
-> cliquer sur une unité du Front à l'écran sélectionne bien *cette* unité.
+> **Vérifié en conditions réelles (2026-08-10)** : la résolution du clic
+> souris→monde (`CameraRig.raycast_at_cursor` + la `SelectionArea` de la
+> Base) sélectionne bien l'unité du Front visée à l'écran, confirmé en
+> playtest manuel.
 
 ### À ne PAS faire dans cette phase
 
