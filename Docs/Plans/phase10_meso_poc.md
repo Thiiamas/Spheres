@@ -314,16 +314,18 @@ meso_siege.tscn` part d'une **copie** de `meso_front.tscn`.
 
 ### Critères de validation
 
-Vérifié **headless** :
+Vérifié **headless** (`tests/meso_siege_test.tscn`) :
 
-- [ ] Une vague ne peut pas endommager la Base adverse tant que sa Tour est
+- [x] Une vague ne peut pas endommager la Base adverse tant que sa Tour est
       vivante (bloquée/redirigée vers la Tour en premier — `_current_target()`
-      déjà écrit pour ça, ce test le confirme en conditions Méso réelles)
-- [ ] La Tour détruite, la vague suivante atteint et endommage la Base
+      déjà écrit pour ça, ce test le confirme en conditions Méso réelles,
+      avec une vraie vague qui parcourt réellement le couloir)
+- [x] La Tour détruite, la même vague reprend sa route et endommage la Base
       derrière
-- [ ] `enemy_tower.died` déclenche la victoire ; `player_tower.died` **et**
-      `player_base.died` déclenchent chacun la défaite indépendamment
-- [ ] Aucune régression : tous les tests headless précédents au vert
+- [x] `enemy_tower.died` déclenche la victoire ; `player_tower.died` **et**
+      `player_base.died` déclenchent chacun la défaite indépendamment (l'un
+      ne déclenche pas l'autre)
+- [x] Aucune régression : les 10 tests headless du projet au vert
       (y compris ceux de 10.1)
 
 Confirmé **en playtest manuel** :

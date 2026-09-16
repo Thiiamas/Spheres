@@ -128,6 +128,31 @@ objectif réel de ce jalon.
 
 ---
 
+## Palier Méso — jalon 10.2 (Tour comme objectif de siège)
+
+Scène : `gameplay_loop/meso/meso_siege.tscn`
+
+Le blocage/déblocage par la Tour **est** mesuré (`meso_siege_test` : une
+vraie vague engage la Tour ennemie sans jamais toucher la Base tant qu'elle
+vit, puis la même vague atteint et endommage la Base une fois la Tour
+tombée ; victoire/défaite testées dans les trois cas, indépendamment). Reste
+le *feel* du siège.
+
+- [ ] **La Tour se sent comme un vrai palier à franchir**, pas un simple
+      délai — le siège (pousser sa vague, l'escorter) doit se sentir
+      différent du pur combat de 10.1.
+- [ ] **La riposte de la Tour** (`EscortGate`, phase 7) contre un joueur
+      non-escorté reste lisible et pas trop punitive dans ce contexte à deux
+      vagues actives.
+- [ ] **Victoire/défaite** s'affichent correctement dans les trois cas (Tour
+      adverse tombée, sa propre Tour tombée, sa propre Base tombée).
+- [ ] **Positionnement des Tours** dans le couloir (`z = ±10`, entre chaque
+      Base et le point de rencontre) — ni trop près du spawn (pas de temps
+      pour apprécier le combat de vague avant le siège) ni trop près de la
+      Base adverse (le siège n'a pas le temps de se sentir long).
+
+---
+
 ## Non-régression ailleurs (la déflexion touche *tout* `FrontUnit`)
 
 `obstacle_deflect_weight` s'applique à toute unité du jeu, pas seulement dans la
