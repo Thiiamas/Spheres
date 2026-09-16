@@ -1010,8 +1010,8 @@ Filet vérifié en neutralisant la correction (`obstacle_deflect_weight = 0`) :
       ne régresse pas avec le relief en place — **validé en playtest manuel**,
       voir `Docs/PLAYTEST_CHECKLIST.md`
 - [x] Décision documentée ici (2a, avec le pourquoi et les mesures)
-- [ ] Non-régression de `level2_front` : la déflexion s'applique à **toute**
-      unité du jeu, pas seulement ici — **playtest manuel**
+- [x] Non-régression de `level2_front` : la déflexion s'applique à **toute**
+      unité du jeu, pas seulement ici — **validé en playtest manuel**
 
 ### À ne PAS faire dans ce jalon
 

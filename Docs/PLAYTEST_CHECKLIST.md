@@ -106,16 +106,18 @@ Il ne reste donc que le visuel et le feel.
 scène de relief. Les scènes plates ne devraient rien voir (les unités ne touchent
 pas les murs), mais ça se vérifie.
 
-- [ ] **`levels/level2_front.tscn`** — les unités poussent toujours vers la base
+- [x] **`levels/level2_front.tscn`** — les unités poussent toujours vers la base
       adverse, assiègent la Tour, et ne longent pas ses murs au lieu de la
       frapper. (La Tour et les Bases sont explicitement exclues de la déflexion,
-      mais c'est le point le plus à risque.)
-- [ ] **`level2_front`, possession 8.2** — clic sur une unité alliée → elle
+      mais c'est le point le plus à risque.) **Validé**.
+- [x] **`level2_front`, possession 8.2** — clic sur une unité alliée → elle
       devient un mage ; les **trois** sorts répondent (A, Z, E — c'est ici que Z
       doit encore marcher) ; quitter le mage le rend au front en `FrontUnit`.
-- [ ] **`gameplay_loop/micro/micro_base_defense.tscn`** (9.1/9.2) — inchangé.
-- [ ] **`levels/main.tscn`** (niveau 1) — inchangé. Rappel : pas d'économie dans
-      cette scène, ses ennemis n'ont pas de `LootOnDeath`.
+      **Validé**.
+- [x] **`gameplay_loop/micro/micro_base_defense.tscn`** (9.1/9.2) — inchangé.
+      **Validé**.
+- [x] **`levels/main.tscn`** (niveau 1) — inchangé. Rappel : pas d'économie dans
+      cette scène, ses ennemis n'ont pas de `LootOnDeath`. **Validé**.
 
 ---
 
