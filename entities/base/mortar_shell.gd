@@ -10,11 +10,23 @@ class_name MortarShell
 ## Modeled after AoeOrb (entities/sphere/aoe_orb.gd): travels for a fixed
 ## flight_time, then detonates a radius query and an optional cosmetic blast
 ## (aoe_blast.tscn is generic enough to reuse as-is).
+##
+## Reused by the Tower's AOE retaliation (phase 10.2, entities/tower/
+## tower_shell.gd, Docs/Plans/phase10_meso_poc.md) via subclassing rather
+## than a new node type from scratch — damage_mask and _apply_damage() are
+## the two seams that reuse needs: which layer the blast queries, and which
+## method delivers the hit. Left as plain vars/an overridable method rather
+## than setup() params so a subclass can change just one without repeating
+## the whole call.
 
 var damage: float = 25.0
 var radius: float = 2.5
 var flight_time: float = 0.9
 var blast_scene: PackedScene
+## Enemies live on physics layer 2 (Faction.ENEMY_LAYER) — the Base's own
+## mortar only ever queries this layer. A subclass changes this directly
+## (see TowerShell) rather than through setup(), which stays untouched.
+var damage_mask: int = 2
 
 @onready var _mesh: MeshInstance3D = $MeshInstance3D
 
@@ -64,11 +76,11 @@ func _explode() -> void:
 	var query := PhysicsShapeQueryParameters3D.new()
 	query.shape = shape
 	query.transform = Transform3D(Basis(), global_position)
-	query.collision_mask = 2 # enemies live on physics layer 2 (Faction.ENEMY_LAYER)
+	query.collision_mask = damage_mask
 	for hit in space.intersect_shape(query, 64):
 		var body = hit.get("collider")
-		if body and body.has_method("take_hit"):
-			body.take_hit(damage)
+		if body:
+			_apply_damage(body)
 
 	if blast_scene:
 		var fx := blast_scene.instantiate()
@@ -78,3 +90,12 @@ func _explode() -> void:
 			fx.play(radius)
 
 	queue_free()
+
+
+## Same convention as FrontUnit/Tower/Enemy: take_hit is the alias other
+## systems (RuneBolt's chain, this shell) call through. Overridden by
+## TowerShell to call take_damage instead, for targets (RuneMage) that only
+## implement that one — see the class doc above.
+func _apply_damage(body: Node) -> void:
+	if body.has_method("take_hit"):
+		body.take_hit(damage)

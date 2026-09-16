@@ -1,10 +1,12 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=14 format=3]
 
 [ext_resource type="Script" path="res://entities/tower/tower.gd" id="1_tower"]
 [ext_resource type="Script" path="res://ui/hp_bar_3d.gd" id="2_hpbar"]
 [ext_resource type="Script" path="res://entities/shared/health.gd" id="3_health"]
 [ext_resource type="PackedScene" path="res://entities/shared/escort_gate.tscn" id="4_gate"]
 [ext_resource type="PackedScene" path="res://entities/tower/tower_bolt.tscn" id="5_bolt"]
+[ext_resource type="PackedScene" path="res://entities/tower/tower_shell.tscn" id="6_shell"]
+[ext_resource type="PackedScene" path="res://entities/tower/tower_aoe_blast.tscn" id="7_aoe_blast"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_structure"]
 albedo_color = Color(0.6, 0.2, 0.2, 1)
@@ -68,3 +70,5 @@ hp_bar = NodePath("../HPBar3D")
 
 [node name="EscortGate" parent="." instance=ExtResource("4_gate")]
 retaliation_projectile = ExtResource("5_bolt")
+aoe_shell = ExtResource("6_shell")
+aoe_blast = ExtResource("7_aoe_blast")

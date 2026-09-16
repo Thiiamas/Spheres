@@ -119,15 +119,15 @@ ne s'applique pas :
 
 ```gdscript
 func _physics_process(delta: float) -> void:
-    if not _configured or not retaliation_enabled:
-        return
-    _retaliation_timer -= delta
-    if _retaliation_timer > 0.0:
-        return
-    var target: Node = _find_hostile_front_unit() if is_protected() else _find_unescorted_attacker()
-    if target != null:
-        _fire_at(target)
-        _retaliation_timer = retaliation_cooldown
+	if not _configured or not retaliation_enabled:
+		return
+	_retaliation_timer -= delta
+	if _retaliation_timer > 0.0:
+		return
+	var target: Node = _find_hostile_front_unit() if is_protected() else _find_unescorted_attacker()
+	if target != null:
+		_fire_at(target)
+		_retaliation_timer = retaliation_cooldown
 ```
 
 - `is_protected() == true` signifie littéralement « un `FrontUnit` hostile
@@ -168,6 +168,66 @@ func _physics_process(delta: float) -> void:
 - `EscortGate` ne touche jamais aux PV ni ne s'auto-libère — c'est un pur
   comportement détection + riposte, libéré automatiquement avec l'hôte dont
   il est enfant.
+
+### Riposte AOE — indépendante, ignore l'escorte (ajout 10.2)
+
+Demandée par l'utilisateur après le premier playtest de 10.2 : la riposte
+mono-cible ci-dessus ne vise **jamais** un joueur escorté (`is_protected()`
+la coupe), donc pousser sa vague rendait le joueur totalement à l'abri de la
+Tour. Pour donner du vrai danger à un siège, une **deuxième** mécanique,
+indépendante, a été ajoutée plutôt que de remplacer la première (les deux
+peuvent toucher le joueur la même seconde, sur des cooldowns séparés) :
+
+```gdscript
+if aoe_enabled:
+	_aoe_timer -= delta
+	if _aoe_timer <= 0.0:
+		var player := _find_hostile_player()
+		if player != null:
+			_fire_aoe_at(player.global_position)
+			_aoe_timer = aoe_cooldown
+```
+
+- **Pas de garde `is_protected()`** — c'est tout le point : un joueur qui
+  pousse avec escorte reste une cible valide pour l'AOE, alors que la
+  riposte mono-cible l'ignorerait.
+- `_find_hostile_player()` : ancien `_find_unescorted_attacker()`, renommé —
+  la fonction ne sait pas et ne doit pas savoir *pourquoi* elle est
+  appelée ; seul le site d'appel (gardé par `is_protected()` ou non) décide
+  du sens du nom d'avant.
+- **Télégraphié, pas instantané** : l'AOE lobe un obus
+  (`entities/tower/tower_shell.tscn`, sous-classe de `MortarShell` — voir
+  ci-dessous) vers la **position actuelle** du joueur au moment du tir, pas
+  une position suivie — bouger pendant le temps de vol (`aoe_flight_time`,
+  1.1s par défaut) esquive le coup, exactement comme le mortier du joueur
+  contre les ennemis.
+- **Cooldown propre** (`aoe_cooldown`, 4.0s par défaut — plus long que les
+  1.5s de la riposte mono-cible, l'AOE étant un deuxième axe de danger, pas
+  un remplacement plus fort).
+
+**`entities/tower/tower_shell.gd`** (`TowerShell extends MortarShell`) — la
+seule différence avec l'obus du mortier du joueur est la méthode de dégâts :
+`MortarShell._apply_damage()` appelle `take_hit` (alias que `FrontUnit`/
+`Tower`/`Enemy` partagent) ; `RuneMage` n'implémente que `take_damage`, donc
+`TowerShell` surcharge `_apply_damage()` pour appeler celle-là à la place.
+`MortarShell` a gagné un champ `damage_mask` (`Faction.ENEMY_LAYER` par
+défaut, comportement du joueur inchangé) que `EscortGate._fire_aoe_at()`
+met à `Faction.PLAYER_LAYER` avant `setup()` — la portée du joueur au tir du
+mortier, sans dupliquer la physique d'arc/l'explosion en radius.
+
+**Visuel séparé** (`entities/tower/tower_shell.tscn` teinté rouge,
+`entities/tower/tower_aoe_blast.tscn` teinté rouge/orange, même script
+générique `aoe_blast.gd` que le mortier du joueur) — pour ne pas confondre
+un obus qui te menace avec celui, bleu, que tu tires toi-même.
+
+**Effet de bord assumé** : `EscortGate` étant partagée, **toute** Tour du
+jeu gagne cette AOE — y compris `PlayerTower`/`EnemyTower` de
+`levels/level2_front.tscn` (phase 7), pas seulement celles de la Phase 10.
+À vérifier en playtest là-bas aussi (`Docs/PLAYTEST_CHECKLIST.md`).
+
+Pas rééquilibré indépendamment de la riposte mono-cible pour l'instant
+(mêmes ordres de grandeur : 25 dégâts contre 100 PV max de RuneMage) — à
+ajuster si le cumul des deux s'avère trop punitif en playtest prolongé.
 
 ### Projectile de riposte (2026-08-02)
 
@@ -342,6 +402,13 @@ unit.target_tower = advance_target_tower if is_instance_valid(advance_target_tow
 | `retaliation_projectile` | `null` (`tower_bolt.tscn` sur `Tower`) | Scène du projectile de riposte ; `null` = dégâts instantanés sans visuel. |
 | `retaliation_projectile_speed` | 14.0 | Vitesse de vol du projectile. |
 | `muzzle_height` | 3.0 | Hauteur de tir au-dessus de l'origine de l'hôte. |
+| `aoe_enabled` | true | Coupe complètement la riposte AOE si besoin (phase 10.2). |
+| `aoe_damage` | 25.0 | Dégâts de l'explosion. |
+| `aoe_radius` | 3.0 | Rayon de l'explosion. |
+| `aoe_cooldown` | 4.0 | Délai minimum entre deux tirs AOE. |
+| `aoe_shell` | `null` (`tower_shell.tscn` sur `Tower`) | Scène de l'obus lobé (`TowerShell`, sous-classe de `MortarShell`). |
+| `aoe_flight_time` | 1.1 | Temps de vol avant l'explosion — la fenêtre pendant laquelle bouger esquive le coup. |
+| `aoe_blast` | `null` (`tower_aoe_blast.tscn` sur `Tower`) | Dôme cosmétique à l'impact (`AoeBlast`, teinté rouge/orange). |
 
 **`Tower`**
 
@@ -381,3 +448,16 @@ constantes définitives.
 - `entities/front_unit/front_unit.gd`, `ally_unit.tscn`, `enemy_unit.tscn` —
   refactorés pour utiliser `Health` ; siège de la tour ennemie (détail dans
   `Docs/front/front_unit_ai.md`).
+- `entities/shared/escort_gate.gd` (phase 10.2) — riposte anti-siège
+  (`_find_hostile_front_unit`) et riposte AOE indépendante
+  (`_find_hostile_player`, renommé depuis `_find_unescorted_attacker`,
+  `_fire_aoe_at`).
+- `entities/base/mortar_shell.gd` (phase 10.2) — `damage_mask` et
+  `_apply_damage()` extraits pour que `TowerShell` puisse réutiliser
+  l'obus/l'explosion sans dupliquer la physique d'arc.
+- `entities/tower/tower_shell.gd`, `tower_shell.tscn` (nouveau, phase 10.2) —
+  `TowerShell extends MortarShell`, obus de l'AOE, teinté rouge.
+- `entities/tower/tower_aoe_blast.tscn` (nouveau, phase 10.2) — variante
+  rouge/orange d'`AoeBlast` pour le dôme d'impact de l'AOE.
+- `tests/tower_aoe_test.gd`/`.tscn` (nouveau, phase 10.2) — headless : l'AOE
+  touche un joueur escorté (l'escorte occupe la riposte mono-cible).

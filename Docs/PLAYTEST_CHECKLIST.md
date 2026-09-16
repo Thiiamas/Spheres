@@ -141,20 +141,26 @@ le *feel* du siège.
 - [ ] **La Tour se sent comme un vrai palier à franchir**, pas un simple
 	  délai — le siège (pousser sa vague, l'escorter) doit se sentir
 	  différent du pur combat de 10.1.
-- [ ] **La Tour riposte maintenant contre la vague qui l'assiège** (nouveau
-      — corrige le retour « elle a l'air inactive »). À juger : l'action
-      est-elle visible/lisible (projectile `tower_bolt`, barre de vie qui
-      bouge des deux côtés) ? Le rythme (35 dégâts / 1.5s, mêmes valeurs que
-      la riposte anti-joueur) est-il trop fort contre une vague de 40 PV
-      max par unité, ou juste assez punitif pour donner du poids au siège ?
+- [x] **La Tour riposte maintenant contre la vague qui l'assiège** (nouveau
+	  — corrige le retour « elle a l'air inactive »). **Validé** : « c'est
+      mieux et le rythme est bon » — 35 dégâts / 1.5s gardés tels quels.
 - [ ] **La riposte de la Tour contre un joueur non-escorté** (`EscortGate`,
 	  phase 7, comportement inchangé) reste lisible et pas trop punitive
       dans ce contexte à deux vagues actives.
+- [ ] **AOE anti-joueur** (nouveau, ajouté après coup à la demande de
+	  l'utilisateur — indépendante de la riposte mono-cible ci-dessus,
+	  ignore l'escorte) : l'obus rouge (`tower_shell`) et le dôme d'impact
+      (`tower_aoe_blast`) sont-ils visibles et lisibles ? Le temps de vol
+      (1.1s) laisse-t-il une vraie fenêtre pour esquiver en bougeant, ou
+	  c'est trop rapide pour être perçu ? Le cumul avec la riposte
+	  mono-cible (25 + jusqu'à 35 dégâts possibles la même poussée, contre
+      100 PV max de RuneMage) est-il trop punitif pour une poussée
+	  escortée — justement le cas que l'AOE devait rendre dangereux ?
 - [ ] **Victoire/défaite** s'affichent correctement dans les trois cas (Tour
-      adverse tombée, sa propre Tour tombée, sa propre Base tombée).
+	  adverse tombée, sa propre Tour tombée, sa propre Base tombée).
 - [ ] **Positionnement des Tours** dans le couloir (`z = ±10`, entre chaque
-      Base et le point de rencontre) — ni trop près du spawn (pas de temps
-      pour apprécier le combat de vague avant le siège) ni trop près de la
+	  Base et le point de rencontre) — ni trop près du spawn (pas de temps
+	  pour apprécier le combat de vague avant le siège) ni trop près de la
 	  Base adverse (le siège n'a pas le temps de se sentir long).
 
 ---
@@ -169,22 +175,28 @@ pas les murs), mais ça se vérifie. Idem pour la nouvelle riposte anti-siège
 qui les assiègent, des deux côtés — pas seulement celles de la Phase 10.
 
 - [x] **`levels/level2_front.tscn`** — les unités poussent toujours vers la base
-      adverse, assiègent la Tour, et ne longent pas ses murs au lieu de la
-      frapper. (La Tour et les Bases sont explicitement exclues de la déflexion,
+	  adverse, assiègent la Tour, et ne longent pas ses murs au lieu de la
+	  frapper. (La Tour et les Bases sont explicitement exclues de la déflexion,
 	  mais c'est le point le plus à risque.) **Validé**.
 - [ ] **`level2_front.tscn`, riposte anti-siège** — les deux Tours ripostent
-      maintenant contre les `FrontUnit` qui les assiègent, pas seulement contre
-      le joueur non-escorté. Le siège de la phase 7 devient plus dur des deux
-      côtés (`PlayerTower` y est déjà endommageable par la vague ennemie depuis
-      la 9.1 — voir « Point ouvert » plus bas) : le rythme de vague de ce
-      niveau (`wave_size = 20` côté ennemi) tient-il toujours bon avec cette
-      riposte en plus ?
+	  maintenant contre les `FrontUnit` qui les assiègent, pas seulement contre
+	  le joueur non-escorté. Le siège de la phase 7 devient plus dur des deux
+	  côtés (`PlayerTower` y est déjà endommageable par la vague ennemie depuis
+	  la 9.1 — voir « Point ouvert » plus bas) : le rythme de vague de ce
+	  niveau (`wave_size = 20` côté ennemi) tient-il toujours bon avec cette
+	  riposte en plus ?
+- [ ] **`level2_front.tscn`, AOE anti-joueur** — les deux Tours gagnent aussi
+	  la nouvelle AOE (obus rouge + dôme d'impact) contre le RuneMage possédé,
+	  escorté ou non. Le combat au contact de la phase 7/8.2 (courir sur le
+	  front en mage) devient plus dangereux près d'une Tour ennemie — est-ce
+	  que ça se sent juste, ou trop punitif pour ce niveau qui n'a pas été
+	  pensé pour ça au départ ?
 - [x] **`level2_front`, possession 8.2** — clic sur une unité alliée → elle
 	  devient un mage ; les **trois** sorts répondent (A, Z, E — c'est ici que Z
-      doit encore marcher) ; quitter le mage le rend au front en `FrontUnit`.
-      **Validé**.
+	  doit encore marcher) ; quitter le mage le rend au front en `FrontUnit`.
+	  **Validé**.
 - [x] **`gameplay_loop/micro/micro_base_defense.tscn`** (9.1/9.2) — inchangé.
-      **Validé**.
+	  **Validé**.
 - [x] **`levels/main.tscn`** (niveau 1) — inchangé. Rappel : pas d'économie dans
 	  cette scène, ses ennemis n'ont pas de `LootOnDeath`. **Validé**.
 
@@ -195,7 +207,7 @@ qui les assiègent, des deux côtés — pas seulement celles de la Phase 10.
 - [x] Jalon 9.1 — boucle de défense de Base, Game Over (playtest utilisateur)
 - [x] Jalon 9.2 — achat et application des upgrades, D4 (playtest utilisateur)
 - [x] Jalon 9.3 — possession du roster et sorts A/E confirmés en jeu
-      (« ok pas mal ça marche »)
+	  (« ok pas mal ça marche »)
 
 ---
 

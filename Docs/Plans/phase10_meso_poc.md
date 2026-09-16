@@ -349,13 +349,72 @@ sans le savoir. Corrigé dans le test (`tests/base_possession_test.gd`,
 `_clear_battlefield()`) : les deux Tours de `level2_front` ont leur riposte
 coupée pour ce test, qui ne porte pas sur le comportement des Tours.
 
+### Deuxième retour de playtest sur 10.2 : la riposte ne suffisait pas
+
+Une fois la riposte anti-siège en place et jugée bonne (rythme validé), la
+question posée en retour a été : *le pattern de la Tour permettra-t-il
+d'ajouter facilement des variantes d'attaque, par exemple une AOE qui cible
+le joueur pour rajouter du danger ?* Réponse honnête à ce moment-là : faire
+varier des **chiffres** par instance (dégâts/cooldown/projectile) était déjà
+facile (ce sont des exports), mais faire varier le **comportement** ne
+l'était pas — `_fire_at()` est une fonction unique en dur, pas encore un
+pattern « stratégie » interchangeable. Décision de l'utilisateur : construire
+cette AOE **maintenant**, en **plus** du tir mono-cible existant (pas à sa
+place) — deux axes de danger indépendants plutôt qu'un seul remplacé.
+
+**Pourquoi une deuxième mécanique plutôt qu'étendre la première** : la
+riposte mono-cible ne vise jamais un joueur escorté (`is_protected()` la
+coupe) — c'était précisément ce qui la rendait inoffensive contre une
+poussée organisée. L'AOE devait au contraire **ignorer** l'escorte pour
+apporter du danger réel à un siège, donc les deux ne pouvaient pas partager
+la même garde ; deux minuteurs indépendants (`_retaliation_timer`/
+`_aoe_timer`) plutôt qu'un seul avec une branche conditionnelle de plus.
+
+**Implémentation** (détail complet dans `Docs/front/tower.md`, section
+« Riposte AOE ») :
+- `EscortGate` gagne un groupe d'exports `AOE Retaliation`
+  (`aoe_enabled`/`aoe_damage`/`aoe_radius`/`aoe_cooldown`/`aoe_shell`/
+  `aoe_flight_time`/`aoe_blast`) et `_fire_aoe_at()`, qui lobe un obus vers
+  la position **actuelle** du joueur (télégraphié, esquivable en bougeant,
+  pas un tir qui suit sa cible).
+- `_find_unescorted_attacker()` renommé `_find_hostile_player()` — la
+  fonction ne sait plus (et n'a jamais eu besoin de savoir) si l'appelant
+  est gardé par `is_protected()` ; seul le site d'appel en décide.
+- **Réutilisation plutôt que duplication de la physique d'arc** :
+  `entities/tower/tower_shell.gd` (`TowerShell extends MortarShell`) ne
+  redéfinit que la méthode de dégâts (`_apply_damage()` appelle
+  `take_damage` au lieu de `take_hit`, puisque `RuneMage` n'implémente que
+  le premier) — `MortarShell` lui-même gagne un champ `damage_mask` (défaut
+  inchangé : la couche ennemie) pour rester généraliste sans toucher au
+  comportement existant du mortier du joueur.
+- Visuel dédié plutôt que réutilisé tel quel : `tower_shell.tscn`/
+  `tower_aoe_blast.tscn` teintés rouge/orange (le mortier du joueur est
+  bleu) — un obus qui te menace ne doit pas se confondre avec celui que tu
+  tires toi-même.
+- **Testé headless** (`tests/tower_aoe_test.gd`, nouveau) : un joueur
+  escorté par une unité alliée (donc `is_protected() == true` tout du long,
+  occupant la riposte mono-cible ailleurs) encaisse quand même l'AOE — la
+  preuve que les deux mécanismes sont bien indépendants.
+- **Effet de bord assumé** : `EscortGate` étant partagée, `level2_front.tscn`
+  (phase 7) gagne aussi cette AOE sur ses deux Tours — à vérifier en
+  playtest là-bas (`Docs/PLAYTEST_CHECKLIST.md`).
+
 ### Fichiers
 
 - `gameplay_loop/meso/meso_siege.tscn`/`.gd` (nouveau)
 - `tests/meso_siege_test.gd`/`.tscn` (nouveau — headless)
 - `entities/shared/escort_gate.gd` (modifié — riposte anti-siège en plus de
-  la riposte anti-joueur, voir ci-dessus)
-- `Docs/front/tower.md` (modifié — section riposte mise à jour)
+  la riposte anti-joueur, puis riposte AOE indépendante, voir ci-dessus)
+- `entities/base/mortar_shell.gd` (modifié — `damage_mask`/`_apply_damage()`
+  extraits pour être réutilisables par héritage)
+- `entities/tower/tower_shell.gd`/`.tscn` (nouveau — `TowerShell extends
+  MortarShell`, obus de l'AOE)
+- `entities/tower/tower_aoe_blast.tscn` (nouveau — variante rouge d'`AoeBlast`)
+- `entities/tower/tower.tscn` (modifié — `aoe_shell`/`aoe_blast` assignés sur
+  l'`EscortGate` enfant)
+- `tests/tower_aoe_test.gd`/`.tscn` (nouveau — headless)
+- `Docs/front/tower.md` (modifié — sections riposte mono-cible et AOE mises
+  à jour)
 - `tests/base_possession_test.gd` (modifié — coupe la riposte des Tours de
   `level2_front`, devenue du bruit pour ce test)
 

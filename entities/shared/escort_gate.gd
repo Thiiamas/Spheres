@@ -37,12 +37,37 @@ class_name EscortGate
 ## ground level, so the bolt should leave from around the structure's top.
 @export var muzzle_height: float = 3.0
 
+@export_group("AOE Retaliation")
+## Independent mechanic added in phase 10.2 (Docs/Plans/phase10_meso_poc.md):
+## while a hostile player is anywhere in detection range, this gate
+## periodically lobs a shell at their CURRENT position — telegraphed, so
+## standing still is what gets punished, not merely being nearby. Unlike
+## the retaliation above, this is NOT gated by is_protected(): pushing with
+## an escort no longer makes the player entirely safe from the Tower, which
+## is the whole point (added at the user's request to give sieges more
+## danger — the single-target retaliation alone read as toothless against a
+## push once it also had to compete with the anti-siege branch above for
+## the same timer). Runs on its own cooldown, so both can land independently.
+@export var aoe_enabled: bool = true
+@export var aoe_damage: float = 25.0
+@export var aoe_radius: float = 3.0
+@export var aoe_cooldown: float = 4.0
+## e.g. entities/tower/tower_shell.tscn (TowerShell, a MortarShell subclass
+## that calls take_damage instead of take_hit — see that script for why).
+@export var aoe_shell: PackedScene
+@export var aoe_flight_time: float = 1.1
+## Cosmetic dome shown where the shell lands (e.g. tower_aoe_blast.tscn) —
+## reuses AoeBlast as-is via PackedScene, same duck-typed play(radius) as
+## MortarShell's own blast_scene.
+@export var aoe_blast: PackedScene
+
 @onready var _zone: Area3D = $DetectionZone
 @onready var _shape: CollisionShape3D = $DetectionZone/CollisionShape3D
 
 var _faction: Faction.Kind = Faction.Kind.ENEMY
 var _configured: bool = false
 var _retaliation_timer: float = 0.0
+var _aoe_timer: float = 0.0
 
 
 ## Called once by the host's _ready(). Duplicates the shape resource first —
@@ -70,19 +95,32 @@ func is_protected() -> bool:
 
 
 func _physics_process(delta: float) -> void:
-	if not _configured or not retaliation_enabled:
+	if not _configured:
 		return
-	_retaliation_timer -= delta
-	if _retaliation_timer > 0.0:
-		return
-	# is_protected() being true is exactly "a hostile FrontUnit is sieging
-	# this gate" — before phase 10.2 that only suppressed the player-directed
-	# branch below; now it's also the trigger for the branch that used to be
-	# missing entirely, which is why a siege used to look like it did nothing.
-	var target: Node = _find_hostile_front_unit() if is_protected() else _find_unescorted_attacker()
-	if target != null:
-		_fire_at(target)
-		_retaliation_timer = retaliation_cooldown
+
+	if retaliation_enabled:
+		_retaliation_timer -= delta
+		if _retaliation_timer <= 0.0:
+			# is_protected() being true is exactly "a hostile FrontUnit is
+			# sieging this gate" — before phase 10.2 that only suppressed the
+			# player-directed branch below; now it's also the trigger for the
+			# branch that used to be missing entirely, which is why a siege
+			# used to look like it did nothing.
+			var target: Node = _find_hostile_front_unit() if is_protected() else _find_hostile_player()
+			if target != null:
+				_fire_at(target)
+				_retaliation_timer = retaliation_cooldown
+
+	if aoe_enabled:
+		_aoe_timer -= delta
+		if _aoe_timer <= 0.0:
+			# Not gated by is_protected(): unlike the branch above, an escort
+			# doesn't make the player safe from this one (phase 10.2 — see
+			# the aoe_enabled doc comment for why).
+			var player := _find_hostile_player()
+			if player != null:
+				_fire_aoe_at(player.global_position)
+				_aoe_timer = aoe_cooldown
 
 
 ## The first hostile FrontUnit (relative to this gate's faction) in range —
@@ -98,13 +136,16 @@ func _find_hostile_front_unit() -> Node:
 
 ## The first damage-capable body in range that isn't itself a FrontUnit and
 ## isn't on this gate's own side — i.e. the enemy player, never an ally one.
+## Used by both retaliation branches above: the single-target one only calls
+## it while unescorted (hence the name history), the AOE one calls it
+## regardless of escort — the function itself doesn't know or care which.
 ## `faction` is duck-typed via the `in` operator (a property check, not a
 ## method call) so this stays agnostic of the concrete detected type
 ## (RuneMage today) — a body without a `faction` field is never excluded,
 ## fail-open rather than fail-closed. Physics layer (Faction.PLAYER_LAYER)
 ## already narrowed the zone's overlaps down to "this is a player-controlled
 ## entity"; faction is the separate, semantic check for "which side".
-func _find_unescorted_attacker() -> Node:
+func _find_hostile_player() -> Node:
 	for body in _zone.get_overlapping_bodies():
 		if body is FrontUnit:
 			continue
@@ -125,3 +166,17 @@ func _fire_at(target: Node) -> void:
 	bolt.global_position = global_position + Vector3.UP * muzzle_height
 	if bolt.has_method("launch"):
 		bolt.launch(target, retaliation_projectile_speed, retaliation_damage)
+
+
+## Lobs aoe_shell at target_pos (the player's position at the moment of
+## firing, not tracked afterward — the shell doesn't home, so moving away
+## during its flight is how a player dodges it).
+func _fire_aoe_at(target_pos: Vector3) -> void:
+	if aoe_shell == null:
+		return
+	var shell := aoe_shell.instantiate()
+	get_tree().current_scene.add_child(shell)
+	shell.global_position = global_position + Vector3.UP * muzzle_height
+	if shell is MortarShell:
+		shell.damage_mask = Faction.PLAYER_LAYER
+		shell.setup(target_pos, aoe_radius, aoe_damage, aoe_flight_time, aoe_blast)
