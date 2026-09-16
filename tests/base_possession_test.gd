@@ -137,6 +137,12 @@ func _process(delta: float) -> void:
 ## level2_front.tscn's two Base spawners fight autonomously the instant the
 ## level loads — real gameplay, but noise for a test that wants to control
 ## exactly what damages the one enemy it cares about.
+##
+## Also mutes both Towers' retaliation (phase 10.2, Docs/Plans/
+## phase10_meso_poc.md): the mortar target below is planted 5 units from
+## PlayerTower, inside its 6-unit detection radius, so EscortGate now
+## retaliates against it as a besieging hostile — pure noise for a test
+## about mortar accuracy, not siege behaviour (that's meso_siege_test).
 func _clear_battlefield() -> void:
 	for group in [&"front_ally", &"front_enemy"]:
 		for unit in get_tree().get_nodes_in_group(group):
@@ -144,6 +150,9 @@ func _clear_battlefield() -> void:
 	for node in [get_node("Level2Front/PlayerBase"), get_node("Level2Front/EnemyBase")]:
 		if node is Base:
 			node.stop_spawning()
+	for node in [get_node("Level2Front/PlayerTower"), get_node("Level2Front/EnemyTower")]:
+		if node is Tower:
+			node.escort_gate.retaliation_enabled = false
 
 
 func _any_mortar_shell() -> bool:

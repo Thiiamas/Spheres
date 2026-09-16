@@ -5,10 +5,12 @@ extends Node3D
 ## assuming the phase 7 behaviour (Docs/front/tower.md) still holds once
 ## composed into a fresh scene — a real allied wave must engage and damage
 ## the enemy Tower WITHOUT the enemy Base taking any damage while that Tower
-## still stands, then, once the Tower falls, the same wave must go on to
-## reach and damage the Base behind it. Also proves D4/D5: enemy Tower dead
-## -> victory; the player's own Tower OR Base dying -> defeat, independently
-## of each other. Run with:
+## still stands, then, once the Tower falls, an allied unit must be able to
+## reach and damage the Base behind it (a fresh one is planted for this step
+## rather than relying on the original wave surviving the Tower's own
+## retaliation, added in this same milestone). Also proves D4/D5: enemy
+## Tower dead -> victory; the player's own Tower OR Base dying -> defeat,
+## independently of each other. Run with:
 ##
 ##   godot --headless res://tests/meso_siege_test.tscn
 ##
@@ -83,12 +85,21 @@ func _process(delta: float) -> void:
 			# Skipped if the ongoing siege already finished it off.
 			if is_instance_valid(_enemy_tower) and not _enemy_tower.health.is_dead():
 				_enemy_tower.health.take_damage(9999.0)
+			# The Tower now fights back against a siege (phase 10.2), so the
+			# planted wave may not have survived to see the Tower fall — not
+			# what this step is testing. Plant a fresh biter directly on the
+			# Base instead of relying on whichever unit is still standing.
+			var ally_scene: PackedScene = load("res://entities/front_unit/ally_unit.tscn")
+			var fresh_biter := ally_scene.instantiate()
+			fresh_biter.target_base = _enemy_base
+			get_tree().current_scene.add_child(fresh_biter)
+			fresh_biter.global_position = _enemy_base.global_position + Vector3(0, 0.5, -2.2)
 			_elapsed = 0.0
 			_state = State.AWAIT_BASE_DAMAGED
 
 		State.AWAIT_BASE_DAMAGED:
 			if _enemy_base.health.hp < _enemy_base.health.max_hp:
-				print("[MesoSiegeTest] Tower down -> the same wave reached and damaged the Base: PASS")
+				print("[MesoSiegeTest] Tower down -> an allied unit reached and damaged the Base: PASS")
 				_state = State.CHECK_VICTORY
 				return
 			if _elapsed > BASE_DAMAGE_TIMEOUT:

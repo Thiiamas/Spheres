@@ -119,7 +119,7 @@ objectif réel de ce jalon.
       retour automatique à la Base à la mort si elle vit encore. **Validé**.
 - [x] **Victoire/défaite** s'affichent correctement et arrêtent bien les
 	  deux spawns (pas seulement celui de la Base qui vient de mourir).
-      **Validé**.
+	  **Validé**.
 - [x] **`wave_slot`** a un effet visible pour la première fois hors
 	  `level2_front` (plus d'unités alliées par vague). **Validé**.
 - [x] **Équilibrage** : `wave_interval = 6s` / `wave_size = 2` des deux
@@ -139,30 +139,46 @@ tombée ; victoire/défaite testées dans les trois cas, indépendamment). Reste
 le *feel* du siège.
 
 - [ ] **La Tour se sent comme un vrai palier à franchir**, pas un simple
-      délai — le siège (pousser sa vague, l'escorter) doit se sentir
-      différent du pur combat de 10.1.
-- [ ] **La riposte de la Tour** (`EscortGate`, phase 7) contre un joueur
-      non-escorté reste lisible et pas trop punitive dans ce contexte à deux
-      vagues actives.
+	  délai — le siège (pousser sa vague, l'escorter) doit se sentir
+	  différent du pur combat de 10.1.
+- [ ] **La Tour riposte maintenant contre la vague qui l'assiège** (nouveau
+      — corrige le retour « elle a l'air inactive »). À juger : l'action
+      est-elle visible/lisible (projectile `tower_bolt`, barre de vie qui
+      bouge des deux côtés) ? Le rythme (35 dégâts / 1.5s, mêmes valeurs que
+      la riposte anti-joueur) est-il trop fort contre une vague de 40 PV
+      max par unité, ou juste assez punitif pour donner du poids au siège ?
+- [ ] **La riposte de la Tour contre un joueur non-escorté** (`EscortGate`,
+	  phase 7, comportement inchangé) reste lisible et pas trop punitive
+      dans ce contexte à deux vagues actives.
 - [ ] **Victoire/défaite** s'affichent correctement dans les trois cas (Tour
       adverse tombée, sa propre Tour tombée, sa propre Base tombée).
 - [ ] **Positionnement des Tours** dans le couloir (`z = ±10`, entre chaque
       Base et le point de rencontre) — ni trop près du spawn (pas de temps
       pour apprécier le combat de vague avant le siège) ni trop près de la
-      Base adverse (le siège n'a pas le temps de se sentir long).
+	  Base adverse (le siège n'a pas le temps de se sentir long).
 
 ---
 
-## Non-régression ailleurs (la déflexion touche *tout* `FrontUnit`)
+## Non-régression ailleurs (la déflexion touche *tout* `FrontUnit`, la riposte anti-siège touche *toute* `EscortGate`)
 
 `obstacle_deflect_weight` s'applique à toute unité du jeu, pas seulement dans la
 scène de relief. Les scènes plates ne devraient rien voir (les unités ne touchent
-pas les murs), mais ça se vérifie.
+pas les murs), mais ça se vérifie. Idem pour la nouvelle riposte anti-siège
+(10.2) : `entities/shared/escort_gate.gd` est partagé, donc les Tours de
+`level2_front.tscn` (phase 7) ripostent désormais aussi contre les `FrontUnit`
+qui les assiègent, des deux côtés — pas seulement celles de la Phase 10.
 
 - [x] **`levels/level2_front.tscn`** — les unités poussent toujours vers la base
       adverse, assiègent la Tour, et ne longent pas ses murs au lieu de la
       frapper. (La Tour et les Bases sont explicitement exclues de la déflexion,
 	  mais c'est le point le plus à risque.) **Validé**.
+- [ ] **`level2_front.tscn`, riposte anti-siège** — les deux Tours ripostent
+      maintenant contre les `FrontUnit` qui les assiègent, pas seulement contre
+      le joueur non-escorté. Le siège de la phase 7 devient plus dur des deux
+      côtés (`PlayerTower` y est déjà endommageable par la vague ennemie depuis
+      la 9.1 — voir « Point ouvert » plus bas) : le rythme de vague de ce
+      niveau (`wave_size = 20` côté ennemi) tient-il toujours bon avec cette
+      riposte en plus ?
 - [x] **`level2_front`, possession 8.2** — clic sur une unité alliée → elle
 	  devient un mage ; les **trois** sorts répondent (A, Z, E — c'est ici que Z
       doit encore marcher) ; quitter le mage le rend au front en `FrontUnit`.

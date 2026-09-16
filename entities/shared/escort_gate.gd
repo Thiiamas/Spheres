@@ -3,10 +3,11 @@ class_name EscortGate
 
 ## Reusable "objective" behavior (Docs/front/tower.md): an entity guarded by an
 ## EscortGate is only vulnerable while a hostile FrontUnit is inside its
-## detection range, and otherwise punishes an unescorted attacker lingering
-## in range with periodic retaliation damage. Knows nothing about HP — pair
-## it with a sibling Health and let the host decide how the two interact
-## (see entities/tower/tower.gd).
+## detection range, and fights back periodically either way (phase 10.2,
+## Docs/Plans/phase10_meso_poc.md) — at the escorting FrontUnit while one is
+## present, at an unescorted attacker lingering in range otherwise. Knows
+## nothing about HP — pair it with a sibling Health and let the host decide
+## how the two interact (see entities/tower/tower.gd).
 ##
 ## Instance escort_gate.tscn as a child of any host and call configure()
 ## from the host's own _ready(). Godot readies children before parents, so
@@ -17,8 +18,11 @@ class_name EscortGate
 @export var detection_radius: float = 6.0
 
 @export_group("Retaliation")
-## When true, an unescorted attacker lingering in range takes periodic
-## damage back — a MOBA turret punishing a solo dive.
+## When true, this gate fights back periodically: at a hostile FrontUnit
+## sieging it if one is in range (phase 10.2 — a siege is no longer free),
+## otherwise at an unescorted attacker lingering in range (a MOBA turret
+## punishing a solo dive). Same cooldown, same damage, same projectile for
+## both — see _physics_process below for how the target is picked.
 @export var retaliation_enabled: bool = true
 @export var retaliation_damage: float = 35.0
 @export var retaliation_cooldown: float = 1.5
@@ -69,12 +73,27 @@ func _physics_process(delta: float) -> void:
 	if not _configured or not retaliation_enabled:
 		return
 	_retaliation_timer -= delta
-	if _retaliation_timer > 0.0 or is_protected():
+	if _retaliation_timer > 0.0:
 		return
-	var attacker := _find_unescorted_attacker()
-	if attacker != null:
-		_fire_at(attacker)
+	# is_protected() being true is exactly "a hostile FrontUnit is sieging
+	# this gate" — before phase 10.2 that only suppressed the player-directed
+	# branch below; now it's also the trigger for the branch that used to be
+	# missing entirely, which is why a siege used to look like it did nothing.
+	var target: Node = _find_hostile_front_unit() if is_protected() else _find_unescorted_attacker()
+	if target != null:
+		_fire_at(target)
 		_retaliation_timer = retaliation_cooldown
+
+
+## The first hostile FrontUnit (relative to this gate's faction) in range —
+## same condition as is_protected(), just returning the body instead of a
+## bool. Picked whenever such a unit is present: a siege is no longer a free
+## chip-away (phase 10.2, Docs/Plans/phase10_meso_poc.md).
+func _find_hostile_front_unit() -> Node:
+	for body in _zone.get_overlapping_bodies():
+		if body is FrontUnit and body.faction == Faction.opposite(_faction):
+			return body
+	return null
 
 
 ## The first damage-capable body in range that isn't itself a FrontUnit and

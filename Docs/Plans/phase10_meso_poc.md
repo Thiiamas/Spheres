@@ -307,10 +307,57 @@ meso_siege.tscn` part d'une **copie** de `meso_front.tscn`.
   de code attendu, juste un test headless qui l'affirme explicitement
   plutôt que de le supposer hérité de la phase 7.
 
+### Trouvé en playtestant 10.2 : la Tour avait l'air inactive
+
+Premier retour de playtest sur la scène assemblée : « je ne vois pas de
+dégât que la Tour fait, je ne vois rien indiquant qu'elle fait quelque
+chose, je pensais qu'elle était inactive. » Diagnostic — comportement hérité
+de la phase 7, jamais un bug : `EscortGate._find_unescorted_attacker()`
+exclut explicitement tout `FrontUnit` de ses cibles ; la riposte ne vise
+**que** le joueur non-escorté (`RuneMage`), jamais la vague qui l'assiège.
+Un `FrontUnit` mord la Tour en silence et elle ne rend jamais le coup — ça
+tenait en phase 7 (la Tour n'était pensée que comme un obstacle pour *toi*),
+mais plus une fois que des vagues autonomes des deux côtés l'assiègent en
+continu.
+
+**Décision de l'utilisateur** : la Tour doit riposter contre les
+`FrontUnit` aussi, pas seulement gagner en lisibilité visuelle sur les
+dégâts qu'elle encaisse — un vrai changement de comportement plutôt qu'un
+correctif purement cosmétique.
+
+Implémenté dans `EscortGate._physics_process()` (`entities/shared/
+escort_gate.gd`) : la cible de la riposte se choisit maintenant sur
+`is_protected()` — vrai (une vague hostile est dans la zone) → riposte
+contre elle (`_find_hostile_front_unit()`, nouveau) ; faux → comportement
+inchangé, riposte contre un joueur non-escorté. Les deux branches sont
+mutuellement exclusives par construction (la présence d'une unité hostile
+est justement ce qui bascule de l'une à l'autre), donc pas d'arbitrage à
+écrire entre les deux. Même cooldown/dégâts/projectile pour les deux — pas
+rééquilibré séparément, à ajuster si la riposte anti-siège s'avère trop
+forte en playtest. `Docs/front/tower.md` mis à jour dans le même changement
+(règle du fichier lui-même : tout changement à `Health`/`EscortGate`/`Tower`
+documente la section correspondante).
+
+**Régression trouvée en relançant la suite headless** : `base_possession_test`
+(phase 8.1, sur `level2_front.tscn`) plantait `hp 5.0 au lieu de 15.0` sur sa
+cible de test du tir mortier. Cause : la cible synthétique du test est plantée
+à 5 unités de `PlayerTower` (rayon de détection 6.0) — la nouvelle riposte
+anti-siège la prenait pour une unité assiégeante et la mordait avant même
+l'impact du mortier, faussant le calcul de dégâts attendu. Pas un bug du jeu :
+un vrai effet de bord d'un test qui plaçait sa cible dans la zone d'une Tour
+sans le savoir. Corrigé dans le test (`tests/base_possession_test.gd`,
+`_clear_battlefield()`) : les deux Tours de `level2_front` ont leur riposte
+coupée pour ce test, qui ne porte pas sur le comportement des Tours.
+
 ### Fichiers
 
 - `gameplay_loop/meso/meso_siege.tscn`/`.gd` (nouveau)
 - `tests/meso_siege_test.gd`/`.tscn` (nouveau — headless)
+- `entities/shared/escort_gate.gd` (modifié — riposte anti-siège en plus de
+  la riposte anti-joueur, voir ci-dessus)
+- `Docs/front/tower.md` (modifié — section riposte mise à jour)
+- `tests/base_possession_test.gd` (modifié — coupe la riposte des Tours de
+  `level2_front`, devenue du bruit pour ce test)
 
 ### Critères de validation
 

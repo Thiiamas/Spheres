@@ -104,21 +104,41 @@ son `Health` (voir `Tower.take_damage`), et elle coupe aussi la riposte
 ci-dessous — pousser sa vague active les dégâts **et** arrête la punition en
 même temps.
 
-### Riposte contre un assaillant non-escorté
+### Riposte — contre le siège d'abord, contre un joueur non-escorté sinon
+
+**Changement de la phase 10.2** (`Docs/Plans/phase10_meso_poc.md`) : avant
+ça, une Tour assiégée par une vague de `FrontUnit` ne ripostait jamais contre
+elle — seul un joueur non-escorté était une cible valide, et
+`is_protected() == true` (justement, une vague en train d'assiéger)
+désactivait la riposte entièrement. Résultat en playtest : une Tour sous
+le feu d'une vague avait l'air totalement passive, sans aucune indication
+qu'elle faisait quoi que ce soit. La riposte cible maintenant **soit** la
+vague qui l'assiège, **soit** le joueur non-escorté — jamais les deux à la
+fois, le second cas ne pouvant de toute façon survenir que quand le premier
+ne s'applique pas :
 
 ```gdscript
 func _physics_process(delta: float) -> void:
     if not _configured or not retaliation_enabled:
         return
     _retaliation_timer -= delta
-    if _retaliation_timer > 0.0 or is_protected():
+    if _retaliation_timer > 0.0:
         return
-    var attacker := _find_unescorted_attacker()
-    if attacker != null:
-        _fire_at(attacker)
+    var target: Node = _find_hostile_front_unit() if is_protected() else _find_unescorted_attacker()
+    if target != null:
+        _fire_at(target)
         _retaliation_timer = retaliation_cooldown
 ```
 
+- `is_protected() == true` signifie littéralement « un `FrontUnit` hostile
+  est dans la zone de détection » — avant la 10.2 ça ne servait qu'à
+  *supprimer* la branche joueur ci-dessous ; c'est maintenant aussi la
+  condition qui *déclenche* la branche manquante. Les deux branches restent
+  mutuellement exclusives par construction : pas besoin d'arbitrer entre les
+  deux, la présence d'une unité hostile décide laquelle s'applique.
+- `_find_hostile_front_unit()` : le premier `FrontUnit` de la zone dont la
+  faction est l'opposée de celle de ce composant — même condition que
+  `is_protected()`, qui retourne le corps au lieu d'un booléen.
 - `_find_unescorted_attacker()` cherche, parmi les corps dans la zone, le
   premier qui a `take_damage`, **n'est pas** un `FrontUnit` — c'est-à-dire le
   joueur (`RuneMage`), jamais une unité — **et n'est pas du même camp** que ce
@@ -138,9 +158,13 @@ func _physics_process(delta: float) -> void:
   rester agnostique du type concret détecté — un corps sans champ `faction`
   n'est jamais exclu (fail-open).
 - Répétée toutes les `retaliation_cooldown` secondes (1.5s par défaut) tant
-  que le joueur reste dans la zone sans escorte — pas une punition unique.
-  `retaliation_damage` par défaut : 35.0, contre 100 PV max du RuneMage —
-  punitif sans être systématiquement fatal en un coup.
+  qu'une cible reste dans la zone — pas une punition unique. Mêmes
+  `retaliation_damage`/`retaliation_cooldown`/`retaliation_projectile` pour
+  les deux branches (35.0 dégâts, contre 100 PV max du RuneMage ou 40 PV max
+  d'un `FrontUnit` — punitif dans les deux cas, quasi létal en deux coups
+  contre une unité). Pas rééquilibré séparément pour l'instant : à ajuster
+  en playtest si la riposte anti-siège s'avère trop forte ou trop faible
+  telle quelle.
 - `EscortGate` ne touche jamais aux PV ni ne s'auto-libère — c'est un pur
   comportement détection + riposte, libéré automatiquement avec l'hôte dont
   il est enfant.
