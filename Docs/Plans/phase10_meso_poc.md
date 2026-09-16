@@ -399,12 +399,36 @@ la même garde ; deux minuteurs indépendants (`_retaliation_timer`/
   (phase 7) gagne aussi cette AOE sur ses deux Tours — à vérifier en
   playtest là-bas (`Docs/PLAYTEST_CHECKLIST.md`).
 
+### Réglage issu du playtest de l'AOE
+
+Retour direct, deux demandes : « réduit les dégâts de la tour (vas-y fort,
+genre 1/3 des dégâts actuel) » et « augmente la range de l'AOE de la tour
+qui cible le joueur, genre x2 actuel ».
+
+- **Dégâts** : `retaliation_damage` 35 → 12 et `aoe_damage` 25 → 8 (facteur
+  ~3 sur les deux, pas seulement l'AOE — « les dégâts de la tour » a été lu
+  comme la Tour dans son ensemble, cohérent avec le risque déjà noté au
+  jalon précédent que le cumul des deux devienne trop punitif).
+- **Portée de l'AOE** : jusqu'ici l'AOE réutilisait `detection_radius`
+  (6.0), pensé pour le corps-à-corps du siège — élargir cette valeur
+  directement aurait aussi élargi `is_protected()` et la riposte mono-cible,
+  deux effets non demandés. Ajouté à la place : `aoe_range` (12.0, doublé),
+  porté par une **deuxième** zone de détection (`AoeZone`, même patron que
+  `DetectionZone`) plutôt qu'un paramètre de plus sur la même — l'AOE peut
+  maintenant menacer un joueur qui n'est pas encore au contact de la Tour,
+  indépendamment de la portée du siège lui-même.
+- Aucune régression : les 11 tests headless du projet toujours au vert
+  (`tower_aoe_test` lit `aoe_damage` dynamiquement sur le composant, donc
+  s'adapte au nouveau réglage sans modification).
+- Détail complet dans `Docs/front/tower.md`, section « Riposte AOE ».
+
 ### Fichiers
 
 - `gameplay_loop/meso/meso_siege.tscn`/`.gd` (nouveau)
 - `tests/meso_siege_test.gd`/`.tscn` (nouveau — headless)
-- `entities/shared/escort_gate.gd` (modifié — riposte anti-siège en plus de
-  la riposte anti-joueur, puis riposte AOE indépendante, voir ci-dessus)
+- `entities/shared/escort_gate.gd`/`.tscn` (modifié — riposte anti-siège en
+  plus de la riposte anti-joueur, puis riposte AOE indépendante avec sa
+  propre zone (`AoeZone`/`aoe_range`), voir ci-dessus)
 - `entities/base/mortar_shell.gd` (modifié — `damage_mask`/`_apply_damage()`
   extraits pour être réutilisables par héritage)
 - `entities/tower/tower_shell.gd`/`.tscn` (nouveau — `TowerShell extends

@@ -225,9 +225,18 @@ jeu gagne cette AOE — y compris `PlayerTower`/`EnemyTower` de
 `levels/level2_front.tscn` (phase 7), pas seulement celles de la Phase 10.
 À vérifier en playtest là-bas aussi (`Docs/PLAYTEST_CHECKLIST.md`).
 
-Pas rééquilibré indépendamment de la riposte mono-cible pour l'instant
-(mêmes ordres de grandeur : 25 dégâts contre 100 PV max de RuneMage) — à
-ajuster si le cumul des deux s'avère trop punitif en playtest prolongé.
+**Réglage issu du premier vrai playtest** : la Tour tapait beaucoup trop
+fort. `retaliation_damage` 35 → **12** et `aoe_damage` 25 → **8** (facteur
+~3 sur les deux, demandé explicitement — « vas-y fort »). Dans le même
+retour, la **portée** de détection de l'AOE a été jugée trop courte : elle
+partageait `detection_radius` (6.0, pensé pour le corps-à-corps du siège),
+ce qui laissait l'AOE ne menacer que quelqu'un déjà presque au contact de la
+Tour. Séparée en son propre paramètre `aoe_range` (12.0, doublé), porté par
+une deuxième zone (`AoeZone`, même patron que `DetectionZone` — masque
+`Faction.PLAYER_LAYER` seul, puisque `_find_hostile_player()` ignore de
+toute façon les `FrontUnit`) plutôt que d'élargir `detection_radius`
+lui-même : ça aurait aussi élargi `is_protected()` et la riposte mono-cible,
+deux effets que ce retour ne demandait pas.
 
 ### Projectile de riposte (2026-08-02)
 
@@ -397,18 +406,19 @@ unit.target_tower = advance_target_tower if is_instance_valid(advance_target_tow
 |---|---|---|
 | `detection_radius` | 6.0 | Rayon de `DetectionZone` (aligné sur `FrontUnit.ENGAGE_RANGE`). |
 | `retaliation_enabled` | true | Coupe complètement la riposte si besoin. |
-| `retaliation_damage` | 35.0 | Dégâts par riposte contre le joueur non-escorté. |
+| `retaliation_damage` | 12.0 (35.0 avant playtest — réduit d'un facteur ~3, la Tour tapait trop fort) | Dégâts par riposte, contre un `FrontUnit` assiégeant ou un joueur non-escorté selon le cas. |
 | `retaliation_cooldown` | 1.5 | Délai minimum entre deux ripostes. |
 | `retaliation_projectile` | `null` (`tower_bolt.tscn` sur `Tower`) | Scène du projectile de riposte ; `null` = dégâts instantanés sans visuel. |
 | `retaliation_projectile_speed` | 14.0 | Vitesse de vol du projectile. |
 | `muzzle_height` | 3.0 | Hauteur de tir au-dessus de l'origine de l'hôte. |
 | `aoe_enabled` | true | Coupe complètement la riposte AOE si besoin (phase 10.2). |
-| `aoe_damage` | 25.0 | Dégâts de l'explosion. |
+| `aoe_damage` | 8.0 (35 → 12 sur la riposte, 25 → 8 ici — playtest : la Tour tapait bien trop fort) | Dégâts de l'explosion. |
 | `aoe_radius` | 3.0 | Rayon de l'explosion. |
 | `aoe_cooldown` | 4.0 | Délai minimum entre deux tirs AOE. |
 | `aoe_shell` | `null` (`tower_shell.tscn` sur `Tower`) | Scène de l'obus lobé (`TowerShell`, sous-classe de `MortarShell`). |
 | `aoe_flight_time` | 1.1 | Temps de vol avant l'explosion — la fenêtre pendant laquelle bouger esquive le coup. |
 | `aoe_blast` | `null` (`tower_aoe_blast.tscn` sur `Tower`) | Dôme cosmétique à l'impact (`AoeBlast`, teinté rouge/orange). |
+| `aoe_range` | 12.0 (6.0 → 12.0, playtest : doublé pour menacer avant que le joueur soit déjà au contact) | Portée de détection du joueur pour l'AOE — zone dédiée (`AoeZone`), indépendante de `detection_radius`. |
 
 **`Tower`**
 
@@ -448,10 +458,11 @@ constantes définitives.
 - `entities/front_unit/front_unit.gd`, `ally_unit.tscn`, `enemy_unit.tscn` —
   refactorés pour utiliser `Health` ; siège de la tour ennemie (détail dans
   `Docs/front/front_unit_ai.md`).
-- `entities/shared/escort_gate.gd` (phase 10.2) — riposte anti-siège
-  (`_find_hostile_front_unit`) et riposte AOE indépendante
+- `entities/shared/escort_gate.gd`, `escort_gate.tscn` (phase 10.2) —
+  riposte anti-siège (`_find_hostile_front_unit`) et riposte AOE indépendante
   (`_find_hostile_player`, renommé depuis `_find_unescorted_attacker`,
-  `_fire_aoe_at`).
+  `_fire_aoe_at`), portée sur sa propre zone (`AoeZone`/`aoe_range`, ajoutée
+  après playtest — voir « Réglage issu du premier vrai playtest » ci-dessus).
 - `entities/base/mortar_shell.gd` (phase 10.2) — `damage_mask` et
   `_apply_damage()` extraits pour que `TowerShell` puisse réutiliser
   l'obus/l'explosion sans dupliquer la physique d'arc.

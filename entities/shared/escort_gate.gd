@@ -24,7 +24,7 @@ class_name EscortGate
 ## punishing a solo dive). Same cooldown, same damage, same projectile for
 ## both — see _physics_process below for how the target is picked.
 @export var retaliation_enabled: bool = true
-@export var retaliation_damage: float = 35.0
+@export var retaliation_damage: float = 12.0
 @export var retaliation_cooldown: float = 1.5
 ## Scene fired at an unescorted attacker (e.g. entities/tower/tower_bolt.tscn)
 ## — a visible telegraph instead of the hit landing instantly with no
@@ -49,7 +49,7 @@ class_name EscortGate
 ## push once it also had to compete with the anti-siege branch above for
 ## the same timer). Runs on its own cooldown, so both can land independently.
 @export var aoe_enabled: bool = true
-@export var aoe_damage: float = 25.0
+@export var aoe_damage: float = 8.0
 @export var aoe_radius: float = 3.0
 @export var aoe_cooldown: float = 4.0
 ## e.g. entities/tower/tower_shell.tscn (TowerShell, a MortarShell subclass
@@ -60,9 +60,18 @@ class_name EscortGate
 ## reuses AoeBlast as-is via PackedScene, same duck-typed play(radius) as
 ## MortarShell's own blast_scene.
 @export var aoe_blast: PackedScene
+## How far the gate can spot a hostile player to lob the AOE at, separate
+## from detection_radius (playtest feedback: the AOE should reach further
+## than the melee-range siege detection it originally piggybacked on, so it
+## can threaten a player before they're already on top of the Tower). Its
+## own zone (AoeZone) rather than resizing DetectionZone, so widening this
+## doesn't also widen is_protected()'s range or the single-target branch's.
+@export var aoe_range: float = 12.0
 
 @onready var _zone: Area3D = $DetectionZone
 @onready var _shape: CollisionShape3D = $DetectionZone/CollisionShape3D
+@onready var _aoe_zone: Area3D = $AoeZone
+@onready var _aoe_shape: CollisionShape3D = $AoeZone/CollisionShape3D
 
 var _faction: Faction.Kind = Faction.Kind.ENEMY
 var _configured: bool = false
@@ -79,6 +88,14 @@ func configure(faction: Faction.Kind) -> void:
 	var shape := (_shape.shape as SphereShape3D).duplicate() as SphereShape3D
 	shape.radius = detection_radius
 	_shape.shape = shape
+
+	# AoeZone only ever needs to find the player (_find_hostile_player already
+	# ignores FrontUnit outright), so its mask stays narrower than DetectionZone's.
+	_aoe_zone.collision_mask = Faction.PLAYER_LAYER
+	var aoe_shape := (_aoe_shape.shape as SphereShape3D).duplicate() as SphereShape3D
+	aoe_shape.radius = aoe_range
+	_aoe_shape.shape = aoe_shape
+
 	_configured = true
 
 
@@ -106,7 +123,7 @@ func _physics_process(delta: float) -> void:
 			# player-directed branch below; now it's also the trigger for the
 			# branch that used to be missing entirely, which is why a siege
 			# used to look like it did nothing.
-			var target: Node = _find_hostile_front_unit() if is_protected() else _find_hostile_player()
+			var target: Node = _find_hostile_front_unit() if is_protected() else _find_hostile_player(_zone)
 			if target != null:
 				_fire_at(target)
 				_retaliation_timer = retaliation_cooldown
@@ -116,8 +133,9 @@ func _physics_process(delta: float) -> void:
 		if _aoe_timer <= 0.0:
 			# Not gated by is_protected(): unlike the branch above, an escort
 			# doesn't make the player safe from this one (phase 10.2 — see
-			# the aoe_enabled doc comment for why).
-			var player := _find_hostile_player()
+			# the aoe_enabled doc comment for why). Its own, longer-range
+			# zone (aoe_range), not DetectionZone.
+			var player := _find_hostile_player(_aoe_zone)
 			if player != null:
 				_fire_aoe_at(player.global_position)
 				_aoe_timer = aoe_cooldown
@@ -134,19 +152,21 @@ func _find_hostile_front_unit() -> Node:
 	return null
 
 
-## The first damage-capable body in range that isn't itself a FrontUnit and
+## The first damage-capable body in `zone` that isn't itself a FrontUnit and
 ## isn't on this gate's own side — i.e. the enemy player, never an ally one.
-## Used by both retaliation branches above: the single-target one only calls
-## it while unescorted (hence the name history), the AOE one calls it
-## regardless of escort — the function itself doesn't know or care which.
-## `faction` is duck-typed via the `in` operator (a property check, not a
-## method call) so this stays agnostic of the concrete detected type
-## (RuneMage today) — a body without a `faction` field is never excluded,
-## fail-open rather than fail-closed. Physics layer (Faction.PLAYER_LAYER)
-## already narrowed the zone's overlaps down to "this is a player-controlled
-## entity"; faction is the separate, semantic check for "which side".
-func _find_hostile_player() -> Node:
-	for body in _zone.get_overlapping_bodies():
+## Takes the zone to search rather than always reading _zone: the
+## single-target branch above calls it with _zone (unchanged range), the AOE
+## branch with _aoe_zone (its own, wider range) — the function itself
+## doesn't know or care which, or whether the caller is gated by
+## is_protected(). `faction` is duck-typed via the `in` operator (a property
+## check, not a method call) so this stays agnostic of the concrete detected
+## type (RuneMage today) — a body without a `faction` field is never
+## excluded, fail-open rather than fail-closed. Physics layer
+## (Faction.PLAYER_LAYER) already narrowed the zone's overlaps down to "this
+## is a player-controlled entity"; faction is the separate, semantic check
+## for "which side".
+func _find_hostile_player(zone: Area3D) -> Node:
+	for body in zone.get_overlapping_bodies():
 		if body is FrontUnit:
 			continue
 		if not body.has_method("take_damage"):
