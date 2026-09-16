@@ -109,22 +109,22 @@ alliée automatique, dégâts dans les deux sens Base↔Base, victoire/défaite,
 pas de fuite de spawn après la mort d'une Base). Reste le *feel*, seul
 objectif réel de ce jalon.
 
-- [ ] **Le combat à deux vagues est déjà bon sans Tour** — c'est le critère
+- [x] **Le combat à deux vagues est déjà bon sans Tour** — c'est le critère
       central de ce jalon : caméra, rythme de spawn, lisibilité du contact
       entre les deux lignes qui se rencontrent au milieu du couloir.
-      **Observé en playtest** : la vague alliée spawne et va bien détruire
-      la base ennemie — le comportement de base fonctionne. Jugement du
-      *feel* (caméra/rythme) pas encore donné, laissé ouvert.
-- [ ] **Posséder une unité alliée du front** (clic, comme en 8.2 — pas un
+      **Validé** : la vague alliée spawne et va bien détruire la base
+      ennemie.
+- [x] **Posséder une unité alliée du front** (clic, comme en 8.2 — pas un
       corps de roster façon 9.3) fonctionne : swap, combat au contact,
-      retour automatique à la Base à la mort si elle vit encore.
-- [ ] **Victoire/défaite** s'affichent correctement et arrêtent bien les
+      retour automatique à la Base à la mort si elle vit encore. **Validé**.
+- [x] **Victoire/défaite** s'affichent correctement et arrêtent bien les
 	  deux spawns (pas seulement celui de la Base qui vient de mourir).
-- [ ] **`wave_slot`** a un effet visible pour la première fois hors
-	  `level2_front` (plus d'unités alliées par vague).
-- [ ] **Équilibrage** : `wave_interval = 6s` / `wave_size = 2` des deux
+      **Validé**.
+- [x] **`wave_slot`** a un effet visible pour la première fois hors
+	  `level2_front` (plus d'unités alliées par vague). **Validé**.
+- [x] **Équilibrage** : `wave_interval = 6s` / `wave_size = 2` des deux
       côtés (symétrique, valeur de départ) — le rythme est-il bon avant même
-	  d'envisager un déséquilibre volontaire ?
+	  d'envisager un déséquilibre volontaire ? **Validé**.
 
 ---
 

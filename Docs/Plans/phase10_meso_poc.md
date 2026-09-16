@@ -238,17 +238,19 @@ Vérifié **headless** (`tests/meso_front_test.tscn`) :
       la victoire
 - [x] Aucune régression : les 9 tests headless du projet au vert
 
-Confirmé **en playtest manuel** (ajouté à `Docs/PLAYTEST_CHECKLIST.md`) :
+Confirmé **en playtest manuel** (`Docs/PLAYTEST_CHECKLIST.md`) :
 
-- [ ] Le *feel* du combat à deux vagues est bon **avant même d'ajouter la
+- [x] Le *feel* du combat à deux vagues est bon **avant même d'ajouter la
       Tour** — c'est le critère central de ce jalon (caméra, rythme de
       spawn, lisibilité du contact entre les deux lignes)
-- [ ] Posséder une unité alliée du front (pas un corps de roster) fonctionne
+- [x] Posséder une unité alliée du front (pas un corps de roster) fonctionne
       comme en 8.2 — clic, swap, combat, retour à la Base à la mort si elle
       vit encore
-- [ ] Victoire/défaite s'affichent correctement et arrêtent bien les deux
+- [x] Victoire/défaite s'affichent correctement et arrêtent bien les deux
       spawns
-- [ ] `wave_slot` a un effet visible (plus d'unités alliées par vague)
+- [x] `wave_slot` a un effet visible (plus d'unités alliées par vague)
+
+**10.1 est complète et validée.**
 
 ### À ne PAS faire dans ce jalon
 
