@@ -1,0 +1,9 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://tests/meso_front_test.gd" id="1_test"]
+[ext_resource type="PackedScene" path="res://gameplay_loop/meso/meso_front.tscn" id="2_level"]
+
+[node name="MesoFrontTest" type="Node3D"]
+script = ExtResource("1_test")
+
+[node name="MesoFront" parent="." instance=ExtResource("2_level")]

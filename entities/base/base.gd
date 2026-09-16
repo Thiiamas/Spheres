@@ -192,8 +192,16 @@ func take_damage(amount: float) -> void:
 ## actively possessed entity when it dies, and there's no fallback entity
 ## to hand control to in this POC. It just goes inert; the level script
 ## reacts to `died` (stop enemy spawning, show defeat).
+##
+## stop_spawning() on self (phase 10, D7): found while planning Méso, where
+## both sides field a wave — without this, a destroyed Base kept producing
+## units indefinitely, since only drive() (mortar/purchases) was gated on
+## _defeated. Harmless before this phase (only the enemy Base ever spawned,
+## and the level script already stopped it explicitly on player defeat), but
+## load-bearing once both sides can die.
 func _on_health_died() -> void:
 	_defeated = true
+	stop_spawning()
 	died.emit()
 
 

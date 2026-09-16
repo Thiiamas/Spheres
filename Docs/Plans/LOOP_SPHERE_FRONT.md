@@ -11,16 +11,16 @@
 
 ## 🎯 Objectif actuel
 
-**Phase 8 est terminée** (8.1 + 8.2, implémentées et playtestées
-manuellement — cf. `phase8_foundations.md`). **Phase 9 (POC Micro) est
-planifiée en détail** dans `phase9_micro_poc.md` — pas encore implémentée,
-découpée en quatre jalons : **9.1 ✅** défense de Base (PV réels + Game Over,
-ennemis en `FrontUnit` plutôt qu'`Enemy.tscn`) ; **9.2 ✅** progression
-(débouché des ressources : `Upgrade` en `Resource` + autoload `Progression`,
-portée globale, un seul portefeuille partagé) — les deux implémentées et
-playtestées ; **9.3** possession d'une unité (variante RuneMage flaguée,
-détails différés à l'implémentation ; Game Over généralisé à « toutes les
-entités contrôlables mortes ») ; **9.4** relief/obstacles.
+**Phase 9 (POC Micro) est terminée** — quatre jalons implémentés et
+playtestés (défense de Base, progression, possession du roster de mages,
+relief/obstacles), mergée dans `main`. Détail : `phase9_micro_poc.md`.
+
+**Phase 10 (POC Méso) est planifiée en détail** dans `phase10_meso_poc.md`
+— pas encore implémentée, découpée en deux jalons : **10.1** front à deux
+camps sans Tour (la Base du joueur reçoit enfin sa propre vague alliée,
+victoire/défaite émergent des PV de Base posés en 9.1) ; **10.2** ajout de
+la Tour comme objectif de siège (referme la définition officielle du
+palier : détruire la tour = victoire).
 
 ---
 
@@ -140,20 +140,19 @@ confirmés, au-delà de la couverture headless.
 > perfectionner pour la suite — mais ça vaut une décision explicite avant
 > de commencer, pas une supposition silencieuse comme H1-H5.
 
-### Phase 10 — POC Méso : front des deux côtés
+### Phase 10 — POC Méso : front des deux côtés *(planifiée, cf. `phase10_meso_poc.md` — pas encore implémentée)*
 | | |
 |---|---|
 | **En jeu** | Base + `FrontUnit` **alliés et ennemis** — les deux camps spawnent maintenant |
 | **Objectif du POC** | Peu de contenu, mais **tout doit être agréable en soi** : caméra, façon dont les unités spawnent, leur comportement au contact |
-| **Portée** | "C'est tout" — pas de Tour listée explicitement, alors qu'elle fait partie de la définition de la boucle Méso (*"Objectif : détruire la tour"*, cf. tableau plus haut). |
+| **Portée** | Séquencée en deux jalons plutôt que tranchée d'un bloc (voir ci-dessous) |
 
-> **Point à trancher avant de coder** : la Tour est-elle volontairement
-> **exclue** de ce POC (on isole d'abord juste "deux fronts d'unités qui se
-> rencontrent", sans objectif de destruction, pour que le combat seul soit
-> déjà satisfaisant), ou sous-entendue comme déjà acquise depuis la phase 7
-> et donc pas rementionnée ? Les deux sont défendables, mais ça change le
-> critère de "c'est fini" pour ce POC — à clarifier plutôt que de le
-> deviner.
+> **Point tranché** (D1, `phase10_meso_poc.md`) : ni exclue ni acquise
+> silencieusement — **séquencée**. 10.1 valide le combat à deux vagues sans
+> Tour (la Base a déjà de vrais PV depuis la 9.1, donc une victoire/défaite
+> émerge sans rien coder de neuf) ; 10.2 ajoute la Tour comme objectif de
+> siège par-dessus, une fois le combat lui-même validé comme agréable —
+> même logique d'isolement de variable que 9.1→9.4 (H3).
 
 ### Phase 11 — POC Macro : capture de base
 | | |
@@ -173,5 +172,5 @@ confirmés, au-delà de la couverture headless.
 
 ## Prochaine étape
 
-**Implémenter la phase 9** (`phase9_micro_poc.md`), en commençant par 9.1
-(terrain plat) avant 9.2 (relief).
+**Implémenter la phase 10** (`phase10_meso_poc.md`), en commençant par 10.1
+(front à deux camps sans Tour) avant 10.2 (Tour/siège).

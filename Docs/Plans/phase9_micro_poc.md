@@ -130,9 +130,9 @@ Phase 8 stable (`BaseControllable`, `MortarShell`, `Economy`,
   `died` (forwardé depuis `health.died`, même patron que `Tower`), et :
   ```gdscript
   func take_damage(amount: float) -> void:
-      if _defeated:
-          return
-      health.take_damage(amount)
+	  if _defeated:
+		  return
+	  health.take_damage(amount)
   ```
   **Pas** de `take_hit()` — décision délibérée : `MortarShell._explode()`
   ne cible que les corps avec `has_method("take_hit")` sur le layer ennemi
@@ -225,11 +225,11 @@ Vérifié **headless** (`tests/base_health_test.tscn`, code retour 0) :
 - [x] Un `FrontUnit` ennemi arrivé à portée endommage la Base du montant
       exact de son `attack_damage` (150 → 142 PV)
 - [x] La Base à 0 PV émet `died`, **reste dans l'arbre** (H5) et ignore
-      silencieusement les entrées suivantes (pas de crash sur un `attack`
-      envoyé après la défaite)
+	  silencieusement les entrées suivantes (pas de crash sur un `attack`
+	  envoyé après la défaite)
 - [x] Une vague **autonome** (sans intervention du test) sort de `EnemyBase`,
-      traverse le couloir et endommage la Base en ~11s — la boucle tourne
-      d'elle-même, ce n'est pas qu'un dégât synthétique
+	  traverse le couloir et endommage la Base en ~11s — la boucle tourne
+	  d'elle-même, ce n'est pas qu'un dégât synthétique
 - [x] Aucune régression : `base_possession_test`, `possession_swap_test`,
       `rune_chain_test`, `synthetic_drive_test` toujours au vert
 
@@ -241,19 +241,19 @@ rendu, pas de souris réelle) :
 - [x] La barre de vie de la Base est **visible et lisible** — première
       version jugée trop petite en playtest, élargie (mesh 1 → 2.5 unités de
       large), validée. A nécessité un correctif générique dans
-      `ui/hp_bar_3d.gd` : l'ancrage à gauche du remplissage codait en dur une
-      largeur de 1 unité (`(ratio - 1.0) * 0.5`), donc toute barre plus large
-      se serait vidée depuis le mauvais côté ; la largeur est maintenant lue
-      depuis le mesh (tour et unités inchangées visuellement, revérifiées)
+	  `ui/hp_bar_3d.gd` : l'ancrage à gauche du remplissage codait en dur une
+	  largeur de 1 unité (`(ratio - 1.0) * 0.5`), donc toute barre plus large
+	  se serait vidée depuis le mauvais côté ; la largeur est maintenant lue
+	  depuis le mesh (tour et unités inchangées visuellement, revérifiées)
 - [x] Tuer un ennemi au mortier rapporte des ressources visibles au HUD
 - [x] Le message de défaite s'affiche correctement à 0 PV
 - [x] Cliquer sur la Base sélectionne toujours bien la Base malgré le
       nouveau `Hull` — confirmé en playtest : le raycast peut toucher `Hull`
       **ou** `SelectionArea`, les deux résolvent vers la `Base` via
-      `hit.get_parent()` (c'est précisément pourquoi `Hull` est un nœud
-      **enfant** et non la racine de `Base`)
+	  `hit.get_parent()` (c'est précisément pourquoi `Hull` est un nœud
+	  **enfant** et non la racine de `Base`)
 - [x] Équilibrage du *feel* : `wave_interval = 6s`, `wave_size = 2`,
-      `max_hp = 150` — jugés « ok pour l'instant » en playtest, gardés
+	  `max_hp = 150` — jugés « ok pour l'instant » en playtest, gardés
       comme valeurs de travail (à réajuster quand 9.2 ajoutera la progression
       et 9.3 la possession, qui changent tous deux la pression ressentie)
 
@@ -416,8 +416,8 @@ func bonus(up: Upgrade, scope := &"global") -> float   # level * up.per_level
 
 ```gdscript
 func apply_progression() -> void:
-    attack_cooldown = _base_cooldown * (1.0 - Progression.bonus(mortar_rate_up))
-    mortar_damage   = _base_damage + Progression.bonus(mortar_damage_up)
+	attack_cooldown = _base_cooldown * (1.0 - Progression.bonus(mortar_rate_up))
+	mortar_damage   = _base_damage + Progression.bonus(mortar_damage_up)
 ```
 
 C'est là que la contrainte plus haut se dissout : une entité fraîchement
@@ -486,14 +486,14 @@ une entité créée **après** l'achat arrive déjà améliorée.
 Vérifié **headless** (`tests/progression_test.tscn`) :
 
 - [x] Un achat refusé faute de ressources ne débite rien, ne monte pas le
-      niveau et ne touche pas la stat
+	  niveau et ne touche pas la stat
 - [x] Un achat au coût exact passe et débite la totalité (0 restant)
 - [x] La stat de l'entité vivante suit l'achat (25 → 33 de dégâts mortier)
 - [x] **Idempotence** : réappliquer deux fois de suite ne fait pas dériver la
-      valeur — le test échouerait si la stat était mutée en place au lieu
-      d'être recalculée depuis sa baseline
+	  valeur — le test échouerait si la stat était mutée en place au lieu
+	  d'être recalculée depuis sa baseline
 - [x] **Une entité créée *après* l'achat arrive déjà améliorée** (33.0) —
-      le critère qui justifie toute l'architecture, et ce qui fera que le
+	  le critère qui justifie toute l'architecture, et ce qui fera que le
       détruire/recréer de `PossessionSwap` sera un non-problème en 9.3
 - [x] `max_level` bloque les achats au-delà, sans rien dépenser
 - [x] Aucune régression : les cinq tests headless précédents au vert (six
@@ -505,7 +505,7 @@ Confirmé **en playtest manuel** :
       grimpe après un achat
 - [x] L'effet est **perceptible en jeu** : cadence de tir, dégâts, PV max
 - [x] Les touches `1`-`4` achètent bien, sans conflit avec le reste des
-      entrées (l'ancien `B` a disparu)
+	  entrées (l'ancien `B` a disparu)
 
 - [x] D4 se sent juste : acheter des PV max en pleine vague soigne
       immédiatement du delta
@@ -808,16 +808,16 @@ défaite seulement quand la Base ET tout le roster sont morts
 - [x] **Validé en playtest** — cliquer un corps du roster prend son contrôle.
       Le rayon sous le curseur résout bien le corps, ce qui confirme de bout en
       bout le correctif du bloqueur 1 (`ALLY_LAYER` sur la variante minimale) ;
-      c'était le seul maillon qu'aucun test headless ne pouvait couvrir.
+	  c'était le seul maillon qu'aucun test headless ne pouvait couvrir.
 - [x] **Validé en playtest** — `Tab` tourne entre la Base et les corps du
-      roster, ce qui confirme au passage l'ordre des nœuds de la scène.
+	  roster, ce qui confirme au passage l'ordre des nœuds de la scène.
 - [x] Seuls A et E répondent ; Z ne fait rien et n'apparaît pas au HUD
 - [x] Un ennemi au contact **endommage** le mage possédé (bloqueur 2 levé)
 - [x] Mourir en possession ne termine pas la partie tant qu'il reste la Base
-      ou un corps du roster ; le contrôle bascule proprement
+	  ou un corps du roster ; le contrôle bascule proprement
 - [x] Game Over seulement quand la Base **et** tout le roster sont morts
 - [x] Les upgrades du mage s'achètent aux mêmes touches et s'appliquent
-      (preuve que 9.2 est bien générique)
+	  (preuve que 9.2 est bien générique)
 - [x] Aucune régression : les **sept** tests headless au vert
 
 ### Bug de la 9.2 trouvé en playtestant la 9.3
@@ -1011,7 +1011,7 @@ Filet vérifié en neutralisant la correction (`obstacle_deflect_weight = 0`) :
       voir `Docs/PLAYTEST_CHECKLIST.md`
 - [x] Décision documentée ici (2a, avec le pourquoi et les mesures)
 - [x] Non-régression de `level2_front` : la déflexion s'applique à **toute**
-      unité du jeu, pas seulement ici — **validé en playtest manuel**
+	  unité du jeu, pas seulement ici — **validé en playtest manuel**
 
 ### À ne PAS faire dans ce jalon
 

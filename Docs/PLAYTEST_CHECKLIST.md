@@ -38,16 +38,16 @@ Scène : `gameplay_loop/micro/micro_possession.tscn`
 ### Ce qui a besoin d'un curseur ou d'un œil
 
 - [x] **Clic sur un corps du roster** en prend le contrôle. Les 3 corps sont à
-      4 m devant la Base. Seule la résolution du rayon n'était pas couverte — le
-      transfert lui-même, l'inertie du corps quitté et la sortie du pool le sont.
-      **Validé** : le rayon résout bien le corps, donc `ALLY_LAYER` sur la
-      variante minimale (bloqueur 1) est confirmé de bout en bout.
+	  4 m devant la Base. Seule la résolution du rayon n'était pas couverte — le
+	  transfert lui-même, l'inertie du corps quitté et la sortie du pool le sont.
+	  **Validé** : le rayon résout bien le corps, donc `ALLY_LAYER` sur la
+	  variante minimale (bloqueur 1) est confirmé de bout en bout.
 - [x] **`Tab`** fait tourner entre la Base et les 3 corps. **Validé** — ce qui
-      confirme aussi que les 4 contrôlables sont dans le pool et que l'ordre des
+	  confirme aussi que les 4 contrôlables sont dans le pool et que l'ordre des
       nœuds de la scène tient.
 - [ ] **Lueur** : le corps quitté redevient faiblement lumineux, le nouveau
-      s'allume (`idle_energy` 0.3 → `possessed_energy` 1.8). **Jugé en
-      playtest** : pas nettement perceptible, mais **pas grave** — n'affecte
+	  s'allume (`idle_energy` 0.3 → `possessed_energy` 1.8). **Jugé en
+	  playtest** : pas nettement perceptible, mais **pas grave** — n'affecte
       pas la lisibilité du jeu, laissé tel quel.
 - [x] **HUD du mage** : `Resources`, `A: bolt`, `E: flux`, et les 2 upgrades.
       **Aucune ligne `Z:`**. **Validé**.
@@ -57,20 +57,20 @@ Scène : `gameplay_loop/micro/micro_possession.tscn`
 ### Questions d'équilibrage (à juger, pas à valider)
 
 - [x] **Reset croisé A ↔ E** — alterner A, E, A, E n'attend plus *aucun*
-      cooldown, et un cube marqué meurt d'un seul bolt. C'est un saut de
+	  cooldown, et un cube marqué meurt d'un seul bolt. C'est un saut de
       puissance net, pas un ajustement. Trop fort ? Levier : `cross_spell_reset`
-      dans l'inspecteur (A/B immédiat), ou un reset partiel. **Jugé OK en
-      playtest**, gardé tel quel.
+	  dans l'inspecteur (A/B immédiat), ou un reset partiel. **Jugé OK en
+	  playtest**, gardé tel quel.
 - [x] **Cooldowns −25 %** (bolt 0,9 s / flux 2,25 s / cage 3,75 s) — le rythme
-      est-il bon, ou est-ce devenu trop permissif ? **Jugé OK en playtest**.
+	  est-il bon, ou est-ce devenu trop permissif ? **Jugé OK en playtest**.
 - [x] **Les corps en réserve sont mordables** — une vague peut décimer ton roster
-      pendant que tu es à la Base. Tension voulue, mais potentiellement punitive.
-      Porte de sortie déjà documentée : réduire les dégâts subis hors possession
-      (le concept d'origine décrit ces corps comme « très résistants »). **Jugé
+	  pendant que tu es à la Base. Tension voulue, mais potentiellement punitive.
+	  Porte de sortie déjà documentée : réduire les dégâts subis hors possession
+	  (le concept d'origine décrit ces corps comme « très résistants »). **Jugé
       OK en playtest**, la tension est acceptée telle quelle.
 - [x] **Revenu du mage** — en mage, ton revenu ce sont *tes* kills, rien d'autre
-      ne tue de cubes. La rotation E→A (un tir par cube) est-elle nécessaire à
-      connaître, ou trop punitive si on l'ignore ? **Jugé OK en playtest**.
+	  ne tue de cubes. La rotation E→A (un tir par cube) est-elle nécessaire à
+	  connaître, ou trop punitive si on l'ignore ? **Jugé OK en playtest**.
 
 ---
 
@@ -83,20 +83,48 @@ piliers, portail, rocher et rampe ; 5/6 restaient plantés sans la correction).
 Il ne reste donc que le visuel et le feel.
 
 - [x] **Lisibilité du contournement** — une unité qui longe un obstacle le fait
-      de façon crédible, sans tremblement ni demi-tour absurde. Le choix du côté
-      est figé au premier contact, donc elle ne doit pas hésiter. **Validé**.
+	  de façon crédible, sans tremblement ni demi-tour absurde. Le choix du côté
+	  est figé au premier contact, donc elle ne doit pas hésiter. **Validé**.
 - [x] **La rampe** — sa boîte de collision est volontairement à moitié enterrée
-      pour ne pas présenter de marche verticale. Vérifier que le rendu ne fait
-      pas « bloc qui sort du sol » de façon moche, et que les cubes la montent
-      et en redescendent proprement. **Validé**.
+	  pour ne pas présenter de marche verticale. Vérifier que le rendu ne fait
+	  pas « bloc qui sort du sol » de façon moche, et que les cubes la montent
+	  et en redescendent proprement. **Validé**.
 - [x] **Le feel de 9.1 ne régresse pas** avec le relief : rythme des vagues,
-      danger perçu, tir de mortier. **Validé**.
+	  danger perçu, tir de mortier. **Validé**.
 - [x] **Le mortier** par-dessus le relief — les obstacles sont sur la couche 1 et
-      le mortier ne masque que la couche 2, donc il *devrait* tirer par-dessus.
-      À confirmer à l'œil : un obus qui traverse un pilier serait laid. **Validé**.
+	  le mortier ne masque que la couche 2, donc il *devrait* tirer par-dessus.
+	  À confirmer à l'œil : un obus qui traverse un pilier serait laid. **Validé**.
 - [x] **Passage latéral du portail** — les blocs laissent 2,25 m de chaque côté.
       Est-ce que ça se lit comme un choix tactique, ou comme une erreur de
       level design ? **Validé, lu comme un choix tactique**.
+
+---
+
+## Palier Méso — jalon 10.1 (front à deux camps, sans Tour)
+
+Scène : `gameplay_loop/meso/meso_front.tscn`
+
+Le combat symétrique lui-même **est** mesuré (`meso_front_test` : vague
+alliée automatique, dégâts dans les deux sens Base↔Base, victoire/défaite,
+pas de fuite de spawn après la mort d'une Base). Reste le *feel*, seul
+objectif réel de ce jalon.
+
+- [ ] **Le combat à deux vagues est déjà bon sans Tour** — c'est le critère
+      central de ce jalon : caméra, rythme de spawn, lisibilité du contact
+      entre les deux lignes qui se rencontrent au milieu du couloir.
+      **Observé en playtest** : la vague alliée spawne et va bien détruire
+      la base ennemie — le comportement de base fonctionne. Jugement du
+      *feel* (caméra/rythme) pas encore donné, laissé ouvert.
+- [ ] **Posséder une unité alliée du front** (clic, comme en 8.2 — pas un
+      corps de roster façon 9.3) fonctionne : swap, combat au contact,
+      retour automatique à la Base à la mort si elle vit encore.
+- [ ] **Victoire/défaite** s'affichent correctement et arrêtent bien les
+	  deux spawns (pas seulement celui de la Base qui vient de mourir).
+- [ ] **`wave_slot`** a un effet visible pour la première fois hors
+	  `level2_front` (plus d'unités alliées par vague).
+- [ ] **Équilibrage** : `wave_interval = 6s` / `wave_size = 2` des deux
+      côtés (symétrique, valeur de départ) — le rythme est-il bon avant même
+	  d'envisager un déséquilibre volontaire ?
 
 ---
 
@@ -109,15 +137,15 @@ pas les murs), mais ça se vérifie.
 - [x] **`levels/level2_front.tscn`** — les unités poussent toujours vers la base
       adverse, assiègent la Tour, et ne longent pas ses murs au lieu de la
       frapper. (La Tour et les Bases sont explicitement exclues de la déflexion,
-      mais c'est le point le plus à risque.) **Validé**.
+	  mais c'est le point le plus à risque.) **Validé**.
 - [x] **`level2_front`, possession 8.2** — clic sur une unité alliée → elle
-      devient un mage ; les **trois** sorts répondent (A, Z, E — c'est ici que Z
+	  devient un mage ; les **trois** sorts répondent (A, Z, E — c'est ici que Z
       doit encore marcher) ; quitter le mage le rend au front en `FrontUnit`.
       **Validé**.
 - [x] **`gameplay_loop/micro/micro_base_defense.tscn`** (9.1/9.2) — inchangé.
       **Validé**.
 - [x] **`levels/main.tscn`** (niveau 1) — inchangé. Rappel : pas d'économie dans
-      cette scène, ses ennemis n'ont pas de `LootOnDeath`. **Validé**.
+	  cette scène, ses ennemis n'ont pas de `LootOnDeath`. **Validé**.
 
 ---
 
