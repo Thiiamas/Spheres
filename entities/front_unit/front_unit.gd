@@ -52,6 +52,9 @@ const ENGAGE_RANGE := 6.0
 @export var avoidance_radius: float = 1.6
 ## How strongly the sideways push competes with the forward seek direction.
 @export var avoidance_weight: float = 2.2
+## How strongly a head-on press against static geometry turns into a sideways
+## walk (9.4). 0 restores the pre-9.4 behaviour: straight into the rock.
+@export var obstacle_deflect_weight: float = 2.5
 ## HP pool (entities/shared/health.gd) — take_damage/take_hit forward to it.
 @export var health: Health
 
@@ -79,6 +82,16 @@ var _attack_shader: ShaderMaterial = null
 var is_attacking: bool:
 	get:
 		return _attacking_timer > 0.0
+
+## Horizontal normal of the static surface this unit was pressed against last
+## frame, or ZERO. Read from move_and_slide's own collisions rather than from a
+## fresh physics query — the information is already there and costs nothing.
+var _wall_normal: Vector3 = Vector3.ZERO
+## Which way along the current wall this unit committed to (+1/-1, 0 = not
+## touching anything). Held until contact is lost: re-deciding every frame made
+## units oscillate in place, because the "which side gains ground" test flips
+## sign as the unit slides — measured, it pinned 2 of 6 cubes at the gate.
+var _deflect_side: float = 0.0
 
 var _attack_timer: float = 0.0
 var _attacking_timer: float = 0.0
@@ -160,7 +173,7 @@ func _physics_process(delta: float) -> void:
 	var to := move_goal - global_position
 	to.y = 0.0
 	var seek := to.normalized() if to.length() > 0.001 else Vector3.ZERO
-	var blended := seek + _avoidance(target) * avoidance_weight
+	var blended := seek + _avoidance(target) * avoidance_weight 		+ _obstacle_deflection(seek) * obstacle_deflect_weight
 	var dir := blended.normalized() if blended.length() > 0.001 else seek
 	velocity.x = dir.x * speed
 	velocity.z = dir.z * speed
@@ -169,9 +182,78 @@ func _physics_process(delta: float) -> void:
 	else:
 		velocity.y -= gravity * delta
 	move_and_slide()
+	_wall_normal = _static_contact_normal()
+	if _wall_normal == Vector3.ZERO:
+		_deflect_side = 0.0 # clear of the wall: next contact decides afresh
 
 	if _attack_timer <= 0.0:
 		_try_attack()
+
+
+## Turns a head-on press against static geometry into a sideways walk (9.4,
+## Docs/Plans/phase9_micro_poc.md).
+##
+## move_and_slide already strips the into-surface component of the velocity,
+## which is what routes a body around a shape it merely grazes. But a unit
+## walking at a pillar's centre has almost no tangential component left to slide
+## on, so it simply stops dead — measured in tests/micro_terrain_test.gd, where
+## 6 of 6 cubes were pinned, two of them by a lone convex pillar. This injects
+## the missing tangential component.
+##
+## Local and stateless, in the spirit of the existing steering — no pathfinding
+## (NavigationAgent3D stays out of scope, PLAN.md). It therefore cannot reason
+## about a shape it can't feel yet: it reacts on contact, not in anticipation.
+func _obstacle_deflection(seek: Vector3) -> Vector3:
+	if _wall_normal == Vector3.ZERO:
+		return Vector3.ZERO
+	# 1.0 = walking dead-on into the surface, 0.0 = moving along or away from it.
+	var into := seek.dot(-_wall_normal)
+	if into <= 0.0:
+		return Vector3.ZERO
+
+	var tangent := _wall_normal.cross(Vector3.UP)
+	if tangent.length_squared() < 0.001:
+		return Vector3.ZERO
+	tangent = tangent.normalized()
+	# Decided ONCE per wall contact, then held. Walk the way that gains ground;
+	# dead-on into a pillar both ways tie, so the tie breaks on a stable
+	# per-instance sign — a crowd splits around the rock instead of every unit
+	# queueing along the same side. Same trick, and the same reason, as the
+	# surround-offset ring above.
+	if _deflect_side == 0.0:
+		var gain := tangent.dot(seek)
+		_deflect_side = signf(gain) if absf(gain) > 0.15 			else (1.0 if get_instance_id() % 2 == 0 else -1.0)
+	return tangent * _deflect_side * into
+
+
+## Horizontal normal of the static geometry hit by the last move_and_slide, or
+## ZERO when nothing relevant was touched.
+##
+## Skips what this unit is *meant* to walk into: other units, which _avoidance
+## already handles, and anything reached through a Base (a Hull, or an ally unit,
+## which Base parents to itself) — a unit arriving at its goal plants itself to
+## attack, and must not sidestep the very thing it came for. The floor filters
+## itself out: its normal is straight up, so flattening y leaves nothing.
+func _static_contact_normal() -> Vector3:
+	for i in get_slide_collision_count():
+		var collider := get_slide_collision(i).get_collider() as Node
+		if collider == null:
+			continue
+		if collider is FrontUnit or collider is RuneMage or collider is Tower:
+			continue
+		if collider.get_parent() is Base:
+			continue
+		var n := get_slide_collision(i).get_normal()
+		# A walkable slope is ground, not an obstacle: its normal still has a
+		# horizontal component, and treating that as a wall made units sidestep
+		# a 12-degree ramp instead of climbing it (4 of 6 cubes pinned at its
+		# leading edge). Same threshold move_and_slide itself uses for is_on_floor.
+		if n.y > cos(floor_max_angle):
+			continue
+		n.y = 0.0
+		if n.length_squared() > 0.01:
+			return n.normalized()
+	return Vector3.ZERO
 
 
 ## Take damage from an opposing FrontUnit's bite. Forwards to the Health
@@ -271,8 +353,18 @@ func _try_attack() -> void:
 ## its Hull child rather than matched directly: Base is a plain Node3D, so the
 ## body in the zone is the Hull, and take_damage lives on the Base itself.
 ## No faction test needed — AttackZone's mask is already the opposing layer.
+##
+## RuneMage joined the list in phase 9.3: until then the possessed player could
+## only be hurt by a Tower's EscortGate, so in a scene with no Tower — every
+## Micro scene — walking into the enemy line cost nothing at all, which gutted
+## the "close combat should feel dangerous" premise. The mask still does the
+## faction work: a mage is only in an *enemy* unit's zone because
+## rune_mage_minimal.tscn puts it on ALLY_LAYER, and an ally unit's zone watches
+## ENEMY_LAYER, so this can't turn into friendly fire.
 func _damageable(body: Node3D) -> Node3D:
 	if body is FrontUnit and body.faction != faction:
+		return body
+	if body is RuneMage:
 		return body
 	if body is Tower:
 		return body

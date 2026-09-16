@@ -664,6 +664,29 @@ le mage conserve.
 > donc réduire les dégâts subis hors possession serait un précédent
 > assumé, pas une rustine.
 
+### Un troisième bloqueur, trouvé en implémentant (et une nuance de ciblage)
+
+**3. Quitter un corps du roster le consommait.** `try_select_at_cursor` appelle
+`_release_current_mage()` avant chaque bascule, ce qui rend le mage possédé au
+front sous forme de `FrontUnit` (phase 8.2). Appliqué à un corps du roster,
+c'est destructeur : cliquer la Base depuis un corps aurait converti ce corps en
+unité alliée et amputé un roster qui ne se reconstitue pas — alors que `Tab`,
+qui ne passe pas par là, l'aurait laissé debout. Les deux chemins doivent dire
+la même chose.
+
+Réglé par un flag `returns_to_front` sur `RuneMage` (`true` par défaut = le
+comportement 8.2), mis à `false` dans `rune_mage_minimal.tscn`. Même logique que
+D5 : une variante se décrit en données, pas en code.
+
+**Nuance de ciblage à connaître pour le playtest** : `_current_target()` ne
+renvoie qu'une `Tower` ou une `FrontUnit` adverse — **jamais un `RuneMage`**. Une
+unité ennemie ne *marche donc pas vers* le mage ; elle le mord si le mage se
+trouve dans sa zone d'attaque pendant qu'elle avance sur la Base. Le danger est
+réel (vérifié : 24 PV perdus en 3 secondes de contact) mais il vient du
+corps-à-corps subi, pas d'une poursuite. Suffisant pour ce jalon ; si le combat
+rapproché doit devenir mordant, ajouter le mage aux cibles de `_nearest_hostile`
+serait le geste suivant — hors périmètre ici.
+
 ### Sous-tâches
 
 **1. Variante `RuneMageMinimal`**
@@ -718,19 +741,133 @@ Le script de niveau porte la règle de défaite généralisée (D8) plutôt que
 - `gameplay_loop/micro/micro_possession.tscn`/`.gd` (nouveau)
 - `tests/micro_possession_test.gd`/`.tscn` (nouveau)
 
+### Ce qui a été implémenté
+
+Les six sous-tâches sont faites. Points à savoir pour relire le code :
+
+- **Flags de sorts** sur `RuneMage`, lus dans `drive()` **et** dans
+  `get_hud_lines()`. `rune_mage_minimal.tscn` est une scène **héritée** de
+  `rune_mage.tscn` : `enable_cage = false`, `returns_to_front = false`, et
+  `collision_layer = 5` → **13** après le `|= PLAYER_LAYER` de `_ready`.
+- **Bloqueur 2 levé** par `FrontUnit._damageable()` qui accepte `RuneMage`.
+  Vérifié en conditions réelles, pas seulement en lecture : un cube au contact
+  fait tomber le mage possédé.
+- **Sélection** : branche `hit is RuneMage` dans `try_select_at_cursor` — pas de
+  destroy/create (D7), et un clic sur le corps déjà habité est consommé sans
+  rien faire.
+- **Défaite (D8)** : `PossessionSwap.find_fallback_controllable()` renvoie Base
+  vivante → corps survivant → `null`. `RuneMage._on_health_died()` s'y branche
+  et **ne décide pas de la défaite** ; `micro_possession.gd` porte la règle et
+  l'expose via `is_defeated()`.
+- **Upgrades du mage** : `mage_hp` (+30 PV/niveau) et `spell_rate` (−8% sur
+  *tous* les cooldowns par niveau). Portées par `rune_mage.tscn`, pas par la
+  variante minimale — un mage est améliorable en tant que mage, et le scope de
+  `Progression` est global de toute façon. Conséquence assumée : le mage de la
+  8.2 dans `level2_front` y a droit aussi.
+- **Refactor tiré par ce jalon** : `Progression.bonus_of()` et
+  `Progression.hud_lines()`. La 9.2 se disait générique mais la Base rendait son
+  bloc HUD et faisait sa recherche par `id` en local ; le mage allait dupliquer
+  les deux. `Base._bonus()` n'est plus qu'un alias d'une ligne.
+- **Réglage de playtest** : les trois cooldowns du mage sont réduits de **25 %**
+  par rapport à la phase 6 (bolt 1,2 → 0,9 s ; flux 3,0 → 2,25 s ; cage 5,0 →
+  3,75 s). La phase 6 les avait calibrés pour un mage qui harcelait une vague à
+  distance ; ici il est au contact d'une ligne qui lui marche dessus, et
+  l'ancienne rotation laissait de longues fenêtres mortes à ne faire que subir.
+  `spell_rate` part de ces nouvelles valeurs, donc c'est toute la courbe qui
+  bouge, pas seulement le niveau 0.
+- **Reset croisé A / E** (`cross_spell_reset`, playtest 9.3) : lancer l'un des
+  deux remet **à zéro** le cooldown de l'autre. Le marquage-puis-bolt est toute
+  l'identité de dégâts du mage, et attendre le plus lent des deux faisait de la
+  paire deux boutons sans rapport. La cage en est exclue : c'est du contrôle, pas
+  de la rotation de dégâts. Conséquence à surveiller : **alterner A, E, A, E
+  n'attend plus jamais de cooldown**, la paire n'est limitée que par la présence
+  d'une cible valide pour E. C'est un export, donc le A/B se fait dans
+  l'inspecteur si c'est trop fort.
+- **Scène** : `gameplay_loop/micro/micro_possession.tscn`, copie de la 9.1 + un
+  nœud `Roster` de 3 corps à `z = -16` (Base à `z = -20`). L'ordre compte :
+  `Roster` est **après** `PlayerBase`, donc la Base s'enregistre la première et
+  reste l'entité possédée au démarrage.
+
+Le test `tests/micro_possession_test.tscn` couvre les 9 points ci-dessous ;
+`tools/run_tests.sh` : **7/7 au vert**.
+
+```
+startup: Base possédée, 3 corps inertes dans le pool
+kit minimal A+E, corps sur ALLY_LAYER (layer 13)
+transfert de possession + corps en réserve inertes
+un corps du roster survit au fait d'être quitté
+upgrade du mage via la touche d'achat partagée (100 -> 130 PV)
+un ennemi endommage le mage possédé (130 -> 122)
+mort en possession -> Base vivante, la partie continue
+Base morte -> le contrôle tombe sur un corps survivant
+défaite seulement quand la Base ET tout le roster sont morts
+```
+
 ### Critères de validation
 
-- [ ] Cliquer un corps du roster prend son contrôle ; le corps quitté
-      redevient inerte (faible lueur), le nouveau s'allume
-- [ ] `Tab` fait aussi tourner entre Base et corps du roster
-- [ ] Seuls A et E répondent ; Z ne fait rien et n'apparaît pas au HUD
-- [ ] Un ennemi au contact **endommage** le mage possédé (bloqueur 2 levé)
-- [ ] Mourir en possession ne termine pas la partie tant qu'il reste la Base
+- [x] **Validé en playtest** — cliquer un corps du roster prend son contrôle.
+      Le rayon sous le curseur résout bien le corps, ce qui confirme de bout en
+      bout le correctif du bloqueur 1 (`ALLY_LAYER` sur la variante minimale) ;
+      c'était le seul maillon qu'aucun test headless ne pouvait couvrir.
+- [x] **Validé en playtest** — `Tab` tourne entre la Base et les corps du
+      roster, ce qui confirme au passage l'ordre des nœuds de la scène.
+- [x] Seuls A et E répondent ; Z ne fait rien et n'apparaît pas au HUD
+- [x] Un ennemi au contact **endommage** le mage possédé (bloqueur 2 levé)
+- [x] Mourir en possession ne termine pas la partie tant qu'il reste la Base
       ou un corps du roster ; le contrôle bascule proprement
-- [ ] Game Over seulement quand la Base **et** tout le roster sont morts
-- [ ] Les upgrades du mage s'achètent aux mêmes touches et s'appliquent
+- [x] Game Over seulement quand la Base **et** tout le roster sont morts
+- [x] Les upgrades du mage s'achètent aux mêmes touches et s'appliquent
       (preuve que 9.2 est bien générique)
-- [ ] Aucune régression : les six tests headless au vert
+- [x] Aucune régression : les **sept** tests headless au vert
+
+### Bug de la 9.2 trouvé en playtestant la 9.3
+
+**Acheter un slot de vague en ajoutait un aux vagues ENNEMIES.** Symptôme observé
+par l'utilisateur : 4 cubes par vague au lieu de 2 après deux achats.
+
+Cause : `base.tscn` est instanciée par les **deux** camps et porte elle-même le
+tableau `upgrades` (ligne 55) — aucune scène ne le vide côté ennemi. Comme le
+scope de `Progression` est global, `_bonus(&"wave_slot")` renvoie donc le niveau
+acheté par le joueur **aussi sur la base ennemie**, et `apply_progression()` le
+lui applique. Le commentaire de `_bonus` affirmait exactement le contraire
+(« the enemy Base (empty `upgrades`) ») : la prémisse était fausse depuis la 9.2.
+
+`wave_slot` était le seul effet visible, mais les quatre upgrades fuyaient :
+`base_hp` rendait la base ennemie **plus résistante** (net dans `level2_front`,
+où les unités alliées peuvent l'attaquer). `mortar_rate`/`mortar_damage`
+n'avaient pas d'effet, la base ennemie ne tirant jamais.
+
+Corrigé par un garde-fou de faction dans `Base.apply_progression()` (et le même
+dans `RuneMage.apply_progression()`, par symétrie) plutôt qu'en vidant le tableau
+dans chaque scène : « seul le joueur bénéficie de la progression du joueur » est
+une règle sur la progression, pas un détail que quelqu'un doit penser à
+réauthorer à chaque niveau.
+
+À noter, `tests/progression_test.gd` **entérinait** le bug : son cas « une entité
+créée après l'achat en hérite » instanciait une base de faction ENNEMIE. Il
+instancie maintenant une base ALLIÉE et sort sa `Controllable` du pool à la main.
+Un nouveau cas vérifie que la base ennemie ignore les achats du joueur — filet
+vérifié en désactivant le garde-fou : il échoue bien avec
+`wave_size 2 -> 3`.
+
+**Conséquence, traitée aussi** : le garde-fou a rendu `wave_slot` **totalement
+sans effet** dans les scènes Micro — le `PlayerBase` n'y a délibérément pas
+d'`unit_scene`, donc `_on_wave_timer_timeout` sort immédiatement, et le seul
+effet observable de l'upgrade était justement la fuite vers l'ennemi. Un puits à
+20 ressources, annoncé au HUD comme les trois autres.
+
+Choix de l'utilisateur : **ne plus l'offrir du tout** (plutôt que de donner une
+vague alliée au POC, qui aurait contredit la décision « pas de vague alliée » et
+changé économie, difficulté et rôle du mage).
+
+Implémenté par `Base._is_applicable()` + `_applicable_upgrades()`, qui **réécrit
+le tableau `upgrades` une fois dans `_ready`** au lieu de filtrer à chaque
+lecture. C'est ce qui garantit que l'offre et l'affichage ne divergent pas : le
+HUD et les touches d'achat parcourent ce même tableau, et l'upgrade *i* s'achète
+avec `upgrade_(i+1)` — filtrer seulement l'affichage aurait laissé la touche 4
+acheter un slot devenu invisible. La Base des scènes Micro n'offre donc plus que
+**3** upgrades ; celle de `level2_front` a un `unit_scene` et garde les quatre,
+donc `base_possession_test` (« wave_size 0 -> 1 ») reste valide tel quel.
 
 ### À ne PAS faire dans ce jalon
 
@@ -797,20 +934,84 @@ concave ou un goulot d'étranglement — il n'y a **aucun vrai pathfinding**
 
 ### Fichiers
 
-- `gameplay_loop/micro/micro_terrain.tscn`/`.gd` (nouveau — copie de
-  `micro_possession.tscn` + obstacles)
-- `entities/front_unit/front_unit.gd` (modifié **seulement si** le
-  playtest montre un blocage — voir sous-tâche 2)
+- `gameplay_loop/micro/micro_terrain.tscn` (nouveau — copie de
+  `micro_possession.tscn` + obstacles). **Pas de `.gd` dédié** : la logique de
+  niveau serait mot pour mot celle de 9.3, donc la scène réutilise
+  `micro_possession.gd`. Dupliquer la règle de défaite pour respecter la
+  convention « un script par jalon » aurait créé deux copies à maintenir ; les
+  scènes restent indépendamment jouables, ce qui était le but de la convention.
+- `entities/front_unit/front_unit.gd` (modifié — le blocage a bien eu lieu,
+  option 2a, voir « Résultat mesuré » ci-dessous)
+- `tests/micro_terrain_test.gd`/`.tscn` (nouveau — détection de blocage)
+- `tools/run_tests.sh` (modifié — watchdog relevé pour le test de relief)
+
+### Résultat mesuré, et la décision qui en découle
+
+Le jalon prévoyait de juger le blocage à l'œil. Ça se mesure, donc ça a été
+mesuré : `tests/micro_terrain_test.gd` échantillonne la distance de chaque cube à
+son objectif et déclare bloquée toute unité qui n'a plus progressé pendant 7 s
+tout en restant loin du but — en nommant la géométrie qu'elle touche.
+
+**Verdict initial, bien plus sévère que ce que le jalon anticipait : 6 cubes sur
+6 plantés.** Et pas seulement dans le goulot — deux l'étaient contre un **pilier
+convexe isolé**, le cas que le constat technique supposait résolu par le
+glissement de `move_and_slide()`. La raison : le seek recalcule chaque frame une
+vitesse pointant droit sur l'objectif, et `move_and_slide` n'en retire que la
+composante entrante. Face au centre d'un pilier, il ne reste presque aucune
+composante tangentielle sur laquelle glisser — l'unité s'arrête net.
+
+**Décision : option 2a** (répulsion locale), pas 2b. `NavigationAgent3D` aurait
+renversé une décision d'architecture documentée (`PLAN.md`, « hors scope v0.1 »)
+sur la base d'un couloir à quatre obstacles ; 2a s'est avérée suffisante ici, et
+reste réversible d'un export.
+
+Implémenté dans `FrontUnit` :
+
+- `_static_contact_normal()` lit les collisions de `move_and_slide` lui-même —
+  aucune requête physique ajoutée, l'information est déjà là. Ignore ce que
+  l'unité est *censée* percuter : les autres unités (déjà gérées par
+  `_avoidance`), la Tour, et tout ce qui s'atteint via une `Base` (un Hull, ou
+  une unité alliée que `Base` parente à elle-même) — une unité arrivée à son
+  objectif se plante pour frapper, elle ne doit pas contourner ce qu'elle est
+  venue chercher.
+- `_obstacle_deflection()` réinjecte la composante tangentielle manquante,
+  pondérée par `obstacle_deflect_weight` (2.5 ; **0 restaure le comportement
+  d'avant**).
+
+Deux corrections trouvées en mesurant, chacune ayant causé un faux blocage :
+
+1. **Une pente praticable n'est pas un mur.** Sa normale garde une composante
+   horizontale ; la traiter comme un obstacle faisait contourner une rampe à 12°
+   au lieu de la monter (4 cubes sur 6). Filtré au même seuil que
+   `is_on_floor()` : `n.y > cos(floor_max_angle)`.
+2. **Le côté de contournement doit être figé.** Choisi chaque frame, le test
+   « quel côté gagne du terrain » change de signe pendant le glissement et
+   l'unité oscille sur place (2 cubes sur 6 au portail). Il est désormais décidé
+   une fois par contact et tenu jusqu'à ce que le contact soit perdu.
+
+**Résultat final : 6 cubes sur 6 traversent** piliers, portail, rocher et rampe.
+Filet vérifié en neutralisant la correction (`obstacle_deflect_weight = 0`) :
+5 sur 6 se replantent, un par obstacle nommé.
+
+> **Deux pièges de méthode rencontrés, à retenir.** (1) Le constructeur plat
+> `Transform3D(...)` prend les **lignes** de la base, pas les colonnes — la rampe
+> montait donc à l'envers et les unités butaient sur sa face d'extrémité. (2)
+> `--quit-after` compte les **itérations de boucle**, pas les ticks physiques (en
+> headless, ratio ~0,42), **et sort avec le code 0** : ce test a été rapporté
+> PASS deux fois alors qu'il était tué avant de conclure. Il applique maintenant
+> sa propre limite en frames physiques, sous un watchdog relevé pour lui dans
+> `tools/run_tests.sh`.
 
 ### Critères de validation
 
-- [ ] Une vague ennemie traverse le couloir avec relief sans qu'aucune unité
-      ne reste bloquée indéfiniment (quelques secondes de contournement
-      sont acceptables, un blocage permanent ne l'est pas)
-- [ ] Le *feel* validé en 9.1 (rythme des vagues, danger perçu, tir mortier)
-      ne régresse pas avec le relief en place
-- [ ] Décision documentée ici (mise à jour de ce doc) si un correctif de
-      mouvement (2a ou 2b) a été nécessaire, avec le pourquoi
+- [x] Une vague ennemie traverse le couloir avec relief sans qu'aucune unité
+      ne reste bloquée indéfiniment — **mesuré**, 6/6 arrivent
+- [x] Le *feel* validé en 9.1 (rythme des vagues, danger perçu, tir mortier)
+      ne régresse pas avec le relief en place — **validé en playtest manuel**,
+      voir `Docs/PLAYTEST_CHECKLIST.md`
+- [x] Décision documentée ici (2a, avec le pourquoi et les mesures)
+- [ ] Non-régression de `level2_front` : la déflexion s'applique à **toute**
+      unité du jeu, pas seulement ici — **playtest manuel**
 
 ### À ne PAS faire dans ce jalon
 

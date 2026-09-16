@@ -43,11 +43,45 @@ ouvert, pas un choix figé.
 | `Docs/Plans/phaseN_*.md` | Spec/prompt d'origine de chaque phase (1 à 7) — historique, pas la référence de comportement actuel |
 | `Docs/front/front_unit_ai.md` | Référence technique **à jour** : mouvement/combat de `FrontUnit` (phase 7) |
 | `Docs/front/tower.md` | Référence technique **à jour** : composants `Health`/`EscortGate`/`Tower` (objectif tour, phase 7) |
+| `Docs/PLAYTEST_CHECKLIST.md` | **Ce qui reste à vérifier à la main** : les points qu'aucun test headless ne peut couvrir (pas de curseur, pas de rendu, et le *feel* qui se juge au lieu de se prouver), plus les non-régressions à repasser. À ouvrir avant un playtest |
 | `Docs/LORE.md` | Lore minimal et volontairement léger (sphère vs cube, « the Shore ») — direction artistique/tonale, pas une mécanique |
 | `Docs/GAME_DEV_STEP_VISUALS_AND_LEVEL.md` | Guide de méthode générique écrit tôt dans le projet (ordre visuels → niveau → contenu) — process, pas une spec du jeu actuel |
 
 Scènes utiles pour s'orienter dans l'éditeur : `levels/main.tscn` (boucle
-principale), `levels/level2_front.tscn` (Le Front), `levels/test_scene.tscn`
-(bac à sable parkour, sans rapport avec la boucle de jeu),
+principale), `levels/level2_front.tscn` (Le Front),
+`gameplay_loop/micro/micro_base_defense.tscn`, `micro_possession.tscn` et
+`micro_terrain.tscn` (POC du palier Micro, phase 9 — une scène par jalon,
+chacune copie de la précédente, donc `micro_terrain` est la plus avancée),
+`levels/test_scene.tscn` (bac à sable parkour, sans rapport avec la boucle de
+jeu),
 `tests/shader_gallery.tscn` / `shader_showcase.tscn` (revue des shaders
 sphère/tribu, hors gameplay).
+
+## Lancer Godot et les tests
+
+Le projet cible **Godot 4.7** (`config/features` dans `project.godot`), en
+build standard — aucun `.cs`, donc pas besoin de la variante mono. L'install
+se fait par winget (`winget install GodotEngine.GodotEngine`), qui place le
+binaire dans un dossier dont le nom contient la version ; `tools/godot.sh`
+résout la plus récente pour éviter un chemin en dur qui casserait au prochain
+`winget upgrade` :
+
+```sh
+tools/godot.sh --version              # 4.7.2.stable.official
+tools/godot.sh --path . --import      # réimporter après un changement d'engine
+tools/run_tests.sh                    # toute la suite headless
+tools/run_tests.sh rune_chain         # un seul test (filtre sur le nom)
+```
+
+> **`project.godot` ne garde pas les commentaires.** Godot réécrit le fichier à
+> chaque lancement et supprime les lignes `;` au passage — inutile d'y documenter
+> quoi que ce soit, l'explication doit vivre ici. Ce qui y a été perdu :
+> `window/size/mode=2` (fenêtre maximisée) existe parce que sans lui le jeu
+> tournait au 1152x648 par défaut de Godot — il n'y avait aucune section
+> `[display]` — ce qui donnait une petite boîte sur un grand écran. Même piège
+> pour les `.tscn` réenregistrées depuis l'éditeur.
+
+Les scènes de `tests/` sont des tests de régression headless : chacune se
+termine elle-même avec le code 0 (PASS) ou 1 (FAIL), et `run_tests.sh` en
+fait le résumé. Les scènes `shader_*` sont des scènes de revue visuelle, pas
+des tests — le runner les ignore.

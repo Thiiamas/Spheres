@@ -35,6 +35,42 @@ func bonus(up: Upgrade, scope: StringName = &"global") -> float:
 	return float(level_of(up.id, scope)) * up.per_level
 
 
+## Accumulated bonus for `id` among the upgrades an entity actually offers, or
+## 0.0 when it offers no such upgrade — which is what keeps an entity with an
+## empty array (the enemy Base) on its authored stats.
+##
+## Lives here rather than being rewritten as a private helper in every
+## apply_progression(): the lookup is identical for each of them, and an entity
+## matching on `id` instead of array position is the invariant that lets its
+## `upgrades` array be reordered freely (see Upgrade.id).
+func bonus_of(upgrades: Array[Upgrade], id: StringName, scope: StringName = &"global") -> float:
+	for up in upgrades:
+		if up != null and up.id == id:
+			return bonus(up, scope)
+	return 0.0
+
+
+## The debug-HUD block for an entity's `upgrades` array — one line per buy key,
+## carrying the level, the cap and the price of the next one.
+##
+## Also here rather than in each entity's get_hud_lines(): every field it prints
+## is this autoload's to know, and the Base and the RuneMage would otherwise
+## render the same thing twice and drift apart.
+func hud_lines(upgrades: Array[Upgrade], scope: StringName = &"global") -> Array[String]:
+	var lines: Array[String] = []
+	for i in mini(upgrades.size(), InputContext.UPGRADE_ACTIONS.size()):
+		var up: Upgrade = upgrades[i]
+		if up == null:
+			continue
+		var level := level_of(up.id, scope)
+		if level >= up.max_level:
+			lines.append("  %d: %s  MAX (%d)" % [i + 1, up.display_name, level])
+		else:
+			lines.append("  %d: %s  %d/%d  cout %d" % [
+				i + 1, up.display_name, level, up.max_level, up.cost_at(level)])
+	return lines
+
+
 ## What the next level of this upgrade costs right now.
 func cost_of(up: Upgrade, scope: StringName = &"global") -> int:
 	if up == null:

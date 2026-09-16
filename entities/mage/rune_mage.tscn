@@ -10,6 +10,9 @@
 [ext_resource type="PackedScene" path="res://entities/mage/rune_bolt.tscn" id="6_bolt"]
 [ext_resource type="PackedScene" path="res://entities/mage/rune_flux.tscn" id="7_flux"]
 [ext_resource type="Script" path="res://entities/shared/health.gd" id="8_health"]
+[ext_resource type="Script" path="res://core/upgrade.gd" id="9_upscript"]
+[ext_resource type="Resource" path="res://entities/mage/upgrades/mage_hp.tres" id="10_up_hp"]
+[ext_resource type="Resource" path="res://entities/mage/upgrades/spell_rate.tres" id="11_up_rate"]
 
 [sub_resource type="SphereMesh" id="Sphere_body"]
 radius = 0.45
@@ -61,6 +64,7 @@ script = ExtResource("1_mage")
 health = NodePath("Health")
 bolt_scene = ExtResource("6_bolt")
 flux_scene = ExtResource("7_flux")
+upgrades = Array[ExtResource("9_upscript")]([ExtResource("10_up_hp"), ExtResource("11_up_rate")])
 body_mesh = NodePath("Body")
 
 [node name="Body" type="MeshInstance3D" parent="." unique_id=1920602211]

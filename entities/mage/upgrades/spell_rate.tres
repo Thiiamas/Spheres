@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="Upgrade" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/upgrade.gd" id="1_upgrade"]
+
+[resource]
+resource_name = "spell_rate"
+script = ExtResource("1_upgrade")
+id = &"spell_rate"
+display_name = "Cadence des sorts"
+max_level = 5
+cost_base = 5
+cost_step = 15
+per_level = 0.08

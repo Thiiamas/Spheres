@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="Upgrade" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/upgrade.gd" id="1_upgrade"]
+
+[resource]
+resource_name = "mage_hp"
+script = ExtResource("1_upgrade")
+id = &"mage_hp"
+display_name = "PV du mage"
+max_level = 5
+cost_base = 5
+cost_step = 15
+per_level = 30.0

@@ -1,0 +1,12 @@
+[gd_scene format=3 uid="uid://cq7n4mrmnml8x"]
+
+[ext_resource type="PackedScene" uid="uid://briuk5d171ryd" path="res://entities/mage/rune_mage.tscn" id="1_base"]
+
+; Inherited from rune_mage.tscn — the fixed-roster body of the Micro loop
+; (9.3). Only three overrides; see the doc comments on RuneMage.enable_bolt and
+; RuneMage.returns_to_front for why each one is a flag rather than code.
+; NB: Godot deletes ';' comments whenever it rewrites a .tscn from the editor.
+[node name="RuneMage" instance=ExtResource("1_base")]
+collision_layer = 5
+returns_to_front = false
+enable_cage = false

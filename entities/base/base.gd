@@ -110,6 +110,11 @@ func _ready() -> void:
 	_hull.collision_mask = 0 # detects nothing itself, only detected by others
 	health.died.connect(_on_health_died)
 
+	# Before the baselines and the first apply: everything downstream — the buy
+	# keys, the HUD, _bonus — reads this array, so filtering it once here is what
+	# keeps the offer and the effect in step.
+	upgrades = _applicable_upgrades()
+
 	# Captured after Health's own _ready (children ready first, so max_hp is
 	# still the authored value here) and before the first apply below.
 	_base_attack_cooldown = attack_cooldown
@@ -225,7 +230,18 @@ func _try_fire(ctx: InputContext) -> void:
 ## state to hand over.
 ##
 ## Must stay idempotent: recompute from _base_*, never mutate the live value.
+##
+## ALLY-only, and that guard is load-bearing (9.3 playtest): Progression holds
+## the *player's* purchases (see autoloads/progression.gd) while base.tscn is
+## shared by both sides, upgrades array included — so without this, an enemy Base
+## reads the player's levels as its own. Buying a wave slot visibly added one to
+## the ENEMY's waves too (4 cubes per wave instead of 2), and base_hp was quietly
+## making the enemy Base tankier. The guard lives here rather than in the scenes
+## because "only the player benefits from the player's progression" is a rule
+## about progression, not a per-level detail somebody has to remember to author.
 func apply_progression() -> void:
+	if faction != Faction.Kind.ALLY:
+		return
 	# Rate is a fraction off the cooldown; floored so a fully-upgraded Base
 	# can't reach a zero or negative cooldown.
 	attack_cooldown = maxf(0.05, _base_attack_cooldown * (1.0 - _bonus(&"mortar_rate")))
@@ -236,13 +252,50 @@ func apply_progression() -> void:
 	health.set_max_hp(_base_max_hp + _bonus(&"base_hp"), true)
 
 
-## Accumulated bonus for an upgrade id, or 0 when this Base doesn't offer it —
-## so the enemy Base (empty `upgrades`) keeps its authored stats untouched.
-func _bonus(id: StringName) -> float:
+## The subset of `upgrades` this Base can actually do something with.
+##
+## Rewriting the array itself, rather than filtering at each read site, is what
+## guarantees the HUD and the buy keys agree: both walk this same array, and
+## Upgrade i is bought with "upgrade_(i+1)". Filter only the display and the
+## fourth key would still buy an upgrade no longer listed.
+##
+## Per-instance: PackedScene instantiation gives every Base its own array, so
+## this never leaks to the other side's copy of base.tscn.
+func _applicable_upgrades() -> Array[Upgrade]:
+	var kept: Array[Upgrade] = []
 	for up in upgrades:
-		if up != null and up.id == id:
-			return Progression.bonus(up)
-	return 0.0
+		if up != null and _is_applicable(up):
+			kept.append(up)
+	return kept
+
+
+## Would a level of `up` change anything on THIS Base? Same principle as
+## apply_progression — the entity decides what a level is worth, including when
+## the honest answer is "nothing".
+func _is_applicable(up: Upgrade) -> bool:
+	match up.id:
+		&"wave_slot":
+			# _on_wave_timer_timeout bails outright without a unit_scene, so
+			# extra wave size is unspendable. That's the case for the Micro
+			# scenes' PlayerBase, which deliberately fields no allied wave — the
+			# upgrade was a 20-resource sink that did nothing (its only visible
+			# effect used to be the enemy-side leak fixed above). level2_front's
+			# PlayerBase does have a unit_scene, so it keeps the upgrade.
+			return unit_scene != null
+		_:
+			return true
+
+
+## Accumulated bonus for an upgrade id, or 0 when this Base doesn't offer it.
+## Kept as a one-line alias purely so apply_progression above reads as stats
+## rather than as lookups.
+##
+## Note this is NOT what keeps the enemy Base out: both sides instantiate the
+## same base.tscn, so both carry the same `upgrades` array and every id resolves
+## for both. The faction guard in apply_progression is the only thing separating
+## them.
+func _bonus(id: StringName) -> float:
+	return Progression.bonus_of(upgrades, id)
 
 
 ## Debug HUD block (duck-typed, see ui/hud.gd) shown while this Base is possessed.
@@ -251,14 +304,5 @@ func get_hud_lines() -> Array[String]:
 		"Left-click/A: fire",
 		"Resources: %d" % Economy.resources,
 	]
-	for i in mini(upgrades.size(), InputContext.UPGRADE_ACTIONS.size()):
-		var up: Upgrade = upgrades[i]
-		if up == null:
-			continue
-		var level := Progression.level_of(up.id)
-		if level >= up.max_level:
-			lines.append("  %d: %s  MAX (%d)" % [i + 1, up.display_name, level])
-		else:
-			lines.append("  %d: %s  %d/%d  cout %d" % [
-				i + 1, up.display_name, level, up.max_level, up.cost_at(level)])
+	lines.append_array(Progression.hud_lines(upgrades))
 	return lines

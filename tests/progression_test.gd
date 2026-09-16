@@ -12,7 +12,7 @@ extends Node3D
 ##
 ## Exit code 0 = PASS, 1 = FAIL.
 
-enum State { SETTLE, REFUSE_BROKE, BUY_ONE, CHECK_APPLIED, CHECK_FRESH, CHECK_MAX, DONE }
+enum State { SETTLE, REFUSE_BROKE, BUY_ONE, CHECK_APPLIED, CHECK_FRESH, CHECK_ENEMY_UNTOUCHED, CHECK_UNAPPLICABLE_HIDDEN, CHECK_MAX, DONE }
 
 const SETTLE_FRAMES := 5 # let possession's deferred initial activation land
 
@@ -23,6 +23,12 @@ var _damage_up: Upgrade = null
 var _damage_index := -1
 ## Authored mortar damage, captured before any purchase.
 var _baseline_damage := 0.0
+var _enemy_base: Base = null
+## The enemy Base's authored stats, captured before any purchase.
+var _enemy_wave_size := 0
+var _enemy_max_hp := 0.0
+## The player Base's authored max_hp, captured before any purchase.
+var _base_player_max_hp := 0.0
 
 
 func _process(_delta: float) -> void:
@@ -50,8 +56,12 @@ func _process(_delta: float) -> void:
 			if _damage_up == null:
 				_fail("player Base offers no mortar_damage upgrade")
 				return
-			# Captured after reset(), so this really is the authored value.
+			# Captured after reset(), so these really are the authored values.
 			_baseline_damage = _base.mortar_damage
+			_enemy_base = get_node("MicroBaseDefense/EnemyBase")
+			_enemy_wave_size = _enemy_base.wave_size
+			_enemy_max_hp = _enemy_base.health.max_hp
+			_base_player_max_hp = _base.health.max_hp
 			_state = State.REFUSE_BROKE
 
 		State.REFUSE_BROKE:
@@ -101,15 +111,18 @@ func _process(_delta: float) -> void:
 
 		State.CHECK_FRESH:
 			# The crux: an entity built AFTER the purchase must come up already
-			# upgraded, with nothing copied across. Spawned ENEMY-faction so its
-			# BaseControllable stays out of the possession pool (see
-			# base_controllable.gd) and this test's own possession is untouched.
+			# upgraded, with nothing copied across. Must be ALLY-faction — only
+			# the player's own side reads progression at all (9.3 playtest fix) —
+			# so its Controllable is unregistered by hand instead, to keep this
+			# test's own possession and the Tab cycle untouched.
 			var base_scene: PackedScene = load("res://entities/base/base.tscn")
 			var fresh: Base = base_scene.instantiate()
-			fresh.faction = Faction.Kind.ENEMY
+			fresh.faction = Faction.Kind.ALLY
 			get_tree().current_scene.add_child(fresh)
 			var expected := _baseline_damage + _damage_up.per_level
 			var fresh_damage := fresh.mortar_damage
+			if fresh.controllable != null:
+				Consciousness.unregister(fresh.controllable)
 			fresh.queue_free()
 			if not is_equal_approx(fresh_damage, expected):
 				_fail("a Base created after the purchase has mortar_damage %.1f, expected %.1f — progression didn't survive entity creation"
@@ -117,6 +130,63 @@ func _process(_delta: float) -> void:
 				return
 			print("[ProgressionTest] entity created after purchase inherits it: PASS (%.1f)"
 				% fresh_damage)
+			_state = State.CHECK_ENEMY_UNTOUCHED
+
+		State.CHECK_ENEMY_UNTOUCHED:
+			# base.tscn is shared by both sides and carries the upgrades array,
+			# so the enemy Base used to read the player's purchases as its own:
+			# a bought wave slot doubled the ENEMY's wave (2 -> 4 cubes) and
+			# base_hp made it tankier. Buy both and pin that it no longer does.
+			# wave_slot is loaded straight from disk: the Micro scene's
+			# PlayerBase no longer *offers* it (see Base._is_applicable), and the
+			# invariant under test is the faction guard, not the offer.
+			var slot: Upgrade = load("res://entities/base/upgrades/wave_slot.tres")
+			var hp_up := _find_upgrade(&"base_hp")
+			if hp_up == null:
+				_fail("player Base offers no base_hp upgrade")
+				return
+			for up in [slot, hp_up]:
+				Economy.add(Progression.cost_of(up))
+				if not Progression.try_buy(up):
+					_fail("could not buy %s" % up.id)
+					return
+			if _enemy_base.wave_size != _enemy_wave_size:
+				_fail("buying wave_slot changed the ENEMY Base's wave_size %d -> %d"
+					% [_enemy_wave_size, _enemy_base.wave_size])
+				return
+			if not is_equal_approx(_enemy_base.health.max_hp, _enemy_max_hp):
+				_fail("buying base_hp changed the ENEMY Base's max_hp %.0f -> %.0f"
+					% [_enemy_max_hp, _enemy_base.health.max_hp])
+				return
+			# ...and the guard is about faction, not a blanket opt-out: the
+			# player's own Base must still have taken the upgrade it does offer.
+			if is_equal_approx(_base.health.max_hp, _base_player_max_hp):
+				_fail("the player's own Base didn't apply base_hp (max_hp still %.0f)"
+					% _base.health.max_hp)
+				return
+			print("[ProgressionTest] enemy Base ignores the player's purchases: PASS (enemy wave %d, hp %.0f unchanged)"
+				% [_enemy_base.wave_size, _enemy_base.health.max_hp])
+			_state = State.CHECK_UNAPPLICABLE_HIDDEN
+
+		State.CHECK_UNAPPLICABLE_HIDDEN:
+			# An upgrade the entity can't spend must not be offered at all —
+			# otherwise its buy key charges the player for nothing. This Base has
+			# no unit_scene (no allied wave in the Micro POC), so wave_slot is
+			# dropped, and the HUD block must match the array it's built from.
+			if _find_upgrade(&"wave_slot") != null:
+				_fail("PlayerBase has no unit_scene but still offers wave_slot")
+				return
+			if _base.wave_size != 0:
+				_fail("wave_slot was bought above and still moved wave_size to %d on a Base that can't spawn"
+					% _base.wave_size)
+				return
+			var listed := Progression.hud_lines(_base.upgrades).size()
+			if listed != _base.upgrades.size():
+				_fail("HUD lists %d upgrades for an array of %d — offer and display disagree"
+					% [listed, _base.upgrades.size()])
+				return
+			print("[ProgressionTest] unapplicable upgrade not offered: PASS (%d offered, wave_size still 0)"
+				% _base.upgrades.size())
 			_state = State.CHECK_MAX
 
 		State.CHECK_MAX:
@@ -139,6 +209,14 @@ func _process(_delta: float) -> void:
 				% _damage_up.max_level)
 			get_tree().quit(0)
 			_state = State.DONE
+
+
+## The player Base's upgrade with this id, or null.
+func _find_upgrade(id: StringName) -> Upgrade:
+	for up in _base.upgrades:
+		if up != null and up.id == id:
+			return up
+	return null
 
 
 ## Both bases spawn on load; their waves would kill each other's units and pay
