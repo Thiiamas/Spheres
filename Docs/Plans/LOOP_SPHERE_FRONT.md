@@ -15,12 +15,16 @@
 playtestés (défense de Base, progression, possession du roster de mages,
 relief/obstacles), mergée dans `main`. Détail : `phase9_micro_poc.md`.
 
-**Phase 10 (POC Méso) est planifiée en détail** dans `phase10_meso_poc.md`
-— pas encore implémentée, découpée en deux jalons : **10.1** front à deux
-camps sans Tour (la Base du joueur reçoit enfin sa propre vague alliée,
-victoire/défaite émergent des PV de Base posés en 9.1) ; **10.2** ajout de
-la Tour comme objectif de siège (referme la définition officielle du
-palier : détruire la tour = victoire).
+**Phase 10 (POC Méso) est terminée** — deux jalons implémentés et
+playtestés (front à deux camps sans Tour, puis Tour comme objectif de
+siège, avec une riposte anti-siège et une AOE anti-joueur ajoutées et
+réglées en playtest), mergée dans `main`. Détail : `phase10_meso_poc.md`.
+
+**Phase 11 (POC Macro) est planifiée** dans `phase11_macro_poc.md` — pas
+encore implémentée, un seul jalon envisagé (11.1, capture de base) : percer
+la Tour adverse (10.2) ouvre la voie à sa Base, la détruire ne l'élimine
+plus mais la fait changer de camp — la nouveauté posée par ce document pour
+le palier Macro.
 
 ---
 
@@ -154,23 +158,25 @@ confirmés, au-delà de la couverture headless.
 > siège par-dessus, une fois le combat lui-même validé comme agréable —
 > même logique d'isolement de variable que 9.1→9.4 (H3).
 
-### Phase 11 — POC Macro : capture de base
+### Phase 11 — POC Macro : capture de base *(planifiée, cf. `phase11_macro_poc.md` — pas encore implémentée)*
 | | |
 |---|---|
 | **Nouveauté** | La base ennemie devient **capturable** — une fois prise, elle **change de camp** (devient alliée) au lieu d'être simplement détruite |
 | **Objectif du POC** | Valider que **Micro + Méso fonctionnent ensemble** en conditions réelles, avec une **vraie condition de victoire**, et une **ouverture** vers l'itération suivante de la boucle Macro (le "front suivant") |
 | **Comble** | Le trou identifié plus haut — *"Macro n'a pas de fin de cycle"* — puisque cette phase définit enfin ce que "gagner" et "continuer" veulent dire concrètement |
 
-> **Point à clarifier plus tard (pas bloquant maintenant)** : "capturer" une
-> base — c'est quoi mécaniquement ? Détruire sa Tour puis un temps
-> d'occupation par des unités alliées (façon `EscortGate`, déjà existant) ?
-> Ou une nouvelle mécanique dédiée ? Pas besoin d'y répondre avant la phase
-> 9, mais ça vaut d'être noté ici pour ne pas l'improviser au dernier moment
-> en phase 11.
+> **Point tranché** (D1, `phase11_macro_poc.md`) : pas de nouvelle mécanique
+> d'occupation — la capture réutilise le même déclencheur que la
+> destruction (PV de Base à 0, déjà posé en 9.1), seule la **suite** change
+> (retournement de camp au lieu de rester inerte pour toujours). Activé par
+> instance (`capturable`), pas par défaut, pour ne rien casser des scènes
+> précédentes qui reposent sur « détruite = reste inerte » (H5, 9.1).
+> « Le front suivant » reste hors scope de ce POC (D4) — la capture met fin
+> à la partie, elle ne rouvre pas un nouveau cycle.
 
 ---
 
 ## Prochaine étape
 
-**Implémenter la phase 10** (`phase10_meso_poc.md`), en commençant par 10.1
-(front à deux camps sans Tour) avant 10.2 (Tour/siège).
+**Implémenter la phase 11** (`phase11_macro_poc.md`, jalon unique 11.1 —
+capture de base), sur la branche `phase11-macro-poc`.
