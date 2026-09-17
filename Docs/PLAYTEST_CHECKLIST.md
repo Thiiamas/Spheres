@@ -138,27 +138,27 @@ vit, puis la même vague atteint et endommage la Base une fois la Tour
 tombée ; victoire/défaite testées dans les trois cas, indépendamment). Reste
 le *feel* du siège.
 
-- [ ] **La Tour se sent comme un vrai palier à franchir**, pas un simple
+- [x] **La Tour se sent comme un vrai palier à franchir**, pas un simple
 	  délai — le siège (pousser sa vague, l'escorter) doit se sentir
-	  différent du pur combat de 10.1.
+	  différent du pur combat de 10.1. **Validé**.
 - [x] **La Tour riposte maintenant contre la vague qui l'assiège** (nouveau
 	  — corrige le retour « elle a l'air inactive »). **Validé** avec le
-      réglage final : `retaliation_damage` 35 → **12**, rythme (1.5s)
-      inchangé.
+	  réglage final : `retaliation_damage` 35 → **12**, rythme (1.5s)
+	  inchangé.
 - [x] **La riposte de la Tour contre un joueur non-escorté** (`EscortGate`,
 	  phase 7, comportement inchangé) — **validé** avec le nouveau réglage
-      (12 dégâts au lieu de 35, « c'est bon »).
+	  (12 dégâts au lieu de 35, « c'est bon »).
 - [x] **AOE anti-joueur** (nouveau — indépendante de la riposte mono-cible
 	  ci-dessus, ignore l'escorte). Premier retour : dégâts trop forts et
 	  portée trop courte → `aoe_damage` réduit 25 → **8**, `aoe_range`
 	  ajouté et doublé (6.0 → **12.0**, zone dédiée séparée de
 	  `detection_radius`). **Validé** avec ce réglage (« c'est bon »).
-- [ ] **Victoire/défaite** s'affichent correctement dans les trois cas (Tour
-	  adverse tombée, sa propre Tour tombée, sa propre Base tombée).
-- [ ] **Positionnement des Tours** dans le couloir (`z = ±10`, entre chaque
+- [x] **Victoire/défaite** s'affichent correctement dans les trois cas (Tour
+	  adverse tombée, sa propre Tour tombée, sa propre Base tombée). **Validé**.
+- [x] **Positionnement des Tours** dans le couloir (`z = ±10`, entre chaque
 	  Base et le point de rencontre) — ni trop près du spawn (pas de temps
 	  pour apprécier le combat de vague avant le siège) ni trop près de la
-	  Base adverse (le siège n'a pas le temps de se sentir long).
+	  Base adverse (le siège n'a pas le temps de se sentir long). **Validé**.
 
 ---
 
@@ -175,19 +175,19 @@ qui les assiègent, des deux côtés — pas seulement celles de la Phase 10.
 	  adverse, assiègent la Tour, et ne longent pas ses murs au lieu de la
 	  frapper. (La Tour et les Bases sont explicitement exclues de la déflexion,
 	  mais c'est le point le plus à risque.) **Validé**.
-- [ ] **`level2_front.tscn`, riposte anti-siège** — les deux Tours ripostent
+- [x] **`level2_front.tscn`, riposte anti-siège** — les deux Tours ripostent
 	  maintenant contre les `FrontUnit` qui les assiègent, pas seulement contre
 	  le joueur non-escorté. Le siège de la phase 7 devient plus dur des deux
 	  côtés (`PlayerTower` y est déjà endommageable par la vague ennemie depuis
 	  la 9.1 — voir « Point ouvert » plus bas) : le rythme de vague de ce
 	  niveau (`wave_size = 20` côté ennemi) tient-il toujours bon avec cette
-	  riposte en plus ?
-- [ ] **`level2_front.tscn`, AOE anti-joueur** — les deux Tours gagnent aussi
+	  riposte en plus ? **Validé**.
+- [x] **`level2_front.tscn`, AOE anti-joueur** — les deux Tours gagnent aussi
 	  la nouvelle AOE (obus rouge + dôme d'impact) contre le RuneMage possédé,
 	  escorté ou non. Le combat au contact de la phase 7/8.2 (courir sur le
 	  front en mage) devient plus dangereux près d'une Tour ennemie — est-ce
 	  que ça se sent juste, ou trop punitif pour ce niveau qui n'a pas été
-	  pensé pour ça au départ ?
+	  pensé pour ça au départ ? **Validé**.
 - [x] **`level2_front`, possession 8.2** — clic sur une unité alliée → elle
 	  devient un mage ; les **trois** sorts répondent (A, Z, E — c'est ici que Z
 	  doit encore marcher) ; quitter le mage le rend au front en `FrontUnit`.

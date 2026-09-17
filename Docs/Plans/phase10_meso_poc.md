@@ -460,14 +460,17 @@ Vérifié **headless** (`tests/meso_siege_test.tscn`) :
 
 Confirmé **en playtest manuel** :
 
-- [ ] La Tour se sent comme un vrai palier à franchir (pas un simple délai)
+- [x] La Tour se sent comme un vrai palier à franchir (pas un simple délai)
       — le siège (pousser sa vague, l'escorter) doit se sentir différent du
       pur combat de 10.1
-- [ ] La riposte de la Tour contre un joueur non-escorté (`EscortGate`,
+- [x] La riposte de la Tour contre un joueur non-escorté (`EscortGate`,
       phase 7) reste lisible et pas trop punitive dans ce contexte à deux
-      vagues actives
-- [ ] Victoire/défaite s'affichent correctement dans les trois cas (Tour
+      vagues actives — réglée après playtest (`retaliation_damage` 35 → 12,
+      `aoe_damage` 25 → 8, `aoe_range` 6.0 → 12.0)
+- [x] Victoire/défaite s'affichent correctement dans les trois cas (Tour
       adverse tombée, sa propre Tour tombée, sa propre Base tombée)
+
+**10.2 est complète et validée.**
 
 ### À ne PAS faire dans ce jalon
 
