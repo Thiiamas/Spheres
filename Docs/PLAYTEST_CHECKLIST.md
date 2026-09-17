@@ -142,25 +142,17 @@ le *feel* du siège.
 	  délai — le siège (pousser sa vague, l'escorter) doit se sentir
 	  différent du pur combat de 10.1.
 - [x] **La Tour riposte maintenant contre la vague qui l'assiège** (nouveau
-	  — corrige le retour « elle a l'air inactive »). **Validé** : « c'est
-      mieux et le rythme est bon » — rythme (1.5s) gardé, mais les dégâts se
-      sont ensuite révélés trop forts une fois joués plus longtemps (voir
-      ligne AOE ci-dessous) : `retaliation_damage` réduit 35 → **12**.
-- [ ] **La riposte de la Tour contre un joueur non-escorté** (`EscortGate`,
-	  phase 7, comportement inchangé) reste lisible et pas trop punitive
-      dans ce contexte à deux vagues actives, avec le nouveau réglage (12
-      dégâts au lieu de 35).
-- [ ] **AOE anti-joueur** (nouveau — indépendante de la riposte mono-cible
-      ci-dessus, ignore l'escorte). **Premier retour** : dégâts trop forts et
-      portée trop courte → `aoe_damage` réduit 25 → **8**, `aoe_range`
-      ajouté et doublé (6.0 → **12.0**, zone dédiée séparée de
-      `detection_radius`). **À revalider avec ces nouveaux réglages** :
-      l'obus rouge (`tower_shell`) et le dôme d'impact (`tower_aoe_blast`)
-      sont-ils visibles et lisibles ? Le temps de vol (1.1s) laisse-t-il une
-      vraie fenêtre pour esquiver ? La portée doublée se sent-elle comme une
-      vraie menace à distance, ou trop loin pour être équitable ? Le cumul
-      avec la riposte mono-cible (8 + jusqu'à 12 dégâts possibles la même
-      poussée, contre 100 PV max de RuneMage) est-il maintenant équilibré ?
+	  — corrige le retour « elle a l'air inactive »). **Validé** avec le
+      réglage final : `retaliation_damage` 35 → **12**, rythme (1.5s)
+      inchangé.
+- [x] **La riposte de la Tour contre un joueur non-escorté** (`EscortGate`,
+	  phase 7, comportement inchangé) — **validé** avec le nouveau réglage
+      (12 dégâts au lieu de 35, « c'est bon »).
+- [x] **AOE anti-joueur** (nouveau — indépendante de la riposte mono-cible
+	  ci-dessus, ignore l'escorte). Premier retour : dégâts trop forts et
+	  portée trop courte → `aoe_damage` réduit 25 → **8**, `aoe_range`
+	  ajouté et doublé (6.0 → **12.0**, zone dédiée séparée de
+	  `detection_radius`). **Validé** avec ce réglage (« c'est bon »).
 - [ ] **Victoire/défaite** s'affichent correctement dans les trois cas (Tour
 	  adverse tombée, sa propre Tour tombée, sa propre Base tombée).
 - [ ] **Positionnement des Tours** dans le couloir (`z = ±10`, entre chaque
