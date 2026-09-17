@@ -21,10 +21,13 @@ siège, avec une riposte anti-siège et une AOE anti-joueur ajoutées et
 réglées en playtest), mergée dans `main`. Détail : `phase10_meso_poc.md`.
 
 **Phase 11 (POC Macro) est planifiée** dans `phase11_macro_poc.md` — pas
-encore implémentée, un seul jalon envisagé (11.1, capture de base) : percer
-la Tour adverse (10.2) ouvre la voie à sa Base, la détruire ne l'élimine
-plus mais la fait changer de camp — la nouveauté posée par ce document pour
-le palier Macro.
+encore implémentée, un seul jalon envisagé (11.1, chaîne de capture) :
+**deux** bases ennemies l'une à la suite de l'autre — percer la Tour qui
+garde la première ouvre la voie à sa capture, qui la change de camp
+**et** en fait le nouveau front actif d'où partent les unités du joueur
+vers la seconde. Le jeu final visera des scènes bien plus grandes avec
+plusieurs bases à enchaîner ; ce POC valide le mécanisme de relais à deux
+maillons, pas la mise à l'échelle.
 
 ---
 
@@ -171,8 +174,12 @@ confirmés, au-delà de la couverture headless.
 > (retournement de camp au lieu de rester inerte pour toujours). Activé par
 > instance (`capturable`), pas par défaut, pour ne rien casser des scènes
 > précédentes qui reposent sur « détruite = reste inerte » (H5, 9.1).
-> « Le front suivant » reste hors scope de ce POC (D4) — la capture met fin
-> à la partie, elle ne rouvre pas un nouveau cycle.
+> **Révisé** après un premier jet trop étroit (D3/D4) : la capture ne clôt
+> **pas** la partie à elle seule — avec deux bases ennemies en chaîne, la
+> première capturée devient le nouveau front actif et recâble son
+> offensive vers la seconde ; seule la capture de la **dernière** de la
+> chaîne termine la partie. « Le front suivant » au sens d'une campagne
+> continue (au-delà de ces deux maillons) reste hors scope de ce POC.
 
 ---
 
