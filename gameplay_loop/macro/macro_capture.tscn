@@ -1,6 +1,6 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=21 format=3]
 
-[ext_resource type="Script" path="res://gameplay_loop/meso/meso_front.gd" id="1_meso"]
+[ext_resource type="Script" path="res://gameplay_loop/macro/macro_capture.gd" id="1_macro"]
 [ext_resource type="Script" path="res://core/camera_rig.gd" id="2_cam"]
 [ext_resource type="Script" path="res://ui/hud.gd" id="3_hud"]
 [ext_resource type="PackedScene" path="res://entities/base/base.tscn" id="4_base"]
@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" path="res://entities/front_unit/enemy_unit.tscn" id="6_enemy"]
 [ext_resource type="PackedScene" path="res://entities/base/mortar_shell.tscn" id="7_mortar"]
 [ext_resource type="PackedScene" path="res://entities/sphere/aoe_blast.tscn" id="8_blast"]
+[ext_resource type="PackedScene" path="res://entities/tower/tower.tscn" id="9_tower"]
 
 [sub_resource type="ProceduralSkyMaterial" id="Sky_mat"]
 sky_top_color = Color(0.33, 0.45, 0.62, 1)
@@ -32,10 +33,10 @@ roughness = 0.85
 
 [sub_resource type="BoxMesh" id="Box_floor"]
 material = SubResource("Mat_floor")
-size = Vector3(16, 1, 50)
+size = Vector3(16, 1, 80)
 
 [sub_resource type="BoxShape3D" id="Shape_floor"]
-size = Vector3(16, 1, 50)
+size = Vector3(16, 1, 80)
 
 [sub_resource type="StandardMaterial3D" id="Mat_wall"]
 albedo_color = Color(0.4, 0.43, 0.48, 1)
@@ -50,13 +51,13 @@ size = Vector3(17, 2, 0.5)
 
 [sub_resource type="BoxMesh" id="Box_wall_ew"]
 material = SubResource("Mat_wall")
-size = Vector3(0.5, 2, 51)
+size = Vector3(0.5, 2, 81)
 
 [sub_resource type="BoxShape3D" id="Shape_wall_ew"]
-size = Vector3(0.5, 2, 51)
+size = Vector3(0.5, 2, 81)
 
-[node name="MesoFront" type="Node3D"]
-script = ExtResource("1_meso")
+[node name="MacroCapture" type="Node3D"]
+script = ExtResource("1_macro")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Env")
@@ -73,7 +74,7 @@ shadow_enabled = true
 shape = SubResource("WorldBoundaryShape3D_ground")
 
 [node name="Floor" type="StaticBody3D" parent="Arena"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 10)
 
 [node name="Mesh" type="MeshInstance3D" parent="Arena/Floor"]
 mesh = SubResource("Box_floor")
@@ -82,7 +83,7 @@ mesh = SubResource("Box_floor")
 shape = SubResource("Shape_floor")
 
 [node name="WallNorth" type="StaticBody3D" parent="Arena"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 25.25)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 50.25)
 
 [node name="Mesh" type="MeshInstance3D" parent="Arena/WallNorth"]
 mesh = SubResource("Box_wall_ns")
@@ -91,7 +92,7 @@ mesh = SubResource("Box_wall_ns")
 shape = SubResource("Shape_wall_ns")
 
 [node name="WallSouth" type="StaticBody3D" parent="Arena"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -25.25)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -30.25)
 
 [node name="Mesh" type="MeshInstance3D" parent="Arena/WallSouth"]
 mesh = SubResource("Box_wall_ns")
@@ -100,7 +101,7 @@ mesh = SubResource("Box_wall_ns")
 shape = SubResource("Shape_wall_ns")
 
 [node name="WallEast" type="StaticBody3D" parent="Arena"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.25, 1, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.25, 1, 10)
 
 [node name="Mesh" type="MeshInstance3D" parent="Arena/WallEast"]
 mesh = SubResource("Box_wall_ew")
@@ -109,7 +110,7 @@ mesh = SubResource("Box_wall_ew")
 shape = SubResource("Shape_wall_ew")
 
 [node name="WallWest" type="StaticBody3D" parent="Arena"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.25, 1, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.25, 1, 10)
 
 [node name="Mesh" type="MeshInstance3D" parent="Arena/WallWest"]
 mesh = SubResource("Box_wall_ew")
@@ -119,7 +120,10 @@ shape = SubResource("Shape_wall_ew")
 
 [node name="PlayerBase" parent="." instance=ExtResource("4_base")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -20)
+capturable = true
+captured_tint = Color(0.35, 0.35, 0.38, 1)
 ally_unit_scene = ExtResource("5_ally")
+enemy_unit_scene = ExtResource("6_enemy")
 wave_interval = 6.0
 wave_size = 2
 wave_unit_spacing = 0.6
@@ -128,15 +132,42 @@ tint = Color(0.27, 0.41, 1, 1)
 mortar_scene = ExtResource("7_mortar")
 mortar_blast_scene = ExtResource("8_blast")
 
-[node name="EnemyBase" parent="." instance=ExtResource("4_base")]
+[node name="EnemyBaseA" parent="." instance=ExtResource("4_base")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 20)
 faction = 1
+capturable = true
+captured_tint = Color(0.27, 0.41, 1, 1)
+ally_unit_scene = ExtResource("5_ally")
 enemy_unit_scene = ExtResource("6_enemy")
 wave_interval = 6.0
 wave_size = 2
 wave_unit_spacing = 0.6
 wave_spread = 3.0
 tint = Color(0.35, 0.35, 0.38, 1)
+
+[node name="EnemyBaseB" parent="." instance=ExtResource("4_base")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 40)
+faction = 1
+capturable = true
+captured_tint = Color(0.27, 0.41, 1, 1)
+ally_unit_scene = ExtResource("5_ally")
+enemy_unit_scene = ExtResource("6_enemy")
+wave_interval = 6.0
+wave_size = 2
+wave_unit_spacing = 0.6
+wave_spread = 3.0
+tint = Color(0.35, 0.35, 0.38, 1)
+
+[node name="PlayerTower" parent="." instance=ExtResource("9_tower")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -10)
+faction = 0
+tint = Color(0.27, 0.41, 1, 1)
+
+[node name="TowerA" parent="." instance=ExtResource("9_tower")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 10)
+
+[node name="TowerB" parent="." instance=ExtResource("9_tower")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 30)
 
 [node name="CameraRig" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.35, -18.3)

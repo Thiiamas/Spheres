@@ -77,6 +77,17 @@ func set_max_hp(value: float, grant_delta: bool = false) -> void:
 	_update_hp_bar()
 
 
+## Reverses `died` — for an entity that reaches 0 HP but isn't removed, only
+## changes state (Base capture, D1/D4, Docs/Plans/phase11_macro_poc.md).
+## take_damage/set_hp/set_max_hp all no-op once `_dead`, so without this a
+## "revived" pool would silently ignore every hit for the rest of the run.
+func revive(value: float = max_hp) -> void:
+	_dead = false
+	hp = clampf(value, 0.0, max_hp)
+	hp_changed.emit(hp, max_hp)
+	_update_hp_bar()
+
+
 func _update_hp_bar() -> void:
 	if hp_bar and hp_bar.has_method("update_bar"):
 		hp_bar.update_bar(hp, max_hp)

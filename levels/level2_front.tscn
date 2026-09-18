@@ -120,7 +120,7 @@ shape = SubResource("Shape_wall_ew")
 
 [node name="PlayerBase" parent="." unique_id=1660653947 instance=ExtResource("5_base")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -20)
-unit_scene = ExtResource("6_ally")
+ally_unit_scene = ExtResource("6_ally")
 wave_size = 0
 wave_spread = 3.425
 tint = Color(0.27, 0.41, 1, 1)
@@ -130,7 +130,7 @@ mortar_blast_scene = ExtResource("10_blast")
 [node name="EnemyBase" parent="." unique_id=356358028 instance=ExtResource("5_base")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 20)
 faction = 1
-unit_scene = ExtResource("7_enemy")
+enemy_unit_scene = ExtResource("7_enemy")
 wave_interval = 9.56
 wave_size = 20
 wave_unit_spacing = 0.35

@@ -127,7 +127,7 @@ mortar_blast_scene = ExtResource("7_blast")
 [node name="EnemyBase" parent="." instance=ExtResource("4_base")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 20)
 faction = 1
-unit_scene = ExtResource("5_enemy")
+enemy_unit_scene = ExtResource("5_enemy")
 wave_interval = 6.0
 wave_size = 2
 wave_unit_spacing = 0.6

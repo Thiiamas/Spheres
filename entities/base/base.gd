@@ -16,8 +16,14 @@ class_name Base
 signal unit_reached_goal(unit: FrontUnit)
 ## Forwarded from the Health child's died (phase 9.1, Docs/Plans/
 ## phase9_micro_poc.md) — same pattern as Tower's own `died`. Emitted once,
-## when this Base's HP first reaches zero.
+## when this Base's HP first reaches zero. Never emitted for a `capturable`
+## Base (phase 11, Docs/Plans/phase11_macro_poc.md) — see `captured` instead.
 signal died
+## Emitted instead of `died` when a `capturable` Base reaches 0 HP and flips
+## side (D1/D4) — a captured Base isn't dead, so level scripts that want to
+## react to a takeover (relay the offensive, end the game) listen for this,
+## not `died`.
+signal captured(new_faction: Faction.Kind)
 
 ## The possession-contract sibling (BaseControllable) — set by it in its
 ## _ready, null on the enemy Base (never possessable, see
@@ -26,7 +32,19 @@ signal died
 var controllable: Controllable = null
 
 @export var faction: Faction.Kind = Faction.Kind.ALLY
-@export var unit_scene: PackedScene
+## When true (phase 11, D1/D2), reaching 0 HP flips this Base to the
+## opposing faction instead of ending its run — see `_capture()`. Off by
+## default: base.tscn is shared by every scene, and a defeated Base going
+## inert (H5) must stay the default everywhere except macro_capture.tscn.
+@export var capturable: bool = false
+## Tint applied after a capture (D1). A single color, not one per faction:
+## a captured Base only ever flips to the *one* other camp it isn't
+## currently on, so there's never a need to pick between two.
+@export var captured_tint: Color = Color(0.6, 0.6, 0.65)
+## Spawned once this Base is ALLY-faction (authored or via capture).
+@export var ally_unit_scene: PackedScene
+## Spawned once this Base is ENEMY-faction (authored or via capture).
+@export var enemy_unit_scene: PackedScene
 @export var advance_target: Node3D
 ## The opposing Tower — units siege it while it's alive instead of trading
 ## blows with whatever minion happens to be nearby (Docs/front/tower.md).
@@ -83,6 +101,12 @@ var controllable: Controllable = null
 ## works unchanged whichever of the two the "select" raycast happens to hit.
 @onready var _hull: StaticBody3D = $Hull
 
+## Recomputed from ally_unit_scene/enemy_unit_scene whenever faction is set
+## (initially in _ready, again in _capture) — never authored directly, so a
+## captured Base spawns the right side's units without a level script having
+## to reassign it.
+var unit_scene: PackedScene = null
+
 var _spawning: bool = true
 var _attack_timer: float = 0.0
 ## True once health reaches zero (phase 9.1) — Base stays in the tree (it
@@ -103,11 +127,10 @@ func _ready() -> void:
 	_wave_timer.wait_time = wave_interval
 	_wave_timer.timeout.connect(_on_wave_timer_timeout)
 	_wave_timer.start()
-	_goal_zone.collision_mask = Faction.opposing_physics_layer(faction)
 	_goal_zone.body_entered.connect(_on_goal_zone_body_entered)
-	_selection_area.collision_layer = Faction.physics_layer(faction)
-	_hull.collision_layer = Faction.physics_layer(faction)
 	_hull.collision_mask = 0 # detects nothing itself, only detected by others
+	unit_scene = ally_unit_scene if faction == Faction.Kind.ALLY else enemy_unit_scene
+	_apply_faction_visuals_and_layers()
 	health.died.connect(_on_health_died)
 
 	# Before the baselines and the first apply: everything downstream — the buy
@@ -124,6 +147,17 @@ func _ready() -> void:
 	Progression.changed.connect(apply_progression)
 	apply_progression()
 
+
+## Faction-dependent physical/visual setup: which layer this Base's
+## Hull/SelectionArea sit on, which layer its GoalZone watches, and its
+## structure tint. Split out of _ready (phase 11, D-sub-task-1) so `_capture()`
+## can rerun it after a faction flip — without this a captured Base would keep
+## its old camp's collision layers (mordable by nobody, or by the wrong side)
+## and old tint.
+func _apply_faction_visuals_and_layers() -> void:
+	_goal_zone.collision_mask = Faction.opposing_physics_layer(faction)
+	_selection_area.collision_layer = Faction.physics_layer(faction)
+	_hull.collision_layer = Faction.physics_layer(faction)
 	var mat := _structure.get_active_material(0)
 	if mat is StandardMaterial3D:
 		mat = mat.duplicate()
@@ -136,6 +170,13 @@ func _ready() -> void:
 func stop_spawning() -> void:
 	_spawning = false
 	_wave_timer.stop()
+
+
+## Reverse of stop_spawning() — lets a level wake a "backline" Base (phase 11)
+## that it put to sleep at load, and is what `_capture()` uses to resume play.
+func start_spawning() -> void:
+	_spawning = true
+	_wave_timer.start()
 
 
 ## Spawns a wave immediately, outside the WaveTimer's schedule — used by the
@@ -199,10 +240,45 @@ func take_damage(amount: float) -> void:
 ## _defeated. Harmless before this phase (only the enemy Base ever spawned,
 ## and the level script already stopped it explicitly on player defeat), but
 ## load-bearing once both sides can die.
+##
+## Branches to `_capture()` for a `capturable` Base (phase 11, D1/D4) instead
+## of the H5 inert path — stop_spawning() still runs first either way, since
+## `_capture()` decides for itself whether/when to restart it.
 func _on_health_died() -> void:
-	_defeated = true
 	stop_spawning()
+	if capturable:
+		_capture()
+		return
+	_defeated = true
 	died.emit()
+
+
+## Flips this Base to the opposing faction instead of ending its run (D1/D4).
+## `_defeated` is never set here — a captured Base is fully alive under its
+## new camp, not a corpse that happens to still respond to drive().
+##
+## Order matters: faction must change before unit_scene/layers/tint are
+## recomputed (they all read it), and `tint` must become `captured_tint`
+## before `_apply_faction_visuals_and_layers()` reads `tint` to recolor the
+## structure.
+func _capture() -> void:
+	faction = Faction.opposite(faction)
+	health.revive(health.max_hp)
+	unit_scene = ally_unit_scene if faction == Faction.Kind.ALLY else enemy_unit_scene
+	tint = captured_tint
+	_apply_faction_visuals_and_layers()
+	apply_progression()
+	start_spawning()
+	captured.emit(faction)
+
+
+## Reassigns where this Base's own units advance toward — used by a level
+## script to recable an already-in-play Base after a capture relays the
+## offensive further down the chain (D4, phase 11), rather than having the
+## level poke advance_target/advance_target_tower directly.
+func retarget(new_base: Node3D, new_tower: Node3D) -> void:
+	advance_target = new_base
+	advance_target_tower = new_tower
 
 
 ## Per-frame input while this Base is possessed (BaseControllable.handle_input).

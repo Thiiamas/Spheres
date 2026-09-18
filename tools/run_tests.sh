@@ -48,6 +48,7 @@ for name in "${scenes[@]}"; do
 	watchdog="$WATCHDOG_FRAMES"
 	case "$name" in
 		micro_terrain_test) watchdog=8000 ;;
+		macro_capture_test) watchdog=2400 ;;
 	esac
 	out="$("$GODOT" --headless --path . "res://tests/$name.tscn" \
 		--quit-after "$watchdog" 2>&1)"

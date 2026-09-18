@@ -20,14 +20,16 @@ playtestés (front à deux camps sans Tour, puis Tour comme objectif de
 siège, avec une riposte anti-siège et une AOE anti-joueur ajoutées et
 réglées en playtest), mergée dans `main`. Détail : `phase10_meso_poc.md`.
 
-**Phase 11 (POC Macro) est planifiée** dans `phase11_macro_poc.md` — pas
-encore implémentée, un seul jalon envisagé (11.1, chaîne de capture) :
-**deux** bases ennemies l'une à la suite de l'autre — percer la Tour qui
-garde la première ouvre la voie à sa capture, qui la change de camp
-**et** en fait le nouveau front actif d'où partent les unités du joueur
-vers la seconde. Le jeu final visera des scènes bien plus grandes avec
-plusieurs bases à enchaîner ; ce POC valide le mécanisme de relais à deux
-maillons, pas la mise à l'échelle.
+**Phase 11 (POC Macro), jalon 11.1 (chaîne de capture) est implémenté** —
+`gameplay_loop/macro/macro_capture.tscn`, couvert headless par
+`macro_capture_test` (12/12 tests au vert), pas encore playtesté
+manuellement (voir `Docs/PLAYTEST_CHECKLIST.md`). **Deux** bases ennemies
+l'une à la suite de l'autre — percer la Tour qui garde la première ouvre la
+voie à sa capture, qui la change de camp **et** en fait le nouveau front
+actif d'où partent les unités du joueur vers la seconde. Le jeu final visera
+des scènes bien plus grandes avec plusieurs bases à enchaîner ; ce POC valide
+le mécanisme de relais à deux maillons, pas la mise à l'échelle. Détail :
+`phase11_macro_poc.md`.
 
 ---
 
@@ -161,7 +163,7 @@ confirmés, au-delà de la couverture headless.
 > siège par-dessus, une fois le combat lui-même validé comme agréable —
 > même logique d'isolement de variable que 9.1→9.4 (H3).
 
-### Phase 11 — POC Macro : capture de base *(planifiée, cf. `phase11_macro_poc.md` — pas encore implémentée)*
+### Phase 11 — POC Macro : capture de base *(11.1 implémenté, headless vert — cf. `phase11_macro_poc.md` ; playtest manuel restant)*
 | | |
 |---|---|
 | **Nouveauté** | La base ennemie devient **capturable** — une fois prise, elle **change de camp** (devient alliée) au lieu d'être simplement détruite |
@@ -185,5 +187,7 @@ confirmés, au-delà de la couverture headless.
 
 ## Prochaine étape
 
-**Implémenter la phase 11** (`phase11_macro_poc.md`, jalon unique 11.1 —
-capture de base), sur la branche `phase11-macro-poc`.
+**Playtester la phase 11** (`phase11_macro_poc.md`, jalon 11.1 — capture de
+base) sur la branche `phase11-macro-poc` : implémentation faite, headless
+vert (`macro_capture_test`), reste à valider manuellement les points de
+`Docs/PLAYTEST_CHECKLIST.md` (§ « Palier Macro — jalon 11.1 »).

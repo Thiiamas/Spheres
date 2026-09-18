@@ -74,8 +74,8 @@ qui change avec cette révision, c'est **la suite** donnée à l'événement
 | D1 | Mécanique de capture | Inchangé : PV à 0 (réutilise `Health`/`died`), pas de zone d'occupation/minuteur séparé. | Voir version précédente — coût quasi nul, déjà quasi entièrement supporté par l'existant. |
 | D2 | Portée du changement | Inchangé : `@export var capturable: bool = false` sur `Base`, activé uniquement sur les instances de `macro_capture.tscn`. | `base.tscn` est partagé par toutes les scènes du jeu — H5 (Base détruite = reste inerte) doit rester le comportement par défaut ailleurs. |
 | D3 | Portée du POC | **Deux** bases ennemies en chaîne (`EnemyBaseA` → `EnemyBaseB`), une seule base joueur. Pas symétrique : l'ennemi n'a pas sa propre chaîne de bases à faire tomber en retour dans ce POC. | Valide le relais (capturer A transmet l'offensive vers B) sans construire la carte « beaucoup plus grande » du jeu final — ça allongerait la chaîne, ça ne changerait pas le mécanisme testé ici. |
-| D4 | Ce qui se passe après une capture | **Capturer `EnemyBaseA` ne termine PAS la partie.** Elle retourne de camp, redevient active, et son `advance_target`/`advance_target_tower` sont recâblés vers `EnemyBaseB`/`EnemyTowerB` — elle devient le nouveau front d'où partent les unités du joueur. `PlayerBase` est recâblée de la même façon (elle ciblait `EnemyBaseA`, devenue alliée — cibler la suite a plus de sens que cibler dans le vide). Victoire = **`EnemyBaseB` capturée** (la dernière de la chaîne), pas avant. | C'est tout le point de la révision : la capture doit *relayer* l'offensive, pas clore la boucle au premier succès. Remplace D4 de la version précédente (qui faisait de la première capture une fin de partie). |
-| D5 | Pression ennemie | `EnemyBaseA` **et** `EnemyBaseB` spawnent leur vague dès le départ, toutes deux vers `PlayerBase`/`PlayerTower` — **pas de dormance** de la seconde base en attendant que la première tombe. | Testé mécaniquement : rien n'empêche deux spawners de la même faction de viser la même cible (leurs unités se croisent sans se gêner, seule la déflexion d'obstacles s'applique). Une dormance aurait demandé un état neuf (« base pas encore active ») pour un gain de *feel* pas demandé explicitement — « l'une à la suite de l'autre » est déjà vrai **spatialement** (la chaîne), pas besoin de le reproduire aussi dans le *timing*. Simplicité d'abord ; à revoir si le playtest montre que la double pression day-one casse le rythme. |
+| D4 | Ce qui se passe après une capture | **Capturer `EnemyBaseA` ne termine PAS la partie.** Elle retourne de camp, redevient active, et son `advance_target`/`advance_target_tower` sont recâblés vers `EnemyBaseB`/`EnemyTowerB` — elle devient le nouveau front d'où partent les unités du joueur. **Révisé (retour utilisateur)** : `PlayerBase`, désormais derrière le nouveau front, devient « backline » — le niveau appelle `stop_spawning()` dessus, elle ne produit plus d'unités (pas de recâblage). Victoire = **`EnemyBaseB` capturée** (la dernière de la chaîne), pas avant. | C'est tout le point de la révision : la capture doit *relayer* l'offensive, pas clore la boucle au premier succès. Remplace D4 de la version précédente (qui faisait de la première capture une fin de partie). |
+| D5 | Pression ennemie | **Révisé (retour utilisateur)** : `EnemyBaseB` est une base « backline » — elle **ne spawn rien** tant que `EnemyBaseA` n'est pas capturée ; à la capture, le niveau la réveille (`Base.start_spawning()` + vague immédiate), déjà câblée vers `PlayerBase`/`PlayerTower`. Remplace la version « pas de dormance ». | La double pression day-one n'était pas voulue : une base en arrière-ligne ne produit pas d'unités tant que le front devant elle tient. |
 | D6 | Relief/portée | Réutilise le couloir plat de `meso_siege.tscn`, allongé pour loger la deuxième paire Tour/Base. Aucun réglage de vague neuf par défaut (10.2 a déjà tuné `wave_interval`/`wave_size`/dégâts de Tour). | Isoler la variable : ce jalon teste le relais de capture, pas l'équilibrage ni le terrain. |
 
 ---
@@ -155,9 +155,10 @@ ailleurs, D2).
 - `macro_capture.gd` :
   - `enemy_base_a.captured.connect(_on_enemy_base_a_captured)` → appelle
     `enemy_base_a.retarget(enemy_base_b, tower_b)` (elle devient le
-    nouveau front, D4) **et** `player_base.retarget(enemy_base_b, tower_b)`
-    (`PlayerBase` ciblait `EnemyBaseA`, désormais alliée — recâblée vers la
-    suite plutôt que laissée à cibler une base amie).
+    nouveau front, D4) **et** `player_base.stop_spawning()` (`PlayerBase` devient backline :
+    le front du joueur est désormais `EnemyBaseA`, elle ne produit plus
+    d'unités) ; `enemy_base_b.start_spawning()` réveille la base backline
+    ennemie (D5).
   - `enemy_base_b.captured.connect(_on_victory)` — dernière de la chaîne,
     fin de partie (D3/D4).
   - `player_base.captured.connect(_on_defeat)` (`PlayerBase.capturable =
@@ -194,23 +195,24 @@ ailleurs, D2).
 
 ### Critères de validation
 
-Vérifié **headless** :
+Vérifié **headless** (`tests/macro_capture_test.gd`) :
 
-- [ ] Une Base non-`capturable` (toutes les scènes existantes) garde
+- [x] Une Base non-`capturable` (toutes les scènes existantes) garde
       exactement son comportement H5 — non-régression explicite
-- [ ] `EnemyBaseA` à 0 PV : faction inversée, PV remontés, `unit_scene`
+- [x] `EnemyBaseA` à 0 PV : faction inversée, PV remontés, `unit_scene`
       correspond au nouveau camp, layers cohérents (mordable par l'ancien
       camp, pas par le nouveau), `captured` émis (pas `died`), le spawn
       **reprend** sous le nouveau camp
-- [ ] Après capture de `EnemyBaseA`, elle vise bien `EnemyBaseB`/`TowerB`
-      (et non plus `PlayerBase`) ; `PlayerBase` aussi
-- [ ] `EnemyBaseB` reste protégée par `TowerB` exactement comme avant la
-      capture de `EnemyBaseA` (aucun raccourci ouvert par le relais)
-- [ ] `player_base.captured` déclenche la défaite ; `enemy_base_b.captured`
+- [x] Après capture de `EnemyBaseA`, elle vise bien `EnemyBaseB`/`TowerB`
+      (et non plus `PlayerBase`) ; `PlayerBase` devient backline (ne spawn plus)
+- [x] `EnemyBaseB` reste protégée par `TowerB` exactement comme avant la
+      capture de `EnemyBaseA` (aucun raccourci ouvert par le relais) —
+      vérifié avec un vrai trajet minuté, pas seulement le câblage
+- [x] `player_base.captured` déclenche la défaite ; `enemy_base_b.captured`
       déclenche la victoire ; `enemy_base_a.captured` ne déclenche **ni
       l'une ni l'autre** (juste le relais)
-- [ ] Driver une Base capturable juste après son retournement ne plante pas
-- [ ] Aucune régression : tous les tests headless précédents au vert
+- [x] Driver une Base capturable juste après son retournement ne plante pas
+- [x] Aucune régression : les 12 tests headless du projet au vert
 
 Confirmé **en playtest manuel** (`Docs/PLAYTEST_CHECKLIST.md`) :
 
@@ -219,9 +221,8 @@ Confirmé **en playtest manuel** (`Docs/PLAYTEST_CHECKLIST.md`) :
 - [ ] Le relais se sent juste : une fois `EnemyBaseA` prise, l'assaut vers
       `EnemyBaseB` démarre sans que le joueur ait à tout relancer
       manuellement depuis `PlayerBase`
-- [ ] La double pression ennemie dès le départ (D5, `EnemyBaseA` +
-      `EnemyBaseB` visant toutes deux `PlayerBase`) est-elle trop forte
-      d'entrée, ou lisible comme un vrai défi Macro ?
+- [ ] Le réveil de `EnemyBaseB` après la capture de `EnemyBaseA` (D5
+      révisé) crée-t-il un nouveau pic de pression lisible ?
 - [ ] Le message « Front capturé » puis « Victoire » se lit bien comme deux
       étapes distinctes, pas comme une fin prématurée
 
@@ -229,14 +230,39 @@ Confirmé **en playtest manuel** (`Docs/PLAYTEST_CHECKLIST.md`) :
 
 - Pas de chaîne symétrique côté ennemi (l'ennemi n'a pas à capturer les
   bases du joueur en cascade dans ce POC, D3)
-- Pas de dormance de `EnemyBaseB` en attendant la chute de `EnemyBaseA`
-  (D5)
+- Pas de mécanisme de dormance générique dans `Base` : le niveau endort/réveille la base backline via `stop_spawning()`/`start_spawning()` (D5)
 - Pas de nouveau relief/déséquilibrage de vague au-delà de ce qu'impose la
   chaîne (D6)
 - Pas de correctif sur le pathing des unités déjà en vol au moment d'une
   capture (limite connue, sous-tâche 3)
 - Pas de carte « taille finale » avec de nombreuses bases — deux suffisent
   à valider le mécanisme (D3)
+
+---
+
+## Bugs connus trouvés en playtest (à traiter, pas encore corrigés)
+
+Constatés par l'utilisateur sur `macro_capture.tscn` après la capture de
+`EnemyBaseA` — **non corrigés**, à reprendre dans une session dédiée :
+
+- **Une Base capturée ne devient pas possédable.** `PlayerBase` s'arrête
+  bien de spawner (backline, voulu), mais le joueur ne peut pas basculer
+  sur `EnemyBaseA`, devenue son nouveau front. Cause probable : le
+  `Controllable` d'une Base est posé une seule fois dans son `_ready`
+  (`base_controllable.gd`) selon sa faction **d'origine** (null pour une Base
+  ennemie) ; rien ne le (re)crée ni ne l'enregistre dans le pool de
+  possession au retournement (`_capture()`).
+- **Crash en alternant entre une `FrontUnit` possédée et la première Base.**
+  Aller-retour unité ↔ `PlayerBase` (swap de possession, phase 8.2) plante.
+  À reproduire et diagnostiquer ; piste : `PlayerBase` a été mise en
+  sommeil (`stop_spawning()`) / la Base garde l'état de possession
+  (`controllable`, `_defeated`, `drive()`) qui suppose une Base toujours
+  jouable côté joueur.
+- **Chantier à prévoir : mieux gérer la façon dont une Base devient
+  contrôlable** — le rendre dépendant de la faction *courante* (activation/
+  désactivation au retournement, enregistrement/retrait du pool, retour de
+  contrôle si la Base possédée est capturée) plutôt que d'un état figé à
+  `_ready`. À planifier avant de passer à des chaînes de plus de deux bases.
 
 ---
 

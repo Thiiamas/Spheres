@@ -5,8 +5,8 @@ manuel. Tenue à jour au fil du développement : coche ce qui est validé, et
 laisse une note quand quelque chose ne va pas.
 
 Tout ce qui n'est pas dans cette liste est couvert par `tools/run_tests.sh`
-(8 tests). Si un point ci-dessous devient automatisable, il doit **quitter cette
-liste** et devenir une assertion.
+(12 tests). Si un point ci-dessous devient automatisable, il doit **quitter
+cette liste** et devenir une assertion.
 
 Rappel : lancer la scène courante avec **F6**, pas F5 — `run/main_scene` pointe
 sur `levels/main.tscn`, donc F5 lance toujours le niveau 1 (phases 1-6), qui n'a
@@ -159,6 +159,31 @@ le *feel* du siège.
 	  Base et le point de rencontre) — ni trop près du spawn (pas de temps
 	  pour apprécier le combat de vague avant le siège) ni trop près de la
 	  Base adverse (le siège n'a pas le temps de se sentir long). **Validé**.
+
+---
+
+## Palier Macro — jalon 11.1 (chaîne de capture de base)
+
+Scène : `gameplay_loop/macro/macro_capture.tscn`
+
+Le mécanisme de relais **est** mesuré (`macro_capture_test`, avec un vrai
+trajet minuté : une fois `EnemyBaseA` capturée, la vague relayée doit
+engager `TowerB` sans jamais toucher `EnemyBaseB` tant qu'elle vit — aucun
+raccourci ouvert par la capture en amont, D3). Le retournement lui-même
+(faction, PV, couches, spawn qui reprend), le recâblage de `EnemyBaseA` et
+`PlayerBase` vers `EnemyBaseB`/`TowerB`, et les trois issues (victoire,
+défaite, relais silencieux) sont testés indépendamment. Reste le *feel*.
+
+- [ ] **Le retournement de `EnemyBaseA` se voit clairement** (teinte, barre
+	  de vie remontée, nouvelle vague qui en sort peu après).
+- [ ] **Le relais se sent juste** : une fois `EnemyBaseA` prise, l'assaut
+	  vers `EnemyBaseB` démarre sans que le joueur ait à tout relancer
+	  manuellement depuis `PlayerBase`.
+- [ ] **Le réveil de `EnemyBaseB`** (D5 révisé : muette tant que
+	  `EnemyBaseA` n'est pas capturée) crée-t-il un nouveau pic de pression
+	  lisible une fois le front relayé ?
+- [ ] **Le message « Front A capturé » puis « Victoire »** se lit bien comme
+	  deux étapes distinctes, pas comme une fin prématurée.
 
 ---
 
